@@ -56,15 +56,15 @@ This creates and returns a new promise. The `handler` must be a function with th
  1. `resolve` should be called with a single argument. If it is called with a non-promise value then the promise is fulfilled with that value. If it is called with a promise, then the constructed promise takes on the state of that promise.
  2. `reject` should be called with a single argument. The returned promise will be rejected with that argument.
 
-### static Promise.resolve(any *value*)
+#### *static* Promise.resolve(any *value*)
 
 Converts values and foreign promises into `jellypromise` promises. If you pass it a value then it returns a Promise for that value. If you pass it something that is close to a promise (such as a jQuery attempt at a promise) it returns a Promise that takes on the state of `value` (rejected or fulfilled).
 
-### static Promise.reject(any *value*)
+#### *static* Promise.reject(any *value*)
 
 Returns a rejected promise with the given value.
 
-### static Promise.all(Array *array*)
+#### *static* Promise.all(Array *array*)
 
 Returns a promise for an array of promises (thenables). The returned promise is rejected if any of promises in the array are rejected. Otherwise, it is resolved with an array of each resolved value. Any non-promise values in the array are simply passed to the resolution array in the same position.
 
@@ -77,7 +77,7 @@ Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')])
   })
 ```
 
-### static Promise.promisify(function *fn*)
+#### *static* Promise.promisify(function *fn*)
 
 Takes a function which accepts a node style callback and returns a new function that returns a promise instead.
 
@@ -93,7 +93,7 @@ var p = read('foo.json', 'utf8')
   })
 ```
 
-### static Promise.nodeify(function *fn*)
+#### *static* Promise.nodeify(function *fn*)
 
 The twin to `promisify` is useful when you want to export an API that can be used by people who haven't learnt about the brilliance of promises yet.
 
@@ -106,7 +106,7 @@ function awesomeAPI(a, b) {
 
 If the last argument passed to `module.exports` is a function, then it will be treated like a node.js callback and not passed on to the child function. Otherwise, the API will just return a promise.
 
-### .then(function *onFulfilled*, function *onRejected*)
+#### .then(function *onFulfilled*, function *onRejected*)
 
 This method follows the [Promises/A+ spec](http://promises-aplus.github.io/promises-spec/).
 
