@@ -1,8 +1,9 @@
 {
-  "name": "promise",
-  "version": "7.1.1",
-  "description": "Bare bones Promises/A+ implementation",
+  "name": "jellypromise",
+  "version": "8.0.0",
+  "description": "A tiny and fast Promises/A+ library, with thoughtful error handling.",
   "main": "index.js",
+  "browser": "browser.js",
   "scripts": {
     "prepublish": "node build",
     "pretest": "node build",
@@ -17,9 +18,13 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/then/promise.git"
+    "url": "https://github.com/JoshuaWise/jellypromise.git"
   },
-  "author": "ForbesLindesay",
+  "author": "Joshua Wise <josh@joshuawise.ninja> (www.joshuawise.ninja)",
+  "bugs": {
+    "url": "https://github.com/JoshuaWise/jellypromise/issues"
+  },
+  "homepage": "https://github.com/JoshuaWise/jellypromise#readme",
   "license": "MIT",
   "devDependencies": {
     "acorn": "^1.0.1",
