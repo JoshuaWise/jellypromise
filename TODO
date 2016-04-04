@@ -1,4 +1,5 @@
 redo lib
+add optimizations for index.js to import (server only)
 
 redo tests
 redo builds
