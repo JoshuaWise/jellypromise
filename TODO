@@ -1,8 +1,6 @@
 redo lib
 
-catch
-else
-iterate
+join
 delay
 timeout
 settle
