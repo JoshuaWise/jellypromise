@@ -1,4 +1,12 @@
 redo lib
+
+catch
+iterate
+delay
+timeout
+settle
+generator (seperate module?)
+
 add optimizations for index.js to import (server only)
 
 redo tests

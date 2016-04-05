@@ -37,12 +37,9 @@ However, in some situations, you may wish to refrain from adding a rejection han
 
 By default, long stack traces are turned on, for superior debugging capabilities. However, if `process.env.NODE_ENV === 'production'`, they will be turned off for performance reasons.
 
-Alternatively, there are two ways to manually turn off long stack traces:
+You can also exclude long stack traces by using:
 
 ```js
-// This is equivalent to setting process.env.NODE_ENV = 'production'
-var Promise = require('jellypromise').noLongStackTraces();
-
 // This alternative has the advantage of excluding the relevant code from being loaded, resulting in a smaller file size for browser builds using browserify
 var Promise = require('jellypromise/production');
 ```
