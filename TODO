@@ -1,7 +1,5 @@
-add optimizations for index.js to import (server only)
-
 redo tests
-redo builds
+redo builds (and scripts in package.json)
 
 generator (seperate module?)
 
@@ -10,3 +8,8 @@ optimization:
 - use check in resolve/reject functions. instead of safety only being in closure constructions, to speed up internal methods
   (and add this optimization to promisify, if this === Promise)
 - use _methods instead of privately scoped functions
+
+
+add optimizations for index.js to import (server only)
+
+add utilities to README

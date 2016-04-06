@@ -3,7 +3,10 @@
   "version": "8.0.0",
   "description": "A tiny and fast Promises/A+ library, with thoughtful error handling.",
   "main": "index.js",
-  "browser": "browser.js",
+  "browser": {
+    "index.js": "browser.js",
+    "production.js": "browser-production.js"
+  },
   "scripts": {
     "prepublish": "node build",
     "pretest": "node build",
