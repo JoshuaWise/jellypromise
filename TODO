@@ -1,7 +1,3 @@
-redo lib
-
-redo node-extensions
-
 add optimizations for index.js to import (server only)
 
 redo tests

@@ -31,50 +31,66 @@ var promise = new Promise(function (resolve, reject) {
 
 ## Unhandled Rejections
 
-When a promise is rejected but has no rejection handlers, the rejection reason will be thrown unless a rejection handler is added before the next event loop tick. This helps the programmer quickly identify and fix errors.
+When a promise is rejected but has no rejection handlers, the rejection reason will be thrown unless a rejection handler is added before the next event loop cycle. This helps the programmer quickly identify and fix errors.
 
 However, in some situations, you may wish to refrain from adding a rejection handler until a later time. In these cases, you can use the `.catchLater()` utility method to supress this behavior.
 
-By default, long stack traces are turned on, for superior debugging capabilities. However, if `process.env.NODE_ENV === 'production'`, they will be turned off for performance reasons.
+## Production Mode
 
-You can also exclude long stack traces by using:
+By default, long stack traces and warnings are turned on, for superior debugging capabilities. However, if `process.env.NODE_ENV === 'production'`, they will be turned off for performance reasons.
+
+You can also exclude these debugging features by using:
 
 ```js
 // This alternative has the advantage of excluding the relevant code from being loaded, resulting in a smaller file size for browser builds using browserify
 var Promise = require('jellypromise/production');
 ```
 
+Setting `process.env.NODE_ENV` only works in Nodejs. Even if you are using [browserify](https://github.com/substack/node-browserify), to use production mode in the browser, you must require `jellypromise/production`, as shown above.
+
+
 # API
 
-### new Promise(function *handler*)
+### new Promise(*handler*)
 
 This creates and returns a new promise. The `handler` must be a function with the following signature: `function handler(function *resolve*, function *reject*)`
 
  1. `resolve` should be called with a single argument. If it is called with a non-promise value then the promise is fulfilled with that value. If it is called with a promise, then the constructed promise takes on the state of that promise.
  2. `reject` should be called with a single argument. The returned promise will be rejected with that argument.
 
-#### *static* Promise.resolve(any *value*)
+#### *static* Promise.resolve(*value*)
 
 Converts values and foreign promises into `jellypromise` promises. If you pass it a value then it returns a Promise for that value. If you pass it something that is close to a promise (such as a jQuery attempt at a promise) it returns a Promise that takes on the state of `value` (rejected or fulfilled).
 
-#### *static* Promise.reject(any *value*)
+#### *static* Promise.reject(*value*)
 
 Returns a rejected promise with the given value.
 
-#### *static* Promise.all(Array *array*)
+#### *static* Promise.all(*iterable*)
 
-Returns a promise for an array of promises (thenables). The returned promise is rejected if any of promises in the array are rejected. Otherwise, it is resolved with an array of each resolved value. Any non-promise values in the array are simply passed to the resolution array in the same position.
+Returns a promise for an array (or iterable) of promises. The returned promise is rejected if any of promises in the array are rejected. Otherwise, it is resolved with an array of each resolved value. Any non-promise values in the array are simply passed to the resolution array in the same position.
 
 ```js
 Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')])
-  .then(function (res) {
-    assert(res[0] === 'a')
-    assert(res[1] === 'b')
-    assert(res[2] === 'c')
+  .then(function (results) {
+    assert(results[0] === 'a')
+    assert(results[1] === 'b')
+    assert(results[2] === 'c')
   })
 ```
 
-#### *static* Promise.promisify(function *fn*)
+#### *static* Promise.race(*iterable*)
+
+Returns a promise that resolves or rejects with the same value/reason as the first resolved/rejected promise in the array/iterable argument. Non-promise values in the array are converted to promises with `Promise.resolve()`.
+
+```js
+Promise.race([promiseA, promiseB, promiseC])
+  .then(function (result) {
+    // "result" is either the value of promiseA, promiseB, or promiseC
+  })
+```
+
+#### *static* Promise.promisify(*func*)
 
 Takes a function which accepts a node style callback and returns a new function that returns a promise instead.
 
@@ -84,24 +100,29 @@ var fs = require('fs')
 var read = Promise.promisify(fs.readFile)
 var write = Promise.promisify(fs.writeFile)
 
-var p = read('foo.json', 'utf8')
+var promise = read('foo.json', 'utf8')
   .then(function (str) {
-    return write('foo.json', JSON.stringify(JSON.parse(str), null, '  '), 'utf8')
+    var json = JSON.parse(str)
+    json.foo = 'bar'
+    return write('foo.json', JSON.stringify(json), 'utf8')
   })
 ```
 
-#### *static* Promise.nodeify(function *fn*)
+**WARNING:** This function is not available in the browser.
 
-The twin to `promisify` is useful when you want to export an API that can be used by people who haven't learnt about the brilliance of promises yet.
+#### *static* Promise.nodeify(*func*)
+
+Converts a promise-returning function to a function that instead accepts a node style callback as its last argument. The newly created function will always return undefined.
 
 ```js
-module.exports = Promise.nodeify(awesomeAPI)
-function awesomeAPI(a, b) {
-  return download(a, b)
-}
+var callbackAPI = Promise.nodeify(promiseAPI)
+
+callbackAPI('foo', 'bar', function (err, result) {
+  // handle error or result here
+})
 ```
 
-If the last argument passed to `module.exports` is a function, then it will be treated like a node.js callback and not passed on to the child function. Otherwise, the API will just return a promise.
+**WARNING:** This function is not available in the browser.
 
 #### .then(function *onFulfilled*, function *onRejected*)
 
@@ -113,30 +134,20 @@ If the promise is fulfilled then `onFulfilled` is called. If the promise is reje
 
 The call to `.then` also returns a promise. If the handler that is called returns a promise, the promise returned by `.then` takes on the state of that returned promise. If the handler that is called returns a value that is not a promise, the promise returned by `.then` will be fulfilled with that value. If the handler that is called throws an exception then the promise returned by `.then` is rejected with that exception.
 
-#### .catch(function *onRejected*)
+#### .catch([...predicates], function *onRejected*)
 
 Sugar for `.then(null, onRejected)`, to mirror `catch` in synchronous code.
+
+If any `predicates` are specified, the `onRejected` handler only catches exceptions that match one of the `predicates`.
+
+A `predicate` can be:
+- an `Error` class (`.catch(TypeError, SyntaxError, func)`)
+- an object defining required property values (`.catch({code: 'ENOENT'}, func)`)
+- a filter function (`.catch(function (err) {return err.statusCode === 404}, func)`)
 
 #### .catchLater()
 
 Prevents an error from being thrown if the promise is rejected but does not yet have a rejection handler (see [Unhandled Rejections](#unhandled-rejections)).
-
-#### .nodeify(function *callback*)
-
-If `callback` is `null` or `undefined` it just returns `this`. If `callback` is a function it is called with rejection reason as the first argument and result as the second argument (as per the node.js convention).
-
-This lets you write API functions that look like:
-
-```js
-function awesomeAPI(foo, bar, callback) {
-  return internalAPI(foo, bar)
-    .then(parseResult)
-    .then(null, retryErrors)
-    .nodeify(callback)
-}
-```
-
-People who use typical node.js style callbacks will be able to just pass a callback and get the expected behavior. The enlightened people can not pass a callback and will get awesome promises.
 
 ## License
 

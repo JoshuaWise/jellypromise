@@ -1,5 +1,5 @@
 'use strict';
-
+process.exit()
 var fs = require('fs');
 var rimraf = require('rimraf');
 var acorn = require('acorn');
