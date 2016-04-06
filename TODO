@@ -8,3 +8,9 @@ redo tests
 redo builds
 
 generator (seperate module?)
+
+optimization:
+- use bit field for multiple things (e.g., _state and _supressUnhandledRejections)
+- use check in resolve/reject functions. instead of safety only being in closure constructions, to speed up internal methods
+- use _methods instead of privately scoped functions
+- find way to keep promises singly linked, to avoid each promise containing an array?
