@@ -8,7 +8,7 @@
     "production.js": "lib-browser-production/index.js"
   },
   "scripts": {
-    "prepublish": "./prepublish",
+    "prepublish": "$(npm bin)/in-publish && ./prepublish || true",
     "postpublish": "./postpublish",
     "build": "$(npm bin)/gulp",
     "pretest": "$(npm bin)/gulp",
@@ -31,6 +31,7 @@
     "fs-extra-promise": "^0.3.1",
     "glob-promise": "^1.0.6",
     "gulp": "^3.9.1",
+    "in-publish": "^2.0.0",
     "mocha": "^2.4.5",
     "promises-aplus-tests": "^2.1.1"
   },
