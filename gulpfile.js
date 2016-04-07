@@ -7,29 +7,39 @@ var globPromise = require('glob-promise')
 var gulp = require('gulp')
 var acorn = require('acorn')
 var walk = require('acorn/dist/walk')
-var JSRE = /.+\.(js|json)$/i
+var dotRE = /(\\|\/|^)\./
 var directiveRE = /@\[(\/?[\w\s]+|\/)\]/g
 var directiveStartRE = /@\[([\w\s]+)\]/
 var directiveEndRE = /@\[\/\]/
 var directiveSingleRE = /@\[\/([\w\s]+)\]/
 var spacesRE = /\s+/g
+var noDots = function (filename) {return !dotRE.test(filename)}
 var glob = function (pattern) {return function () {return globPromise(pattern)}}
 var readFile = function (filename) {return fs.readFileAsync(filename).then(String)}
+var done = function () {console.log('Done!')}
 var recognizedDirectives = ['node', 'browser', 'development', 'production']
 
 
 gulp.task('default', ['node', 'browser', 'node-production', 'browser-production']);
 gulp.task('node', function () {
 	return process('lib-node', ['node', 'development'])
+	.then(done)
 });
 gulp.task('browser', function () {
 	return process('lib-browser', ['browser', 'development'])
+	.then(done)
 });
 gulp.task('node-production', function () {
 	return process('lib-node-production', ['node', 'production'])
+	.then(function () {
+		fs.writeFileAsync('production.js',
+			"'use strict'\nmodule.exports = require('./lib-node-production/index.js')\n")
+	})
+	.then(done)
 });
 gulp.task('browser-production', function () {
 	return process('lib-browser-production', ['browser', 'production'])
+	.then(done)
 });
 
 gulp.task('clear', function () {
@@ -37,30 +47,25 @@ gulp.task('clear', function () {
 		fs.removeAsync('lib-node'),
 		fs.removeAsync('lib-browser'),
 		fs.removeAsync('lib-node-production'),
-		fs.removeAsync('lib-browser-production')
+		fs.removeAsync('lib-browser-production'),
+		fs.removeAsync('production.js')
 	)
 });
 
 
 function process(lib, directives) {
-	var filenames
-	return fs.copyAsync('src', lib, {clobber: true, filter: JSRE})
+	var filenames = []
+	return fs.copyAsync('src', lib, {clobber: true, filter: noDots})
+	.then(function () {console.log('Building to', lib + '/**')})
 	.then(glob(lib + '/**/*.js'))
-	.then(function (arr) {return filenames = arr})
+	.then(function (arr) {
+		filenames.push.apply(filenames, arr)
+		return arr
+	})
 	.map(readFile)
 	.then(obfuscateProperties)
 	.map(processDirectives(directives, filenames))
 	.map(function (data, i) {return fs.writeFileAsync(filenames[i], data)})
-	.then(writeProductionLink(lib, directives))
-}
-
-function writeProductionLink(lib, directives) {
-	if (directives.indexOf('production') === -1) {
-		var productionPath = joinPath('..', lib + '-production')
-		return fs.writeFileAsync(joinPath(lib, 'production.js'),
-			"'use strict'\nmodule.exports = require('" + productionPath + "')"
-		)
-	}
 }
 
 function obfuscateProperties(sources) {
@@ -105,13 +110,8 @@ function processDirectives(directives, filenames) {
 		source = source.split('\n')
 		parseDirectives(comments.filter(Directive.isDirective), basename(filenames[index]))
 			.forEach(function (directive) {
-				if (directive.in(directives)) {
-					removeLines.push(directive.startLine, directive.endLine)
-				} else {
-					for (var i=directive.startLine, len=directive.endLine; i<=len; i++) {
-						removeLines.push(i)
-					}
-				}
+				var lineRange = directive.in(directives) ? directive.keepLines() : directive.eraseLines()
+				removeLines = removeLines.concat(lineRange)
 			})
 		return source.filter(
 			function (line, n) {return removeLines.indexOf(n) === -1}
@@ -124,12 +124,13 @@ function processDirectives(directives, filenames) {
 *===========================*/
 
 function Directive(startComment, endComment) {
-	var valueRE = startComment === endComment ? directiveSingleRE : directiveStartRE
+	var regex = startComment === endComment ? directiveSingleRE : directiveStartRE
+	var match = startComment.value.match(regex)
 	this.startLine = startComment.loc.start.line - 1
 	this.endLine = endComment.loc.start.line - 1
-	this._directives = startComment.value.match(valueRE)[1].trim().split(spacesRE)
+	this._directives = match[1].trim().split(spacesRE)
 	if (!this.in(recognizedDirectives)) {
-		throw new Error('Unrecognized directive in: ' + this)
+		throw new Error('Unrecognized directive in "' + match[0] + '"')
 	}
 }
 Directive.prototype.in = function (allowedDirectives) {
@@ -141,8 +142,15 @@ Directive.prototype.in = function (allowedDirectives) {
 	}
 	return true
 }
-Directive.prototype.toString = function () {
-	return JSON.stringify(this._directives, null, 4)
+Directive.prototype.keepLines = function () {
+	return this.startLine === this.endLine ? [] : [this.startLine, this.endLine]
+}
+Directive.prototype.eraseLines = function () {
+	var start = this.startLine
+	var len = this.endLine - start + 1
+	var ret = new Array(len)
+	for (var i=0; i<len; i++) {ret[i] = start + i}
+	return ret
 }
 Directive.isDirective = function (comment) {
 	return comment.type === 'Line' && comment.value.search(directiveRE) !== -1

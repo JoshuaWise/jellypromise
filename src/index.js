@@ -2,21 +2,21 @@
 
 // @[development node]
 if (process.env.NODE_ENV === 'production') {
-	module.exports = require('./production')
+	module.exports = require('../production')
 } else {
-	module.exports = require('./lib/core')
-	require('./lib/utilities')
-	require('./lib/node-extensions')
-	require('./lib/long-stack-traces')
+	module.exports = require('./core')
+	require('./utilities')
+	require('./node-extensions')
+	require('./long-stack-traces')
 }
 // @[/]
 // @[production node]
-module.exports = require('./lib/core')
-require('./lib/utilities')
-require('./lib/node-extensions')
+module.exports = require('./core')
+require('./utilities')
+require('./node-extensions')
 // @[/]
 // @[browser]
-module.exports = require('./lib/core')
-require('./lib/utilities')
-require('./lib/long-stack-traces') // @[/development]
+module.exports = require('./core')
+require('./utilities')
+require('./long-stack-traces') // @[/development]
 // @[/]

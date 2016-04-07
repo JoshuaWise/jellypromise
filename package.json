@@ -3,7 +3,10 @@
   "version": "8.0.0",
   "description": "A tiny and fast Promises/A+ library, with thoughtful error handling.",
   "main": "lib-node/index.js",
-  "browser": "lib-browser/index.js",
+  "browser": {
+    "lib-node/index.js": "lib-browser/index.js",
+    "production.js": "lib-browser-production/index.js"
+  },
   "scripts": {
     "prepublish": "$(npm bin)/gulp",
     "pretest": "$(npm bin)/gulp",
