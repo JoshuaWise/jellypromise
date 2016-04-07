@@ -3,3 +3,4 @@ set -e
 rm ./.next-version-arg
 $(npm bin)/gulp clear
 git commit -am 'postpublish unbuild'
+git push
