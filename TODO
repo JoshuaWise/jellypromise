@@ -1,7 +1,3 @@
-redo build process to create seperate lib folders, rather than browserify/compiled versions.
-allow block directives (i.e., do this block for browser, do this block for node).
-implement "gulp clear" to remove build materials before commiting, and add to pre-commit hook.
-
 implement colors for warnings and erros, in development mode
 
 generator (seperate module?)
