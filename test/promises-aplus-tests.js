@@ -1,5 +1,5 @@
 var tests = require('promises-aplus-tests')
-var Promise = require('../');
+var Promise = require('../production');
 
 tests.mocha({
 	deferred: function () {

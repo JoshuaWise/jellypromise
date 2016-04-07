@@ -1,5 +1,7 @@
-redo tests
-redo builds (and scripts in package.json)
+redo build process to create seperate lib folders, rather than browserify/compiled versions.
+allow block directives (i.e., do this block for browser, do this block for node).
+
+implement colors for warnings and erros, in development mode
 
 generator (seperate module?)
 
@@ -13,3 +15,5 @@ optimization:
 add optimizations for index.js to import (server only)
 
 add utilities to README
+
+redo tests

@@ -31,7 +31,7 @@ var promise = new Promise(function (resolve, reject) {
 
 ## Unhandled Rejections
 
-When a promise is rejected but has no rejection handlers, the rejection reason will be thrown unless a rejection handler is added before the next event loop cycle. This helps the programmer quickly identify and fix errors.
+When a promise is rejected but has no rejection handlers, the rejection will be logged to the console unless a rejection handler is added before the next event loop cycle. This helps the programmer quickly identify and fix errors.
 
 However, in some situations, you may wish to refrain from adding a rejection handler until a later time. In these cases, you can use the `.catchLater()` utility method to supress this behavior.
 

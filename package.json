@@ -8,10 +8,9 @@
     "production.js": "browser-production.js"
   },
   "scripts": {
-    "prepublish": "node build",
-    "pretest": "node build",
-    "test": "$(npm bin)/mocha --timeout 200 --slow 99999 && node --expose-gc test-memory-leak",
-    "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- --bail --timeout 200 --slow 99999 -R dot"
+    "prepublish": "$(npm bin)/gulp",
+    "pretest": "$(npm bin)/gulp",
+    "test": "$(npm bin)/mocha --bail --timeout 200 --slow 99999 && node --expose-gc test-memory-leak"
   },
   "repository": {
     "type": "git",
@@ -24,9 +23,12 @@
   "homepage": "https://github.com/JoshuaWise/jellypromise#readme",
   "license": "MIT",
   "devDependencies": {
-    "acorn": "^1.0.1",
+    "acorn": "^3.0.4",
+    "browserify": "^13.0.0",
     "cli-color": "^1.1.0",
+    "gulp": "^3.9.1",
     "mocha": "^2.4.5",
+    "promise": "^7.1.1",
     "promises-aplus-tests": "^2.1.1"
   },
   "dependencies": {
