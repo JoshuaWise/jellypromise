@@ -43,13 +43,13 @@ gulp.task('browser-production', function () {
 });
 
 gulp.task('clear', function () {
-	return Promise.all(
+	return Promise.all([
 		fs.removeAsync('lib-node'),
 		fs.removeAsync('lib-browser'),
 		fs.removeAsync('lib-node-production'),
 		fs.removeAsync('lib-browser-production'),
 		fs.removeAsync('production.js')
-	)
+	])
 });
 
 
