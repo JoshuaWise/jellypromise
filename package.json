@@ -2,11 +2,8 @@
   "name": "jellypromise",
   "version": "8.0.0",
   "description": "A tiny and fast Promises/A+ library, with thoughtful error handling.",
-  "main": "index.js",
-  "browser": {
-    "index.js": "browser.js",
-    "production.js": "browser-production.js"
-  },
+  "main": "lib-node/index.js",
+  "browser": "lib-browser/index.js",
   "scripts": {
     "prepublish": "$(npm bin)/gulp",
     "pretest": "$(npm bin)/gulp",

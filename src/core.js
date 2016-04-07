@@ -1,7 +1,7 @@
 'use strict'
 var asap = require('asap/raw')
 var toArray = require('./to-array')
-var warn = require('./warn') // @[development]
+var warn = require('./warn') // @[/development]
 function noop() {}
 
 // States:
@@ -225,12 +225,14 @@ function Deferred(onFulfilled, onRejected, promise) {
 	this.onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : null
 	this.onRejected = typeof onRejected === 'function' ? onRejected : null
 	this.promise = promise
-	if (typeof onFulfilled !== 'function' && onFulfilled != null) { // @[development]
-		warn('Promise handlers must be functions (' + typeof onFulfilled + 's will be ignored).') // @[development]
-	} // @[development]
-	if (typeof onRejected !== 'function' && onRejected != null) { // @[development]
-		warn('Promise handlers must be functions (' + typeof onFulfilled + 's will be ignored).') // @[development]
-	} // @[development]
+	// @[development]
+	if (typeof onFulfilled !== 'function' && onFulfilled != null) {
+		warn('Promise handlers must be functions (' + typeof onFulfilled + 's will be ignored).')
+	}
+	if (typeof onRejected !== 'function' && onRejected != null) {
+		warn('Promise handlers must be functions (' + typeof onFulfilled + 's will be ignored).')
+	}
+	// @[/]
 }
 
 function catchType(type, reason) {

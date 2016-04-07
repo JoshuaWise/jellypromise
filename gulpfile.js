@@ -1,5 +1,6 @@
 'use strict'
 var Promise = require('bluebird')
+var joinPath = require('path').join
 var basename = require('path').basename
 var fs = require('fs-extra-promise')
 var globPromise = require('glob-promise')
@@ -7,8 +8,11 @@ var gulp = require('gulp')
 var acorn = require('acorn')
 var walk = require('acorn/dist/walk')
 var JSRE = /.+\.(js|json)$/i
-var directiveRE = /@\[([-\w\s]+)\]/g
-var directiveEndRE = /@\[\s*\/\s*\]/g
+var directiveRE = /@\[(\/?[\w\s]+|\/)\]/g
+var directiveStartRE = /@\[([\w\s]+)\]/
+var directiveEndRE = /@\[\/\]/
+var directiveSingleRE = /@\[\/([\w\s]+)\]/
+var spacesRE = /\s+/g
 var glob = function (pattern) {return function () {return globPromise(pattern)}}
 var readFile = function (filename) {return fs.readFileAsync(filename).then(String)}
 var recognizedDirectives = ['node', 'browser', 'development', 'production']
@@ -32,10 +36,11 @@ gulp.task('clear', function () {
 	return Promise.all(
 		fs.removeAsync('lib-node'),
 		fs.removeAsync('lib-browser'),
-		fs.removeAsync('lib-production'),
+		fs.removeAsync('lib-node-production'),
 		fs.removeAsync('lib-browser-production')
 	)
 });
+
 
 function process(lib, directives) {
 	var filenames
@@ -46,6 +51,16 @@ function process(lib, directives) {
 	.then(obfuscateProperties)
 	.map(processDirectives(directives, filenames))
 	.map(function (data, i) {return fs.writeFileAsync(filenames[i], data)})
+	.then(writeProductionLink(lib, directives))
+}
+
+function writeProductionLink(lib, directives) {
+	if (directives.indexOf('production') === -1) {
+		var productionPath = joinPath('..', lib + '-production')
+		return fs.writeFileAsync(joinPath(lib, 'production.js'),
+			"'use strict'\nmodule.exports = require('" + productionPath + "')"
+		)
+	}
 }
 
 function obfuscateProperties(sources) {
@@ -79,7 +94,6 @@ function obfuscateProperties(sources) {
 	})
 }
 
-
 function processDirectives(directives, filenames) {
 	return function (source, index) {
 		var comments = []
@@ -110,9 +124,10 @@ function processDirectives(directives, filenames) {
 *===========================*/
 
 function Directive(startComment, endComment) {
+	var valueRE = startComment === endComment ? directiveSingleRE : directiveStartRE
 	this.startLine = startComment.loc.start.line - 1
 	this.endLine = endComment.loc.start.line - 1
-	this._directives = startComment.value.match(directiveRE).map(trimDirectiveName)
+	this._directives = startComment.value.match(valueRE)[1].trim().split(spacesRE)
 	if (!this.in(recognizedDirectives)) {
 		throw new Error('Unrecognized directive in: ' + this)
 	}
@@ -130,33 +145,33 @@ Directive.prototype.toString = function () {
 	return JSON.stringify(this._directives, null, 4)
 }
 Directive.isDirective = function (comment) {
-	return comment.type === 'Line'
-		&& (comment.value.search(directiveRE) !== -1 || comment.value.search(directiveEndRE) !== -1)
-}
-
-function trimDirectiveName(directiveName) {
-	return directiveName.replace(directiveRE, '$1').trim()
+	return comment.type === 'Line' && comment.value.search(directiveRE) !== -1
 }
 
 function parseDirectives(comments, filename) {
 	var directives = []
+	var stack = []
 	for (var i=0, len=comments.length; i<len; i++) {
 		var comment = comments[i]
-		if (comment.value.search(directiveRE) !== -1) {
-			if (startComment) {
+		
+		var matches = comment.value.match(directiveRE)
+		if (matches && matches.length > 1) {
+			throw new Error('Multiple directives in ' + filename + ', line ' + comment.loc.start.line + '.')
+		}
+		
+		if (directiveSingleRE.test(comment.value)) {
+			directives.push(new Directive(comment, comment))
+		} else if (directiveStartRE.test(comment.value)) {
+			stack.push(comment)
+		} else if (directiveEndRE.test(comment.value)) {
+			if (!stack.length) {
 				throw new Error('Unbalanced directive pair in ' + filename + ', line ' + comment.loc.start.line + '.')
 			}
-			var startComment = comment
-		} else if (comment.value.search(directiveEndRE) !== -1) {
-			if (!startComment) {
-				throw new Error('Unbalanced directive pair in ' + filename + ', line ' + comment.loc.start.line + '.')
-			}
-			directives.push(new Directive(startComment, comment))
-			startComment = undefined
+			directives.push(new Directive(stack.pop(), comment))
 		}
 	}
-	if (startComment) {
-		throw new Error('Unbalanced directive pair in ' + filename + ', line ' + startComment.loc.start.line + '.')
+	if (stack.length) {
+		throw new Error('Missing end-directive in ' + filename + ', line ' + stack[stack.length - 1].loc.start.line + '.')
 	}
 	return directives
 }
