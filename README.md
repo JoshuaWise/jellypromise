@@ -6,7 +6,7 @@ This is a small implementation of Promises that achieves the following design go
 - Fast performance
 - A superset of the [ES6 Promise](http://www.ecma-international.org/ecma-262/6.0/#sec-promise-objects)
 - Has a small, carefully-selected set of utilities
-- Throws unhandled errors by default (the opposite of what [then/promise](https://github.com/then/promise) does), and provides utilities for useful error handling patterns
+- Logs unhandled errors by default (the opposite of what [then/promise](https://github.com/then/promise) does), and provides utilities for useful error handling patterns
 
 [![Build Status](https://img.shields.io/travis/JoshuaWise/jellypromise.svg)](https://travis-ci.org/JoshuaWise/jellypromise)
 
