@@ -11,6 +11,7 @@ var tests = [
 	'./basic'
 ]
 
+console.log(clc.magenta('--- Memory leak tests ---'))
 ;(function next() {
 	if (!tests.length) {
 		console.log(clc.green('All tests cleared!'))

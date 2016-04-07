@@ -8,7 +8,9 @@
     "production.js": "lib-browser-production/index.js"
   },
   "scripts": {
-    "prepublish": "$(npm bin)/gulp",
+    "prepublish": "./commit-version",
+    "postpublish": "./unbuild-version",
+    "build": "$(npm bin)/gulp",
     "pretest": "$(npm bin)/gulp",
     "test": "$(npm bin)/mocha --bail --timeout 200 --slow 99999 && node --expose-gc test-memory-leak"
   },

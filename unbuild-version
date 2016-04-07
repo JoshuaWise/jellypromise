@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -e
+$(npm bin)/gulp clear
+git commit -m 'postpublish unbuild'
