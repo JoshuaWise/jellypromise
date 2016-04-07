@@ -18,3 +18,6 @@ add optimizations for index.js to import (server only)
 add utilities to README
 
 redo tests
+
+maybe add .filter/.map/.reduce/.each for processing arrays (any shortcut API possible?)
+maybe switch Promise.iterate to a prototype method

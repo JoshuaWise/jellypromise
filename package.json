@@ -24,11 +24,12 @@
   "license": "MIT",
   "devDependencies": {
     "acorn": "^3.0.4",
-    "browserify": "^13.0.0",
+    "bluebird": "^3.3.4",
     "cli-color": "^1.1.0",
+    "fs-extra-promise": "^0.3.1",
+    "glob-promise": "^1.0.6",
     "gulp": "^3.9.1",
     "mocha": "^2.4.5",
-    "promise": "^7.1.1",
     "promises-aplus-tests": "^2.1.1"
   },
   "dependencies": {
