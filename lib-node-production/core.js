@@ -16,11 +16,11 @@ function Promise(fn) {
 	if (typeof fn !== 'function') {
 		throw new TypeError('Promises must be constructed with a function argument.')
 	}
-	this._64 = 0
-	this._41 = null
-	this._26 = null
-	this._58 = 0
-	this._20 = false
+	this._43 = 0
+	this._25 = null
+	this._85 = null
+	this._28 = 0
+	this._41 = false
 	if (fn !== noop) {
 		resolveOrReject(this, fn)
 	}
@@ -59,7 +59,7 @@ Promise.prototype.catch = function (onRejected) {
 	return this.then(null, onRejected)
 }
 Promise.prototype.catchLater = function () {
-	this._20 = true
+	this._41 = true
 	return this
 }
 module.exports = Promise
@@ -132,8 +132,8 @@ function resolve(self, newValue) {
 		if (then === self.then && newValue instanceof Promise) {
 			// If newValue is a trusted promise, we can optimize their linkage
 			// via state === 3.
-			self._64 = 3
-			self._41 = newValue
+			self._43 = 3
+			self._25 = newValue
 			finale(self)
 			return
 		} else if (typeof then === 'function') {
@@ -143,19 +143,19 @@ function resolve(self, newValue) {
 			return
 		}
 	}
-	self._64 = 1
-	self._41 = newValue
+	self._43 = 1
+	self._25 = newValue
 	finale(self)
 }
 function reject(self, newValue) {
-	self._64 = 2
-	self._41 = newValue
+	self._43 = 2
+	self._25 = newValue
 	
 	// If the promise does not have a handler at the end of the current event
 	// loop cycle, throw the error.
-	if (!self._20) {
+	if (!self._41) {
 		asap(function () {
-			if (!self._20) {
+			if (!self._41) {
 				console.error('Unhandled rejection ' + (newValue instanceof Error
 					? newValue.stack || (err.name + ': ' + err.message)
 					: String(newValue))
@@ -167,34 +167,34 @@ function reject(self, newValue) {
 	finale(self)
 }
 function finale(self) {
-	if (self._58 === 1) {
-		handle(self, self._26)
-		self._26 = null
-	} else if (self._58 === 2) {
-		var deferreds = self._26
+	if (self._28 === 1) {
+		handle(self, self._85)
+		self._85 = null
+	} else if (self._28 === 2) {
+		var deferreds = self._85
 		for (var i=0, len=deferreds.length; i<len; i++) {
 			handle(self, deferreds[i])
 		}
-		self._26 = null
+		self._85 = null
 	}
 }
 
 function handle(self, deferred) {
-	while (self._64 === 3) {
-		self = self._41
+	while (self._43 === 3) {
+		self = self._25
 	}
-	if (!self._20) {
-		self._20 = true
+	if (!self._41) {
+		self._41 = true
 	}
-	if (self._64 === 0) {
-		if (self._58 === 0) {
-			self._58 = 1
-			self._26 = deferred
-		} else if (self._58 === 1) {
-			self._58 = 2
-			self._26 = [self._26, deferred]
+	if (self._43 === 0) {
+		if (self._28 === 0) {
+			self._28 = 1
+			self._85 = deferred
+		} else if (self._28 === 1) {
+			self._28 = 2
+			self._85 = [self._85, deferred]
 		} else {
-			self._26.push(deferred)
+			self._85.push(deferred)
 		}
 	} else {
 		handleResolved(self, deferred)
@@ -202,15 +202,15 @@ function handle(self, deferred) {
 }
 function handleResolved(self, deferred) {
 	asap(function () {
-		var cb = self._64 === 1 ? deferred.onFulfilled : deferred.onRejected
+		var cb = self._43 === 1 ? deferred.onFulfilled : deferred.onRejected
 		if (cb === null) {
-			if (self._64 === 1) {
-				resolve(deferred.promise, self._41)
+			if (self._43 === 1) {
+				resolve(deferred.promise, self._25)
 			} else {
-				reject(deferred.promise, self._41)
+				reject(deferred.promise, self._25)
 			}
 		} else {
-			var ret = tryCallOne(cb, self._41)
+			var ret = tryCallOne(cb, self._25)
 			if (ret === IS_ERROR) {
 				reject(deferred.promise, LAST_ERROR)
 			} else {
