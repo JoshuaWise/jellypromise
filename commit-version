@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -e
 $(npm bin)/gulp
-git add lib-* production.js
+git add -f lib-* production.js
 git commit -m 'prepublish build'
 npm version "$@"
 git push
