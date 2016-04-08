@@ -5,7 +5,7 @@ Promise.promisify = function (fn) {
 	if (typeof fn !== 'function') {
 		throw new TypeError('Expected argument to be a function.')
 	}
-	var likelyArgCount = Math.max(0, Math.min(1024, ~~fn.length) - 1)
+	var likelyArgCount = Math.max(0, Math.min(1024, fn.length) - 1) || 0
 	var minArgCount = Math.max(0, likelyArgCount - 3)
 	var maxArgCount = Math.max(3, likelyArgCount)
 	var argGuesses = [likelyArgCount]

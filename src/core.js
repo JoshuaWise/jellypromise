@@ -1,7 +1,7 @@
 'use strict'
 var asap = require('asap/raw')
 var clc = require('cli-color') // @[/development node]
-var arrayFrom = require('./array-from')
+var asArray = require('./as-array')
 var warn = require('./warn') // @[/development]
 function noop() {}
 
@@ -79,24 +79,25 @@ Promise.reject = function (reason) {
 	return promise
 }
 Promise.race = function (iterable) {
-	var arr = arrayFrom(iterable)
 	return new Promise(function (res, rej) {
-		for (var i=0, len=arr.length; i<len; i++) {
-			Promise.resolve(arr[i]).then(res, rej)
+		var input = asArray(iterable)
+		for (var i=0, len=input.length; i<len; i++) {
+			Promise.resolve(input[i]).then(res, rej)
 		}
 	})
 }
 Promise.all = function (iterable) {
-	var arr = arrayFrom(iterable)
 	return new Promise(function (res, rej) {
-		var pendings = arr.length
+		var input = asArray(iterable)
+		var pendings = input.length
+		var result = new Array(pendings)
 		if (pendings === 0) {
-			return res(arr)
+			return res(result)
 		}
-		arr.forEach(function (item, i) {
+		input.forEach(function (item, i) {
 			Promise.resolve(item).then(function (value) {
-				arr[i] = value
-				if (--pendings === 0) {res(arr)}
+				result[i] = value
+				if (--pendings === 0) {res(result)}
 			}, rej)
 		})
 	})

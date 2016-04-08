@@ -1,6 +1,7 @@
 'use strict'
 var Promise = require('./core')
 
+// All methods accept iterable objects
 Promise.prototype.filter = function (fn, ctx) {
 	// returns new array
 }

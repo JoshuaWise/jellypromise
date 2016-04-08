@@ -16,5 +16,3 @@ add utilities to README
 redo tests
 
 make sure browser-production works (require('jellypromise/production') with browserify)
-
-correct behavior of Promise.any with no items
