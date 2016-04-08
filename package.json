@@ -27,7 +27,6 @@
   "devDependencies": {
     "acorn": "^3.0.4",
     "bluebird": "^3.3.4",
-    "cli-color": "^1.1.0",
     "fs-extra-promise": "^0.3.1",
     "glob": "^7.0.3",
     "gulp": "^3.9.1",
@@ -36,6 +35,7 @@
     "promises-aplus-tests": "^2.1.1"
   },
   "dependencies": {
-    "asap": "^2.0.3"
+    "asap": "^2.0.3",
+    "cli-color": "^1.1.0"
   }
 }

@@ -6,6 +6,7 @@ if (process.env.NODE_ENV === 'production') {
 } else {
 	module.exports = require('./core')
 	require('./utilities')
+	require('./aggregate-methods')
 	require('./node-extensions')
 	require('./long-stack-traces')
 }
@@ -13,10 +14,12 @@ if (process.env.NODE_ENV === 'production') {
 // @[production node]
 module.exports = require('./core')
 require('./utilities')
+require('./aggregate-methods')
 require('./node-extensions')
 // @[/]
 // @[browser]
 module.exports = require('./core')
 require('./utilities')
+require('./aggregate-methods')
 require('./long-stack-traces') // @[/development]
 // @[/]

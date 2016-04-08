@@ -1,6 +1,4 @@
-implement colors for warnings and erros, in development mode
-
-generator (seperate module?)
+maybe add .filter/.map/.reduce/.each for processing arrays (any shortcut API possible?)
 
 optimization:
 - use bit field for multiple things (e.g., _state, _deferredState, _supressUnhandledRejections)
@@ -9,12 +7,14 @@ optimization:
 - use _methods instead of privately scoped functions
 
 
+generator (seperate module?)
+
 add optimizations for index.js to import (server only)
 
 add utilities to README
 
 redo tests
 
-maybe add .filter/.map/.reduce/.each for processing arrays (any shortcut API possible?)
-
 make sure browser-production works (require('jellypromise/production') with browserify)
+
+correct behavior of Promise.any with no items

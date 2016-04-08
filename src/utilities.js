@@ -7,6 +7,9 @@ var resolve = require('./shared').resolve
 var noop = require('./shared').noop
 
 Promise.prototype.finally = function (fn) {
+	if (typeof fn !== 'function') {
+		throw new TypeError('Expected argument to be a function.')
+	}
 	return this.then(function (value) {
 		return Promise.resolve(fn()).then(function () {
 			return value
@@ -18,6 +21,9 @@ Promise.prototype.finally = function (fn) {
 	})
 }
 Promise.prototype.tap = function (fn) {
+	if (typeof fn !== 'function') {
+		throw new TypeError('Expected argument to be a function.')
+	}
 	return this.then(function (value) {
 		return Promise.resolve(fn()).then(function () {
 			return value
@@ -42,19 +48,19 @@ Promise.prototype.delay = function (ms) {
 		var p = new Promise(noop)
 		setTimeout(function () {
 			resolve(p, value)
-		}, +ms)
+		}, ~~ms)
 		return p
 	})
 }
 Promise.prototype.timeout = function (ms, reason) {
 	if (reason == null) {
-		reason = new TimeoutError('The operation timed out after ' + +ms + ' milliseconds.')
+		reason = new TimeoutError('The operation timed out after ' + ~~ms + ' milliseconds.')
 	} else if (!(reason instanceof Error)) {
 		reason = new TimeoutError(String(reason))
 	}
 	var self = this
 	return new Promise(function (res, rej) {
-		var timer = setTimeout(function () {rej(reason)}, +ms)
+		var timer = setTimeout(function () {rej(reason)}, ~~ms)
 		self.then(res, rej)
 	})
 }
@@ -63,7 +69,7 @@ Promise.any = function (iterable) {
 	return new Promise(function (res, rej) {
 		var pendings = arr.length
 		if (pendings === 0) {
-			throw new RangeError('Promise.any() cannot be used on an iterable with no items.')
+			throw new RangeError('Promise.any cannot be used on an iterable with no items.')
 		}
 		function fail(reason) {
 			if (--pendings === 0) {rej(reason)}
@@ -74,12 +80,15 @@ Promise.any = function (iterable) {
 	})
 }
 Promise.iterate = function (iterable, fn) {
+	if (typeof fn !== 'function') {
+		throw new TypeError('Expected second argument to be a function.')
+	}
 	if (iterator && typeof iterable[iterator] === 'function') {
 		var it = iterable[iterator]()
 	} else if (typeof iterable.length === 'number') {
 		var it = makeIterator(iterable)
 	} else {
-		throw new TypeError('Expected argument to be an iterable or array-like object.')
+		throw new TypeError('Expected first argument to be an iterable or array-like object.')
 	}
 	return new Promise(function (res, rej) {
 		;(function next() {
@@ -106,6 +115,9 @@ Promise.props = function (obj) {
 	})
 }
 Promise.join = function (a, b, handler) {
+	if (handler && typeof handler !== 'function') {
+		throw new TypeError('Promise.join handler must be a function, if provided.')
+	}
 	return new Promise(function (res, rej) {
 		var halfDone = false
 		var other;
@@ -122,6 +134,9 @@ Promise.join = function (a, b, handler) {
 	})
 }
 Promise.partition = function (iterable, handler) {
+	if (handler && typeof handler !== 'function') {
+		throw new TypeError('Promise.partition handler must be a function, if provided.')
+	}
 	var arr = arrayFrom(iterable)
 	var resolved = []
 	var rejected = []

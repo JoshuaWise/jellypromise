@@ -1,5 +1,6 @@
 'use strict'
 var asap = require('asap/raw')
+var clc = require('cli-color') // @[/development node]
 var arrayFrom = require('./array-from')
 var warn = require('./warn') // @[/development]
 function noop() {}
@@ -157,10 +158,24 @@ function reject(self, newValue) {
 	if (!self._supressUnhandledRejections) {
 		asap(function () {
 			if (!self._supressUnhandledRejections) {
+				// @[development node]
+				console.error(clc.red('Unhandled rejection ' + (newValue instanceof Error
+					? newValue.stack || (err.name + ': ' + err.message)
+					: String(newValue))
+				))
+				// @[/]
+				// @[production node]
 				console.error('Unhandled rejection ' + (newValue instanceof Error
 					? newValue.stack || (err.name + ': ' + err.message)
 					: String(newValue))
 				)
+				// @[/]
+				// @[browser]
+				console.error('Unhandled rejection ' + (newValue instanceof Error
+					? newValue.stack || (err.name + ': ' + err.message)
+					: String(newValue))
+				)
+				// @[/]
 			}
 		})
 	}
@@ -252,6 +267,7 @@ function catchType(type, reason) {
 		}
 		return true
 	}
+	warn('The predicate passed to .catch() is invalid, and will be ignored.') // @[/development]
 	return false
 }
 
