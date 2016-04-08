@@ -153,6 +153,15 @@ function reject(self, newValue) {
 	self._state = 2
 	self._value = newValue
 	
+	// @[development]
+	if (!(newValue instanceof Error)) {
+		var type = newValue === null ? null :
+			typeof newValue === 'object' ? Object.prototype.toString.call(newValue) :
+			typeof newValue
+		warn('A promise was rejected with a non-error: ' + type)
+	}
+	// @[/]
+	
 	// If the promise does not have a handler at the end of the current event
 	// loop cycle, throw the error.
 	if (!self._supressUnhandledRejections) {
