@@ -1,9 +1,10 @@
 'use strict'
 var iterator = require('./iterator-symbol')
+var slice = Array.prototype.slice
 
 module.exports = function (iterable) {
 	if (typeof iterable.length === 'number') {
-		return Array.prototype.slice.call(iterable)
+		return slice.call(iterable)
 	}
 	if (iterator && typeof iterable[iterator] === 'function') {
 		var arr = []

@@ -1,6 +1,6 @@
 'use strict'
 var Promise = require('./core')
-var toArray = require('./to-array')
+var arrayFrom = require('./array-from')
 var iterator = require('./iterator-symbol')
 var TimeoutError = require('./timeout-error')
 var resolve = require('./shared').resolve
@@ -59,7 +59,7 @@ Promise.prototype.timeout = function (ms, reason) {
 	})
 }
 Promise.any = function (iterable) {
-	var arr = toArray(iterable)
+	var arr = arrayFrom(iterable)
 	return new Promise(function (res, rej) {
 		var pendings = arr.length
 		if (pendings === 0) {
@@ -68,9 +68,9 @@ Promise.any = function (iterable) {
 		function fail(reason) {
 			if (--pendings === 0) {rej(reason)}
 		}
-		arr.forEach(function (item, i) {
+		for (var i=0; i<pendings; i++) {
 			Promise.resolve(item).then(res, fail)
-		})
+		}
 	})
 }
 Promise.iterate = function (iterable, fn) {
@@ -121,25 +121,25 @@ Promise.join = function (a, b, handler) {
 		Promise.resolve(b).then(done).catch(rej)
 	})
 }
-Promise.partition = function (iterable) {
-	var arr = toArray(iterable)
+Promise.partition = function (iterable, handler) {
+	var arr = arrayFrom(iterable)
 	var resolved = []
 	var rejected = []
 	return new Promise(function (res, rej) {
 		var pendings = arr.length
 		if (pendings === 0) {
-			return res({resolved: resolved, rejected: rejected})
+			return handler ? res(handler(resolved, rejected)) : res(resolved)
 		}
 		for (var i=0; i<pendings; i++) {
 			Promise.resolve(arr[i]).then(pushResolved, pushRejected)
 		}
 		function pushResolved(value) {
 			resolved.push(value)
-			--pendings || res({resolved: resolved, rejected: rejected})
+			--pendings || (handler ? res(handler(resolved, rejected)) : res(resolved))
 		}
 		function pushRejected(value) {
 			rejected.push(value)
-			--pendings || res({resolved: resolved, rejected: rejected})
+			--pendings || (handler ? res(handler(resolved, rejected)) : res(resolved))
 		}
 	})
 }

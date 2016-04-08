@@ -1,6 +1,6 @@
 'use strict'
 var asap = require('asap/raw')
-var toArray = require('./to-array')
+var arrayFrom = require('./array-from')
 var warn = require('./warn') // @[/development]
 function noop() {}
 
@@ -78,7 +78,7 @@ Promise.reject = function (reason) {
 	return promise
 }
 Promise.race = function (iterable) {
-	var arr = toArray(iterable)
+	var arr = arrayFrom(iterable)
 	return new Promise(function (res, rej) {
 		for (var i=0, len=arr.length; i<len; i++) {
 			Promise.resolve(arr[i]).then(res, rej)
@@ -86,7 +86,7 @@ Promise.race = function (iterable) {
 	})
 }
 Promise.all = function (iterable) {
-	var arr = toArray(iterable)
+	var arr = arrayFrom(iterable)
 	return new Promise(function (res, rej) {
 		var pendings = arr.length
 		if (pendings === 0) {
