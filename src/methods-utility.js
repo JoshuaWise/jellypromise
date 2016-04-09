@@ -61,7 +61,7 @@ Promise.prototype.timeout = function (ms, reason) {
 		} else if (!(reason instanceof Error)) {
 			reason = new TimeoutError(String(reason))
 		}
-		var timer = setTimeout(function () {rej(reason)}, ~~ms)
+		setTimeout(function () {rej(reason)}, ~~ms)
 		self.then(res, rej)
 	})
 }
@@ -104,30 +104,17 @@ Promise.partition = function (iterable, handler) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		var resolved = []
-		if (handler) {
-			var rejected = []
-			if (pendings === 0) {
-				return res(handler(resolved, rejected))
-			}
-			var pushResolved = function (value) {
-				resolved.push(value)
-				--pendings || res(handler(resolved, rejected))
-			}
-			var pushRejected = function (reason) {
-				rejected.push(reason)
-				--pendings || res(handler(resolved, rejected))
-			}
-		} else {
-			if (pendings === 0) {
-				return res(resolved)
-			}
-			var pushResolved = function (value) {
-				resolved.push(value)
-				--pendings || res(resolved)
-			}
-			var pushRejected = function (reason) {
-				--pendings || res(resolved)
-			}
+		var rejected = []
+		if (pendings === 0) {
+			return handler ? res(handler(resolved, rejected)) : res(resolved)
+		}
+		var pushResolved = function (value) {
+			resolved.push(value)
+			--pendings || (handler ? res(handler(resolved, rejected)) : res(resolved))
+		}
+		var pushRejected = function (reason) {
+			rejected.push(reason)
+			--pendings || (handler ? res(handler(resolved, rejected)) : res(resolved))
 		}
 		for (var i=0; i<pendings; i++) {
 			Promise.resolve(input[i]).then(pushResolved, pushRejected)

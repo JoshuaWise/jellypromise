@@ -1,7 +1,7 @@
 'use strict'
-var warn = require('./warn') // @[/development]
 var asArray = require('./util').asArray
 var INTERNAL = require('./util').INTERNAL
+var catchesError = require('./util').catchesError
 
 function Promise(fn) {
 	if (typeof this !== 'object') {
@@ -23,25 +23,16 @@ Promise.prototype.then = function (onFulfilled, onRejected) {
 	return res
 }
 Promise.prototype.catch = function (onRejected) {
-	var len = arguments.length
-	if (len === 2) {
-		var type = onRejected
-		onRejected = arguments[1]
-		return this.then(null, function (reason) {
-			if (catchType(type, reason)) {
-				return onRejected(reason)
-			}
-			throw reason
-		})
-	} else if (len > 2) {
-		var args = new Array(--len)
+	if (arguments.length > 1) {
+		var len = arguments.length - 1
+		var args = new Array(len)
 		for (var i=0; i<len; i++) {
 			args[i] = arguments[i]
 		}
 		onRejected = arguments[i]
 		return this.then(null, function (reason) {
 			for (var i=0; i<len; i++) {
-				if (catchType(args[i], reason)) {
+				if (catchesError(args[i], reason)) {
 					return onRejected(reason)
 				}
 			}
@@ -91,25 +82,4 @@ Promise.all = function (iterable) {
 			}, rej)
 		})
 	})
-}
-
-function catchType(type, reason) {
-	if (type === Error || (type && type.prototype instanceof Error)) {
-		return reason instanceof type
-	}
-	if (typeof type === 'function') {
-		return !!type(reason)
-	}
-	if (type && typeof type === 'object') {
-		var keys = Object.keys(type)
-		for (var i=0, len=keys.length; i<len; i++) {
-			var key = keys[i]
-			if (reason[key] != type[key]) {
-				return false
-			}
-		}
-		return true
-	}
-	warn('The predicate passed to .catch() is invalid, and will be ignored.') // @[/development]
-	return false
 }

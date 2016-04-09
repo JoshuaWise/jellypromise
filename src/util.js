@@ -1,6 +1,7 @@
 'use strict'
-var iterator = exports.iterator = typeof Symbol === 'function' && Symbol.iterator || undefined
+var warn = require('./warn') // @[/development]
 
+var iterator = exports.iterator = typeof Symbol === 'function' && Symbol.iterator || undefined
 exports.INTERNAL = function () {}
 
 // Returns an array or throws. The returned object may or may not be a safe
@@ -21,4 +22,27 @@ exports.asArray = function (iterable) {
 		return arr
 	}
 	throw new TypeError('Expected argument to be an iterable object.')
+}
+
+exports.catchesError = function (predicate, reason) {
+	if (predicate === Error || (predicate && predicate.prototype instanceof Error)) {
+		return reason instanceof predicate
+	}
+	if (typeof predicate === 'function') {
+		return !!predicate(reason)
+	}
+	if (predicate && typeof predicate === 'object') {
+		var keys = Object.keys(predicate)
+		for (var i=0, len=keys.length; i<len; i++) {
+			var key = keys[i]
+			if (reason[key] != predicate[key]) {
+				return false
+			}
+		}
+		if (len > 0) {
+			return true
+		}
+	}
+	warn('The predicate passed to .catch() is invalid, and will be ignored.') // @[/development]
+	return false
 }
