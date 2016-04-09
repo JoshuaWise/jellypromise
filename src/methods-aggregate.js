@@ -19,6 +19,9 @@ var INTERNAL = require('./util').INTERNAL
 
 Promise.prototype.filter = function (fn, ctx) {
 	return this.then(function (iterable) {
+		if (typeof fn !== 'function') {
+			throw new TypeError('Expected first argument to be a function.')
+		}
 		var input = asArray(iterable)
 		var originalValues = copy(input)
 		return mapArray(input, fn, ctx).then(function (bools) {
@@ -32,11 +35,17 @@ Promise.prototype.filter = function (fn, ctx) {
 }
 Promise.prototype.map = function (fn, ctx) {
 	return this.then(function (iterable) {
+		if (typeof fn !== 'function') {
+			throw new TypeError('Expected first argument to be a function.')
+		}
 		return mapArray(asArray(iterable), fn, ctx)
 	})
 }
 Promise.prototype.forEach = function (fn, ctx) {
 	return this.then(function (iterable) {
+		if (typeof fn !== 'function') {
+			throw new TypeError('Expected first argument to be a function.')
+		}
 		var input = asArray(iterable)
 		var originalValues = copy(input)
 		return mapArray(input, fn, ctx).then(function () {
@@ -47,21 +56,31 @@ Promise.prototype.forEach = function (fn, ctx) {
 Promise.prototype.reduce = function (fn, seed) {
 	var useSeed = arguments.length > 1
 	return this.then(function (iterable) {
+		if (typeof fn !== 'function') {
+			throw new TypeError('Expected first argument to be a function.')
+		}
 		var input = asArray(iterable)
 		if (input === iterable) {
 			input = copy(input)
 		}
-		return reduceArray(input, fn, seed, useSeed, false)
-	})
-}
-Promise.prototype.reduceRight = function (fn, seed) {
-	var useSeed = arguments.length > 1
-	return this.then(function (iterable) {
-		var input = asArray(iterable)
-		if (input === iterable) {
-			input = copy(input)
+		if (useSeed) {
+			input.unshift(seed)
+		} else if (input.length === 0) {
+			return Promise.reject(new Error('Cannot reduce an empty iterable with no initial value.'))
 		}
-		return reduceArray(input.reverse(), fn, seed, useSeed, true)
+		var result
+		var firstItem = true
+		var len = input.length
+		var i = useSeed ? 0 : 1
+		var setResult = function (value) {result = value}
+		return Promise.iterate(input, function (item) {
+			if (firstItem) {
+				firstItem = false
+				result = item
+				return
+			}
+			return Promise.resolve(fn(result, item, i++, len)).then(setResult)
+		}).then(function () {return result})
 	})
 }
 
@@ -83,31 +102,6 @@ function mapArray(input, fn, ctx) {
 		for (var i=0, len=pendings; i<len; i++) {
 			Promise.resolve(input[i]).then(each(i)).catch(rej)
 		}
-	})
-}
-
-function reduceArray(input, fn, seed, useSeed, reverse) {
-	if (useSeed) {
-		input.unshift(seed)
-	} else if (input.length === 0) {
-		return Promise.reject(new Error('Cannot reduce an empty iterable with no initial value.'))
-	}
-	var result
-	var firstItem = true
-	var len = input.length
-	var i = reverse ? (useSeed ? len : len - 1) : (useSeed ? 0 : 1)
-	var setResult = function (value) {
-		result = value
-	}
-	return Promise.iterate(input, function (item) {
-		if (firstItem) {
-			firstItem = false
-			result = item
-			return
-		}
-		return Promise.resolve(fn(result, item, reverse ? i-- : i++, len)).then(setResult)
-	}).then(function () {
-		return result
 	})
 }
 
