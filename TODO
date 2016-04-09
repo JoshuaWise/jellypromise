@@ -1,10 +1,12 @@
-add .filter/.map/.reduce/.reduceRight/.forEach for processing arrays (any shortcut API possible?)
+add long stack traces for development mode
+
 
 optimization:
 - add optimizations for index.js to import (server only)
 - make use of private handle/resolve/reject functions, instead of using new Promise() with closures, to speed up methods and static functions (and add this optimization to promisify)
 - add optimized case for .catch() with single predicate
 - split Promise.partition() processing paths based on whether handler was provided
+- use fake promise class (e.g., PromiseArray) for optimized aggregate methods.
 
 generator (seperate module?)
 
@@ -13,3 +15,5 @@ add utilities to README
 redo tests
 
 make sure browser-production works (require('jellypromise/production') with browserify)
+
+decide if I really want .log()

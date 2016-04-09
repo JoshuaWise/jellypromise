@@ -3,56 +3,109 @@ var Promise = require('./promise')
 var asArray = require('./util').asArray
 var INTERNAL = require('./util').INTERNAL
 
-// NOTE:
-// When not using Promise.all (i.e., when using the raw array that was passed),
-// deleted indexes are not filled in with undefineds, and thus will be skipped
-// by the array methods.
+// In these implementations, all values from the iterable are plucked before a
+// single callback is invoked. Modifying the input array after the handler has
+// returned will have no effect on the items that are processed, or the result
+// array. The result array is always a safe, clean, base array.
 
-// All methods accept iterable objects
+// No items are processed synchronously.
+
+// Each item is processed as soon as it becomes available (in order of promise
+// resolution). The index passed to the callback functions are the item's
+// position in the input array, NOT their index in the order of processing.
+// Of course, in reduce and reduceRight, the execution is ordered.
+
+// All indexes are processed, even deleted or non-existent values of an array.
+
 Promise.prototype.filter = function (fn, ctx) {
 	return this.then(function (iterable) {
-		return new PromiseMapper(iterable, fn, ctx, true).promise
+		var input = asArray(iterable)
+		var originalValues = copy(input)
+		return mapArray(input, fn, ctx).then(function (bools) {
+			var result = []
+			for (var i=0, len=bools.length; i<len; i++) {
+				bools[i] && result.push(originalValues[i])
+			}
+			return result
+		})
 	})
 }
 Promise.prototype.map = function (fn, ctx) {
 	return this.then(function (iterable) {
-		return new PromiseMapper(iterable, fn, ctx, false).promise
+		return mapArray(asArray(iterable), fn, ctx)
 	})
 }
 Promise.prototype.forEach = function (fn, ctx) {
-	// returns same array (actually same, or safe copy?)
+	return this.then(function (iterable) {
+		var input = asArray(iterable)
+		var originalValues = copy(input)
+		return mapArray(input, fn, ctx).then(function () {
+			return originalValues
+		})
+	})
 }
 Promise.prototype.reduce = function (fn, seed) {
-	// returns result (order matters)
+	var useSeed = arguments.length > 1
+	return this.then(function (iterable) {
+		return reduceArray(copy(asArray(iterable)), fn, seed, useSeed, false)
+	})
 }
 Promise.prototype.reduceRight = function (fn, seed) {
-	// returns result (order matters)
+	var useSeed = arguments.length > 1
+	return this.then(function (iterable) {
+		return reduceArray(copy(asArray(iterable)).reverse(), fn, seed, useSeed, true)
+	})
 }
 
-function PromiseMapper(iterable, fn, ctx, filter) {
-	this.promise = new Promise(INTERNAL)
-	this.alive = true
-	var input = this.input = asArray(iterable)
-	var len = this.length = this.pendings = this.input.length
-	var values = this._values = new Array(len)
-	for (var i=0; i<len; i++) {
-		var item = input[i]
-		if (Promise.isPromise(item)) {
-			var p = Promise.resolve(item)
-			// make p invoke this.valueResolved
-		} else {
-			this.valueResolved(item, i)
+function mapArray(input, fn, ctx) {
+	return new Promise(function (res, rej) {
+		var pendings = input.length
+		var result = new Array(pendings)
+		if (pendings === 0) {
+			return res(result)
 		}
-	}
+		var each = function (i) {
+			return function (value) {
+				return Promise.resolve(fn.call(ctx, value, i, len)).then(function (value) {
+					result[i] = value
+					if (--pendings === 0) {res(result)}
+				})
+			}
+		}
+		for (var i=0, len=pendings; i<len; i++) {
+			Promise.resolve(input[i]).then(each(i)).catch(rej)
+		}
+	})
 }
-PromiseMapper.prototype.valueResolved = function (value, i) {
-	if (this.alive) {
-		this.values[i] = item
-		// do map logic here
-		--this.pendings || this.resolve()
+
+function reduceArray(input, fn, seed, useSeed, reverse) {
+	if (useSeed) {
+		input.unshift(seed)
+	} else if (input.length === 0) {
+		return Promise.reject(new Error('Cannot reduce an empty iterable with no initial value.'))
 	}
+	var result
+	var firstItem = true
+	var len = input.length
+	var i = reverse ? (useSeed ? len : len - 1) : (useSeed ? 0 : 1)
+	var setResult = function (value) {
+		result = value
+	}
+	return Promise.iterate(input, function (item) {
+		if (firstItem) {
+			firstItem = false
+			result = item
+			return
+		}
+		return Promise.resolve(fn(result, item, reverse ? i-- : i++, len)).then(setResult)
+	}).then(function () {
+		return result
+	})
 }
-PromiseMapper.prototype.resolve = function () {
-	this.alive = false
-	resolve(this.promise, this.values)
+
+function copy(array) {
+	var len = array.length
+	var result = new Array(len)
+	for (var i=0; i<len; i++) {result[i] = array[i]}
+	return result
 }

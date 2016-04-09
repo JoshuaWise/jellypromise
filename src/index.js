@@ -6,7 +6,7 @@ if (process.env.NODE_ENV === 'production') {
 } else {
 	module.exports = require('./promise')
 	require('./methods-utility')
-	// require('./methods-aggregate')
+	require('./methods-aggregate')
 	require('./methods-node')
 	require('./methods-private')
 	require('./long-stack-traces')
@@ -15,14 +15,14 @@ if (process.env.NODE_ENV === 'production') {
 // @[production node]
 module.exports = require('./promise')
 require('./methods-utility')
-// require('./methods-aggregate')
+require('./methods-aggregate')
 require('./methods-node')
 require('./methods-private')
 // @[/]
 // @[browser]
 module.exports = require('./promise')
 require('./methods-utility')
-// require('./methods-aggregate')
+require('./methods-aggregate')
 require('./methods-private')
 require('./long-stack-traces') // @[/development]
 // @[/]

@@ -65,6 +65,13 @@ Promise.prototype.timeout = function (ms, reason) {
 		self.then(res, rej)
 	})
 }
+Promise.prototype.log = function (prefix) {
+	var usePrefix = arguments.length > 0
+	return this.then(function (value) {
+		usePrefix ? console.log(prefix, value)
+		          : console.log(value)
+	})
+}
 Promise.any = function (iterable) {
 	return new Promise(function (res, rej) {
 		var input = asArray(iterable)
@@ -110,11 +117,15 @@ Promise.partition = function (iterable, handler) {
 		}
 		var pushResolved = function (value) {
 			resolved.push(value)
-			--pendings || (handler ? res(handler(resolved, rejected)) : res(resolved))
+			if (--pendings === 0) {
+				handler ? res(handler(resolved, rejected)) : res(resolved)
+			}
 		}
 		var pushRejected = function (reason) {
 			rejected.push(reason)
-			--pendings || (handler ? res(handler(resolved, rejected)) : res(resolved))
+			if (--pendings === 0) {
+				handler ? res(handler(resolved, rejected)) : res(resolved)
+			}
 		}
 		for (var i=0; i<pendings; i++) {
 			Promise.resolve(input[i]).then(pushResolved, pushRejected)
