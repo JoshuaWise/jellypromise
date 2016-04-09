@@ -5,12 +5,7 @@ var asArray = require('./as-array')
 var warn = require('./warn') // @[/development]
 function noop() {}
 
-// States:
-// 0 = pending
-// 1 = fulfilled with _value
-// 2 = rejected with _value
-// 3 = adopted the state of another promise, _value
-// Once the state is no longer pending (0) it is immutable.
+
 function Promise(fn) {
 	if (typeof this !== 'object') {
 		throw new TypeError('Promises must be constructed via the "new" keyword.')
@@ -18,11 +13,9 @@ function Promise(fn) {
 	if (typeof fn !== 'function') {
 		throw new TypeError('Promises must be constructed with a function argument.')
 	}
-	this._state = 0
+	this._state = $NO_STATE
 	this._value = null
 	this._deferreds = null
-	this._deferredState = 0
-	this._supressUnhandledRejections = false
 	if (fn !== noop) {
 		resolveOrReject(this, fn)
 	}
@@ -61,7 +54,7 @@ Promise.prototype.catch = function (onRejected) {
 	return this.then(null, onRejected)
 }
 Promise.prototype.catchLater = function () {
-	this._supressUnhandledRejections = true
+	this._state |= $SUPRESS_UNHANDLED_REJECTIONS
 	return this
 }
 module.exports = Promise
@@ -135,7 +128,7 @@ function resolve(self, newValue) {
 		if (then === self.then && newValue instanceof Promise) {
 			// If newValue is a trusted promise, we can optimize their linkage
 			// via state === 3.
-			self._state = 3
+			self._state |= $IS_FOLLOWING
 			self._value = newValue
 			finale(self)
 			return
@@ -146,12 +139,12 @@ function resolve(self, newValue) {
 			return
 		}
 	}
-	self._state = 1
+	self._state |= $IS_RESOLVED
 	self._value = newValue
 	finale(self)
 }
 function reject(self, newValue) {
-	self._state = 2
+	self._state |= $IS_REJECTED
 	self._value = newValue
 	
 	// @[development]
@@ -165,9 +158,9 @@ function reject(self, newValue) {
 	
 	// If the promise does not have a handler at the end of the current event
 	// loop cycle, throw the error.
-	if (!self._supressUnhandledRejections) {
+	if (!(self._state & $SUPRESS_UNHANDLED_REJECTIONS)) {
 		asap(function () {
-			if (!self._supressUnhandledRejections) {
+			if (!(self._state & $SUPRESS_UNHANDLED_REJECTIONS)) {
 				// @[development node]
 				console.error(clc.red('Unhandled rejection ' + (newValue instanceof Error
 					? newValue.stack || (err.name + ': ' + err.message)
@@ -193,10 +186,10 @@ function reject(self, newValue) {
 	finale(self)
 }
 function finale(self) {
-	if (self._deferredState === 1) {
+	if (self._state & $SINGLE_HANDLER) {
 		handle(self, self._deferreds)
 		self._deferreds = null
-	} else if (self._deferredState === 2) {
+	} else if (self._state & $MANY_HANDLERS) {
 		var deferreds = self._deferreds
 		for (var i=0, len=deferreds.length; i<len; i++) {
 			handle(self, deferreds[i])
@@ -206,18 +199,19 @@ function finale(self) {
 }
 
 function handle(self, deferred) {
-	while (self._state === 3) {
+	while (self._state & $IS_FOLLOWING) {
 		self = self._value
 	}
-	if (!self._supressUnhandledRejections) {
-		self._supressUnhandledRejections = true
+	var state = self._state
+	if (!(state & $SUPRESS_UNHANDLED_REJECTIONS)) {
+		self._state |= $SUPRESS_UNHANDLED_REJECTIONS
 	}
-	if (self._state === 0) {
-		if (self._deferredState === 0) {
-			self._deferredState = 1
+	if (!(state & $IS_FINAL)) {
+		if (!(state & $HAS_SOME_HANDLER)) {
+			self._state |= $SINGLE_HANDLER
 			self._deferreds = deferred
-		} else if (self._deferredState === 1) {
-			self._deferredState = 2
+		} else if (state & $SINGLE_HANDLER) {
+			self._state = state & ~$SINGLE_HANDLER | $MANY_HANDLERS
 			self._deferreds = [self._deferreds, deferred]
 		} else {
 			self._deferreds.push(deferred)
@@ -228,9 +222,9 @@ function handle(self, deferred) {
 }
 function handleResolved(self, deferred) {
 	asap(function () {
-		var cb = self._state === 1 ? deferred.onFulfilled : deferred.onRejected
+		var cb = self._state & $IS_RESOLVED ? deferred.onFulfilled : deferred.onRejected
 		if (cb === null) {
-			if (self._state === 1) {
+			if (self._state & $IS_RESOLVED) {
 				resolve(deferred.promise, self._value)
 			} else {
 				reject(deferred.promise, self._value)

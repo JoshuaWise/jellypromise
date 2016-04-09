@@ -63,12 +63,12 @@ function process(lib, directives) {
 		return arr
 	})
 	.map(readFile)
-	.then(obfuscateProperties)
+	.then(replaceTokens)
 	.map(processDirectives(directives, filenames))
 	.map(function (data, i) {return fs.writeFileAsync(filenames[i], data)})
 }
 
-function obfuscateProperties(sources) {
+function replaceTokens(sources) {
 	var ids = []
 	var names = {}
 	function getIdFor(name) {
@@ -89,7 +89,12 @@ function obfuscateProperties(sources) {
 				if (node.property.type !== 'Identifier') return
 				if (node.property.name[0] !== '_') return
 				replace(node.property, getIdFor(node.property.name))
-			}
+			},
+			Identifier: function (node) {
+				if (constants.indexOf(node.name) !== -1) {
+					replace(node, constantMap[node.name])
+				}
+			}	
 		})
 		function replace(node, str) {
 			for (var i=node.start; i<node.end; i++) {source[i] = ''}
@@ -183,3 +188,30 @@ function parseDirectives(comments, filename) {
 	}
 	return directives
 }
+
+/*==========================*
+|         Constants         |
+*===========================*/
+
+var constantMap = {
+	NO_STATE: 0x0,
+	
+	IS_RESOLVED: 0x1,
+	IS_REJECTED: 0x2,
+	IS_FOLLOWING: 0x4,
+	
+	SINGLE_HANDLER: 0x8,
+	MANY_HANDLERS: 0x10,
+	
+	SUPRESS_UNHANDLED_REJECTIONS: 0x20,
+	
+	IS_FINAL: 0x1 | 0x2,
+	IS_NOT_PENDING: 0x1 | 0x2 | 0x4,
+	HAS_SOME_HANDLER: 0x8 | 0x10
+}
+Object.keys(constantMap).forEach(function (key) {
+	var value = constantMap[key]
+	delete constantMap[key]
+	constantMap['$' + key] = value
+})
+var constants = Object.keys(constantMap)

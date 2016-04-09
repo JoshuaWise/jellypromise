@@ -123,7 +123,7 @@ Promise.join = function (a, b, handler) {
 		}
 		var done = function (value) {
 			if (halfDone) {
-				if (p1._state === 1) {
+				if (p1._state & IS_RESOLVED) {
 					handler ? res(handler(p1._value, value)) : res(p1._value)
 				} else {
 					handler ? res(handler(value, p2._value)) : res(value)
