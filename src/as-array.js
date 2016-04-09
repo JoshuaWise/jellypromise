@@ -1,5 +1,4 @@
 'use strict'
-var iterator = require('./iterator-symbol')
 
 // Returns an array or throws. The returned object may or may not be a safe
 // copy. The only safe operations are to synchronously loop through the object.
@@ -20,3 +19,6 @@ module.exports = function (iterable) {
 	}
 	throw new TypeError('Expected argument to be an iterable object.')
 }
+
+var iterator = module.exports.iterator =
+	typeof Symbol === 'function' && Symbol.iterator || undefined

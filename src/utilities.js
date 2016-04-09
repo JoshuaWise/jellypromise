@@ -1,7 +1,7 @@
 'use strict'
-var Promise = require('./core')
+var Promise = require('./promise')
 var asArray = require('./as-array')
-var iterator = require('./iterator-symbol')
+var iterator = asArray.iterator
 var TimeoutError = require('./timeout-error')
 var resolve = require('./shared').resolve
 var noop = require('./shared').noop

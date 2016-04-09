@@ -1,5 +1,5 @@
 'use strict'
-var Promise = require('./core')
+var Promise = require('./promise')
 var asArray = require('./as-array')
 // var resolve = require('./shared').resolve
 var noop = require('./shared').noop

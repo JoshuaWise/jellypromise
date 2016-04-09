@@ -1,5 +1,5 @@
 'use strict'
-var Promise = require('./core.js')
+var Promise = require('./promise.js')
 
 Promise.promisify = function (fn) {
 	if (typeof fn !== 'function') {
