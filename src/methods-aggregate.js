@@ -47,13 +47,21 @@ Promise.prototype.forEach = function (fn, ctx) {
 Promise.prototype.reduce = function (fn, seed) {
 	var useSeed = arguments.length > 1
 	return this.then(function (iterable) {
-		return reduceArray(copy(asArray(iterable)), fn, seed, useSeed, false)
+		var input = asArray(iterable)
+		if (input === iterable) {
+			input = copy(input)
+		}
+		return reduceArray(input, fn, seed, useSeed, false)
 	})
 }
 Promise.prototype.reduceRight = function (fn, seed) {
 	var useSeed = arguments.length > 1
 	return this.then(function (iterable) {
-		return reduceArray(copy(asArray(iterable)).reverse(), fn, seed, useSeed, true)
+		var input = asArray(iterable)
+		if (input === iterable) {
+			input = copy(input)
+		}
+		return reduceArray(input.reverse(), fn, seed, useSeed, true)
 	})
 }
 
