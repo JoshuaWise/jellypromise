@@ -311,3 +311,4 @@ function tryCallTwo(fn, a, b) {
 
 require('./shared').resolve = resolve
 require('./shared').noop = noop
+require('./shared').Deferred = Deferred

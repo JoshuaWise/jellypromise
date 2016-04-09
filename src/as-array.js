@@ -4,6 +4,7 @@ var iterator = require('./iterator-symbol')
 // Returns an array or throws. The returned object may or may not be a safe
 // copy. The only safe operations are to synchronously loop through the object.
 // After control is given back to the caller, the object must not be used.
+// The returned array COULD be a subclass of Array.
 module.exports = function (iterable) {
 	if (Array.isArray(iterable)) {
 		return iterable
