@@ -1,8 +1,7 @@
 maybe add .filter/.map/.reduce/.each for processing arrays (any shortcut API possible?)
 
 optimization:
-- use check in resolve/reject functions. instead of safety only being in closure constructions, to speed up internal methods
-  (and add this optimization to promisify, if this === Promise)
+- use check in resolve/reject functions. instead of safety only being in closure constructions, to speed up internal methods (and add this optimization to promisify)
 - use _methods instead of privately scoped functions
 
 

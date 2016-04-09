@@ -97,6 +97,44 @@ Promise.props = function (obj) {
 		})
 	})
 }
+Promise.partition = function (iterable, handler) {
+	return new Promise(function (res, rej) {
+		if (handler && typeof handler !== 'function') {
+			throw new TypeError('Promise.partition handler must be a function, if provided.')
+		}
+		var input = asArray(iterable)
+		var pendings = input.length
+		var resolved = []
+		if (handler) {
+			var rejected = []
+			if (pendings === 0) {
+				return res(handler(resolved, rejected))
+			}
+			var pushResolved = function (value) {
+				resolved.push(value)
+				--pendings || res(handler(resolved, rejected))
+			}
+			var pushRejected = function (reason) {
+				rejected.push(reason)
+				--pendings || res(handler(resolved, rejected))
+			}
+		} else {
+			if (pendings === 0) {
+				return res(resolved)
+			}
+			var pushResolved = function (value) {
+				resolved.push(value)
+				--pendings || res(resolved)
+			}
+			var pushRejected = function (reason) {
+				--pendings || res(resolved)
+			}
+		}
+		for (var i=0; i<pendings; i++) {
+			Promise.resolve(input[i]).then(pushResolved, pushRejected)
+		}
+	})
+}
 Promise.iterate = function (iterable, fn) {
 	return new Promise(function (res, rej) {
 		if (typeof fn !== 'function') {
@@ -138,44 +176,6 @@ Promise.join = function (a, b, handler) {
 		var p2 = Promise.resolve(b).then(done)
 		p1.catch(rej)
 		p2.catch(rej)
-	})
-}
-Promise.partition = function (iterable, handler) {
-	return new Promise(function (res, rej) {
-		if (handler && typeof handler !== 'function') {
-			throw new TypeError('Promise.partition handler must be a function, if provided.')
-		}
-		var input = asArray(iterable)
-		var pendings = input.length
-		var resolved = []
-		if (handler) {
-			var rejected = []
-			if (pendings === 0) {
-				return res(handler(resolved, rejected))
-			}
-			var pushResolved = function (value) {
-				resolved.push(value)
-				--pendings || res(handler(resolved, rejected))
-			}
-			var pushRejected = function (reason) {
-				rejected.push(reason)
-				--pendings || res(handler(resolved, rejected))
-			}
-		} else {
-			if (pendings === 0) {
-				return res(resolved)
-			}
-			var pushResolved = function (value) {
-				resolved.push(value)
-				--pendings || res(resolved)
-			}
-			var pushRejected = function (reason) {
-				--pendings || res(resolved)
-			}
-		}
-		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i]).then(pushResolved, pushRejected)
-		}
 	})
 }
 Promise.isPromise = function (value) {
