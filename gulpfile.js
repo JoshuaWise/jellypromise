@@ -70,7 +70,7 @@ function process(lib, directives) {
 
 function replaceTokens(sources) {
 	var ids = []
-	var names = {}
+	var names = Object.create(null)
 	function getIdFor(name) {
 		if (name in names) {return names[name]}
 		do {
