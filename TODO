@@ -1,13 +1,10 @@
-maybe add .filter/.map/.reduce/.each for processing arrays (any shortcut API possible?)
+add .filter/.map/.reduce/.reduceRight/.forEach for processing arrays (any shortcut API possible?)
 
 optimization:
-- use check in resolve/reject functions. instead of safety only being in closure constructions, to speed up internal methods (and add this optimization to promisify)
-- use _methods instead of privately scoped functions
-
+- make use of private handle/resolve/reject functions, instead of using new Promise() with closures, to speed up methods and static functions (and add this optimization to promisify)
+- add optimizations for index.js to import (server only)
 
 generator (seperate module?)
-
-add optimizations for index.js to import (server only)
 
 add utilities to README
 

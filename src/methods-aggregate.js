@@ -1,9 +1,7 @@
 'use strict'
 var Promise = require('./promise')
-var asArray = require('./as-array')
-// var resolve = require('./shared').resolve
-var noop = require('./shared').noop
-var Deferred = require('./shared').Deferred
+var asArray = require('./util').asArray
+var INTERNAL = require('./util').INTERNAL
 
 // NOTE:
 // When not using Promise.all (i.e., when using the raw array that was passed),
@@ -32,7 +30,7 @@ Promise.prototype.reduceRight = function (fn, seed) {
 }
 
 function PromiseMapper(iterable, fn, ctx, filter) {
-	this.promise = new Promise(noop)
+	this.promise = new Promise(INTERNAL)
 	this.alive = true
 	var input = this.input = asArray(iterable)
 	var len = this.length = this.pendings = this.input.length

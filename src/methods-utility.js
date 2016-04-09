@@ -1,10 +1,9 @@
 'use strict'
 var Promise = require('./promise')
-var asArray = require('./as-array')
-var iterator = asArray.iterator
 var TimeoutError = require('./timeout-error')
-var resolve = require('./shared').resolve
-var noop = require('./shared').noop
+var asArray = require('./util').asArray
+var iterator = require('./util').iterator
+var INTERNAL = require('./util').INTERNAL
 
 Promise.prototype.finally = function (fn) {
 	if (typeof fn !== 'function') {
@@ -47,9 +46,9 @@ Promise.prototype.else = function (value) {
 }
 Promise.prototype.delay = function (ms) {
 	return this.then(function (value) {
-		var p = new Promise(noop)
+		var p = new Promise(INTERNAL)
 		setTimeout(function () {
-			resolve(p, value)
+			p._resolve(value)
 		}, ~~ms)
 		return p
 	})
