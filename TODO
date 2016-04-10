@@ -10,8 +10,6 @@ optimization:
 
 generator (seperate module?)
 
-add utilities to README
-
 redo tests
 
 make sure browser-production works (require('jellypromise/production') with browserify)
