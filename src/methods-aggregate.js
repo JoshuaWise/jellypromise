@@ -22,12 +22,11 @@ Promise.prototype.filter = function (fn, ctx) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		var input = asArray(iterable)
-		var originalValues = copy(input)
-		return mapArray(input, fn, ctx).then(function (bools) {
+		var array = asArrayCopy(iterable)
+		return mapArray(array, fn, ctx).then(function (bools) {
 			var result = []
 			for (var i=0, len=bools.length; i<len; i++) {
-				bools[i] && result.push(originalValues[i])
+				bools[i] && result.push(array[i])
 			}
 			return result
 		})
@@ -46,10 +45,9 @@ Promise.prototype.forEach = function (fn, ctx) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		var input = asArray(iterable)
-		var originalValues = copy(input)
-		return mapArray(input, fn, ctx).then(function () {
-			return originalValues
+		var array = asArrayCopy(iterable)
+		return mapArray(array, fn, ctx).then(function () {
+			return array
 		})
 	})
 }
@@ -59,21 +57,18 @@ Promise.prototype.reduce = function (fn, seed) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		var input = asArray(iterable)
-		if (input === iterable) {
-			input = copy(input)
-		}
+		var array = asArrayCopy(iterable)
 		if (useSeed) {
-			input.unshift(seed)
-		} else if (input.length === 0) {
+			array.unshift(seed)
+		} else if (array.length === 0) {
 			return Promise.reject(new Error('Cannot reduce an empty iterable with no initial value.'))
 		}
 		var result
 		var firstItem = true
-		var len = input.length
+		var len = array.length
 		var i = useSeed ? 0 : 1
 		var setResult = function (value) {result = value}
-		return Promise.iterate(input, function (item) {
+		return Promise.iterate(array, function (item) {
 			if (firstItem) {
 				firstItem = false
 				result = item
@@ -105,9 +100,13 @@ function mapArray(input, fn, ctx) {
 	})
 }
 
-function copy(array) {
-	var len = array.length
-	var result = new Array(len)
-	for (var i=0; i<len; i++) {result[i] = array[i]}
-	return result
+function asArrayCopy(iterable) {
+	var array = asArray(iterable)
+	if (array === iterable) {
+		var len = array.length
+		var result = new Array(len)
+		for (var i=0; i<len; i++) {result[i] = array[i]}
+		return result
+	}
+	return array
 }
