@@ -16,8 +16,6 @@ redo tests
 
 make sure browser-production works (require('jellypromise/production') with browserify)
 
-decide if I really want .log()
-
 add hash links to README
 
 should .forEach also have .each alias?
