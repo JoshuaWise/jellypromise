@@ -61,7 +61,7 @@ This creates and returns a new promise. `handler` must be a function with the fo
 
 #### *static* Promise.resolve(*value*) -> *promise*
 
-Creates a promise that is resolved with the given `value`. If you pass a promise or promise-like object, the returned promise takes on the state of that promise-like object (rejected or fulfilled).
+Creates a promise that is resolved with the given `value`. If you pass a promise or promise-like object, the returned promise takes on the state of that promise-like object (fulfilled or rejected).
 
 #### *static* Promise.reject(*value*) -> *promise*
 
@@ -69,13 +69,13 @@ Creates a promise that is rejected with the given `value` (usually an `Error` ob
 
 #### *static* Promise.race(*iterable*) -> *promise*
 
-Returns a promise that resolves or rejects with the same value/exception as the first resolved/rejected promise in the `iterable` argument.
+Returns a promise that fulfills or rejects with the same value/exception as the first fulfilled/rejected promise in the `iterable` argument.
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
 #### *static* Promise.all(*iterable*) -> *promise*
 
-Returns a promise for an `iterable` of promises. The returned promise is rejected if any of promises in `iterable` are rejected. Otherwise, it is resolved with an array of each fulfillment value, respectively.
+Returns a promise for an `iterable` of promises. The returned promise is rejected if any of promises in `iterable` are rejected. Otherwise, it is fulfilled with an array of each fulfillment value, respectively.
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
@@ -90,7 +90,7 @@ Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')])
 
 #### *static* Promise.any(*iterable*) -> *promise*
 
-Returns a promise for an `iterable` of promises. It is resolved with the value of the first resolved promise in `iterable`. If all of the given promises reject, it is rejected with the last rejection reason.
+Returns a promise for an `iterable` of promises. It is fulfilled with the value of the first fulfilled promise in `iterable`. If all of the given promises reject, it is rejected with the last rejection reason.
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
@@ -110,44 +110,38 @@ Promise.props({users: getUsers(), news: getNews()})
 
 #### *static* Promise.partition(*iterable*, [*handler*]) -> *promise*
 
-Waits for each promise in the `iterable` argument to either resolve or reject, and then invokes the `handler` function with the following signature:
+Waits for each promise in the `iterable` argument to either fulfill or reject, and then invokes the `handler` function with the following signature:
 
-`function handler(resolvedValues, rejectionReasons)`
+`function handler(fulfillmentValues, rejectionReasons)`
 
- 1. `resolvedValues` is an array containing each fulfillment value of each resolved promise from the `iterable` argument.
- 2. `rejectionReasons` is an array containing each rejection reason of each rejected promise from the `iterable` argument.
-
-Both `resolvedValues` and `rejectionReasons` are sorted by first-resolved-to-last-resolved.
+ 1. `fulfillmentValues` is an array containing each value of each fulfilled promise from the `iterable` argument, sorted by first-resolved-to-last-resolved.
+ 2. `rejectionReasons` is an array containing each rejection reason of each rejected promise from the `iterable` argument, sorted by first-resolved-to-last-resolved.
 
 The promise returned by `Promise.partition` is resolved with the return value of the `handler`, or is rejected if `handler` throws an error.
 
-If a `handler` argument is not provided (or is not a function), the returned promise is simply resolved with `resolvedValues`. In such a case, `rejectionReasons` are discarded.
+If a `handler` argument is not provided (or is not a function), the returned promise is simply fulfilled with `fulfillmentValues`. In such a case, `rejectionReasons` is discarded.
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
 #### *static* Promise.iterate(*iterable*, [*callback*]) -> *promise*
 
-Asynchronously iterates through each value in `iterable`, in order, and invokes the `callback` function for each value. If `iterable` yields a promise, that promise's fulfillment value is awaited before being passed to `callback` for that iteration. If `callback` returns a promise, the next iteration is delayed until that promise resolves.
+Asynchronously iterates through each value in `iterable`, in order, and invokes the `callback` function for each value. If `iterable` yields a promise, that promise's fulfillment value is awaited before being passed to `callback` for that iteration. If `callback` returns a promise, the next iteration is delayed until that promise is fulfilled.
 
-`Promise.iterate` returns a promise that is resolved when `iterable` is done being iterated through. Its fulfillment value is always `undefined`.
+`Promise.iterate` returns a promise that is fulfilled when `iterable` is done producing values. Its fulfillment value is always `undefined`.
 
 If any promises given by `iterable` are rejected, or if `callback` throws, or if `callback` returns a promise that is rejected, the returned promise is rejected and iteration is stopped.
 
-`Promise.iterate` allows you to potentially iterate indefinitely if `iterable` never stops producing values. Each iteration takes place asynchronously, so the program will never be blocked by infinite iteration.
-
-If a `callback` function is not provided, iteration still takes place, but without invoking a `callback` on each value.
-
-Non-promise values in the `iterable` are treated like already-fulfilled promises.
+`Promise.iterate` allows you to potentially iterate indefinitely (if `iterable` never stops producing values). Each iteration takes place asynchronously, so the program will never be blocked by infinite iteration.
 
 #### *static* Promise.join(*valueA*, *valueB*, [*handler*]) -> *promise*
 
-A simpler, more performant alternative to `Promise.all`. This function waits for both `valueA` and `valueB` to resolve (if they are not promises, they are resolved right away), and then invokes `handler` with the fulfillment values of `valueA` and `valueB` as its two arguments, respectively.
+A simpler, more performant alternative to `Promise.all`. This function waits for both `valueA` and `valueB` to be fulfilled (if they are not promises, they are fulfilled right away), and then invokes `handler` with the fulfillment values of `valueA` and `valueB` as its two arguments, respectively.
 
 The returned promise is resolved with the return value of the `handler`.
 
 If either `valueA` or `valueB` rejects, or if `handler` throws, or if `handler` returns a rejected promise, the returned promise rejects with the associated exception.
 
-If a `handler` function is not provided, the returned promise is simply resolved with the fulfillment value of `valueA` (after both `valueA` and `valueB` have resolved)
+If a `handler` function is not provided, the returned promise is simply fulfilled with the value of `valueA` (after both `valueA` and `valueB` have been fulfilled)
 
 #### *static* Promise.isPromise(*value*) -> *boolean*
 
@@ -193,7 +187,7 @@ If you are new to promises, the following resources are available:
  - [Promises.org's introduction to promises](https://www.promisejs.org/)
  - [David Walsh's article on promises](https://davidwalsh.name/promises)
 
-Non-function arguments are ignored. In other words, when this promise resolves or rejects, the promise returned by `.then` would be resolved or rejected with the same value/exception.
+Non-function arguments are ignored. In other words, when this promise fulfills or rejects, the promise returned by `.then` would be fulfilled or rejected with the same value/exception.
 
 #### .catch([*...predicates*], *onRejected*) -> *promise*
 
@@ -212,7 +206,7 @@ Prevents an error from being logged if the promise is rejected but does not yet 
 
 #### .finally(*handler*) -> *promise*
 
-Pass a `handler` that will be called regardless of this promise's fate. The `handler` is invoked with no arguments, and cannot change the promise chain's fulfillment value or rejection reason. If `handler` returns a promise, the promise returned by `.finally` will not be fulfilled/rejected until that promise is resolved.
+Pass a `handler` that will be called regardless of this promise's fate. The `handler` is invoked with no arguments, and cannot change the promise chain's fulfillment value or rejection reason. If `handler` returns a promise, the promise returned by `.finally` will not be settled until that promise is settled.
 
 This method is primarily used for cleanup after asynchronous operations.
 
@@ -232,7 +226,7 @@ Returns a new promise chained from this one, whose fulfillment is delayed by the
 
 #### .timeout(*milliseconds*, [*reason*]) -> *promise*
 
-Returns a new promise chained from this one. However, if this promise does not resolve within the specified number of `milliseconds`, the returned promise rejects with a `TimeoutError`.
+Returns a new promise chained from this one. However, if this promise does not settle within the specified number of `milliseconds`, the returned promise rejects with a `TimeoutError`.
 
 If you specify a string `reason`, the `TimeoutError` will have `reason` as its message. Otherwise, a default message will be used. If `reason` is an `instanceof Error`, it is used instead of a `TimeoutError`.
 

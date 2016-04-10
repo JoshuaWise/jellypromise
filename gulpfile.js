@@ -196,9 +196,9 @@ function parseDirectives(comments, filename) {
 var constantMap = {
 	NO_STATE: 0x0,
 	
-	IS_RESOLVED: 0x1,
+	IS_FULFILLED: 0x1,
 	IS_REJECTED: 0x2,
-	IS_FOLLOWING: 0x4,
+	IS_FOLLOWING: 0x4, // Proxy for a promise that could be pending, fulfilled, or rejected.
 	
 	SINGLE_HANDLER: 0x8,
 	MANY_HANDLERS: 0x10,
@@ -206,7 +206,7 @@ var constantMap = {
 	SUPRESS_UNHANDLED_REJECTIONS: 0x20,
 	
 	IS_FINAL: 0x1 | 0x2,
-	IS_NOT_PENDING: 0x1 | 0x2 | 0x4,
+	IS_RESOLVED: 0x1 | 0x2 | 0x4,
 	HAS_SOME_HANDLER: 0x8 | 0x10
 }
 Object.keys(constantMap).forEach(function (key) {

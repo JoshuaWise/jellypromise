@@ -116,25 +116,25 @@ Promise.partition = function (iterable, handler) {
 		}
 		var input = asArray(iterable)
 		var pendings = input.length
-		var resolved = []
+		var fulfilled = []
 		var rejected = []
 		if (pendings === 0) {
-			return handler ? res(handler(resolved, rejected)) : res(resolved)
+			return handler ? res(handler(fulfilled, rejected)) : res(fulfilled)
 		}
-		var pushResolved = function (value) {
-			resolved.push(value)
+		var pushFulfilled = function (value) {
+			fulfilled.push(value)
 			if (--pendings === 0) {
-				handler ? res(handler(resolved, rejected)) : res(resolved)
+				handler ? res(handler(fulfilled, rejected)) : res(fulfilled)
 			}
 		}
 		var pushRejected = function (reason) {
 			rejected.push(reason)
 			if (--pendings === 0) {
-				handler ? res(handler(resolved, rejected)) : res(resolved)
+				handler ? res(handler(fulfilled, rejected)) : res(fulfilled)
 			}
 		}
 		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i]).then(pushResolved, pushRejected)
+			Promise.resolve(input[i]).then(pushFulfilled, pushRejected)
 		}
 	})
 }
@@ -174,7 +174,7 @@ Promise.join = function (a, b, handler) {
 		}
 		var done = function (value) {
 			if (halfDone) {
-				if (p1._state & IS_RESOLVED) {
+				if (p1._state & $IS_FULFILLED) {
 					handler ? res(handler(p1._value, value)) : res(p1._value)
 				} else {
 					handler ? res(handler(value, p2._value)) : res(value)

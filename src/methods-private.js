@@ -16,7 +16,7 @@ Promise.prototype._resolveFromHandler = function (handler) {
 	}
 }
 Promise.prototype._resolve = function (newValue) {
-	if (this._state & $IS_NOT_PENDING) {
+	if (this._state & $IS_RESOLVED) {
 		return
 	}
 	if (newValue === this) {
@@ -38,12 +38,12 @@ Promise.prototype._resolve = function (newValue) {
 			return
 		}
 	}
-	this._state |= $IS_RESOLVED
+	this._state |= $IS_FULFILLED
 	this._value = newValue
 	finale(this)
 }
 Promise.prototype._reject = function (newValue) {
-	if (this._state & $IS_NOT_PENDING) {
+	if (this._state & $IS_RESOLVED) {
 		return
 	}
 	this._state |= $IS_REJECTED
@@ -98,16 +98,16 @@ Promise.prototype._handle = function (deferred) {
 			self._deferreds.push(deferred)
 		}
 	} else {
-		handleResolved(self, deferred)
+		handleSettled(self, deferred)
 	}
 }
 
-function handleResolved(self, deferred) {
+function handleSettled(self, deferred) {
 	asap(function () {
-		var isResolved = self._state & $IS_RESOLVED
-		var cb = isResolved ? deferred.onFulfilled : deferred.onRejected
+		var isFulfilled = self._state & $IS_FULFILLED
+		var cb = isFulfilled ? deferred.onFulfilled : deferred.onRejected
 		if (cb === null) {
-			if (isResolved) {
+			if (isFulfilled) {
 				deferred.promise._resolve(self._value)
 			} else {
 				deferred.promise._reject(self._value)
