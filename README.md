@@ -88,7 +88,7 @@ Prevents an error from being logged if the promise gets rejected but does not ye
 
 ### .finally(*handler*) -> *promise*
 
-Pass a `handler` that will be called regardless of this promise's fate. The `handler` will be invoked with no arguments, and cannot change the promise chain's current fulfillment value or rejection reason. If `handler` returns a promise, the promise returned by `.finally` will not be settled until that promise is settled.
+Pass a `handler` that will be called regardless of this promise's fate. The `handler` will be invoked with no arguments, and it cannot change the promise chain's current fulfillment value or rejection reason. If `handler` returns a promise, the promise returned by `.finally` will not be settled until that promise is settled.
 
 This method is primarily used for cleanup operations.
 
@@ -130,7 +130,7 @@ Values are passed through the `callback` as soon as possible. They are not passe
 
 ### .map(*callback*, [*thisArg*]) -> *promise*
 
-In the same spirit as `.filter`, but instead of filtering the iterable/array, it transforms each value through the mapper `callback` function.
+Similar to the `.filter` method, but instead of filtering the iterable/array, it transforms each value through the mapper `callback` function.
 
 `callback` has the following signature: `function callback(value, index, length)`
 
@@ -138,7 +138,7 @@ Values are passed through the `callback` as soon as possible. They are not passe
 
 ### .forEach(*callback*, [*thisArg*]) -> *promise*
 
-In the same spirit as `.map`, but instead of transforming each value in the iterable, the resulting array will always contain the same values as the original iterable. You can still delay the returned promise's fulfillment by returning unsettled promises from the `callback` function. This method is primarily used for side effects.
+Similar to the `.map` method, but instead of transforming each value in the iterable, the resulting array will always contain the same values as the original iterable. You can still delay the returned promise's fulfillment by returning unsettled promises from the `callback` function. This method is primarily used for side effects.
 
 `callback` has the following signature: `function callback(value, index, length)`
 
