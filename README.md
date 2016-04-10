@@ -117,7 +117,7 @@ Waits for each promise in the `iterable` argument to settle, and then invokes th
  1. `fulfillmentValues` is an array containing the values of each fulfilled promise from the `iterable` argument, sorted by first-resolved-to-last-resolved.
  2. `rejectionReasons` is an array containing the rejection reasons of each rejected promise from the `iterable` argument, sorted by first-resolved-to-last-resolved.
 
-The promise returned by `Promise.partition` is resolved with the return value of the `handler`, or is rejected if `handler` throws an error.
+This function returns a promise that is resolved with the return value of `handler` (or rejected if `handler` throws).
 
 If a `handler` argument is not provided (or is not a function), the returned promise is simply fulfilled with `fulfillmentValues`. In such a case, `rejectionReasons` is discarded.
 
