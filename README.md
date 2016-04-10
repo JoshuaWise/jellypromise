@@ -138,7 +138,7 @@ Values are passed through the `callback` as soon as possible. They are not passe
 
 ### .forEach(*callback*, [*thisArg*]) -> *promise*
 
-Similar to the `.map` method, but instead of transforming each value in the iterable, the resulting array will always contain the same values as the original iterable. You can still delay the returned promise's fulfillment by returning unsettled promises from the `callback` function. This method is primarily used for side effects.
+Similar to the `.map` method, but instead of transforming each value in the iterable, the resulting array will always contain the same values as the original iterable. Unsettled promises returned from the `callback` function will still delay the overall fulfillment of the promise created from this method. This method is primarily used for side effects.
 
 `callback` has the following signature: `function callback(value, index, length)`
 
