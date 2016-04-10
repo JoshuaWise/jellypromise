@@ -1,6 +1,7 @@
 'use strict'
 var Promise = require('./promise')
 var TimeoutError = require('./timeout-error')
+var warn = require('./warn')
 var asArray = require('./util').asArray
 var iterator = require('./util').iterator
 var INTERNAL = require('./util').INTERNAL
@@ -105,8 +106,13 @@ Promise.props = function (obj) {
 }
 Promise.partition = function (iterable, handler) {
 	return new Promise(function (res, rej) {
-		if (handler && typeof handler !== 'function') {
-			throw new TypeError('Promise.partition handler must be a function, if provided.')
+		// @[development]
+		if (typeof handler !== 'function' && handler != null) {
+			warn('Handlers must be functions (' + typeof handler + 's will be ignored).')
+		}
+		// @[/]
+		if (typeof handler !== 'function') {
+			handler = null
 		}
 		var input = asArray(iterable)
 		var pendings = input.length
@@ -134,8 +140,13 @@ Promise.partition = function (iterable, handler) {
 }
 Promise.iterate = function (iterable, fn) {
 	return new Promise(function (res, rej) {
+		// @[development]
+		if (typeof fn !== 'function' && fn != null) {
+			warn('Handlers must be functions (' + typeof fn + 's will be ignored).')
+		}
+		// @[/]
 		if (typeof fn !== 'function') {
-			throw new TypeError('Expected second argument to be a function.')
+			fn = null
 		}
 		if (iterator && iterable != null && typeof iterable[iterator] === 'function') {
 			var it = iterable[iterator]()
@@ -153,8 +164,13 @@ Promise.iterate = function (iterable, fn) {
 }
 Promise.join = function (a, b, handler) {
 	return new Promise(function (res, rej) {
-		if (handler && typeof handler !== 'function') {
-			throw new TypeError('Promise.join handler must be a function, if provided.')
+		// @[development]
+		if (typeof handler !== 'function' && handler != null) {
+			warn('Handlers must be functions (' + typeof handler + 's will be ignored).')
+		}
+		// @[/]
+		if (typeof handler !== 'function') {
+			handler = null
 		}
 		var done = function (value) {
 			if (halfDone) {
