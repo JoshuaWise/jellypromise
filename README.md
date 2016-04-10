@@ -141,7 +141,7 @@ The returned promise will be resolved with the return value of the `handler`.
 
 If either `valueA` or `valueB` rejects, or if `handler` throws, or if `handler` returns a rejected promise, then the returned promise will be rejected.
 
-If a `handler` function is not provided, the returned promise will simply be fulfilled with the fulfillment value of `valueA` (after both `valueA` and `valueB` have been fulfilled)
+If a `handler` function is not provided, the returned promise will simply be fulfilled with the fulfillment of `valueA` (after both `valueA` and `valueB` have been fulfilled)
 
 #### *static* Promise.isPromise(*value*) -> *boolean*
 
