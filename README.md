@@ -127,7 +127,7 @@ Non-promise values in the `iterable` are treated like already-fulfilled promises
 
 Asynchronously iterates through each value in `iterable`, in order, and invokes the `callback` function for each value. If `iterable` yields a promise, that promise's fulfillment value will be awaited before being passed to `callback` for that iteration. If `callback` returns a promise, the next iteration will be delayed until that promise is fulfilled.
 
-`Promise.iterate` returns a promise that will be fulfilled when `iterable` is done producing values. Its fulfillment value will always be `undefined`.
+This function returns a promise that will be fulfilled when `iterable` is done producing values. Its fulfillment value will always be `undefined`.
 
 If any promises yielded by `iterable` are rejected, or if `callback` throws, or if `callback` returns a rejected promise, then the returned promise will be rejected and iteration is stopped.
 
