@@ -16,3 +16,5 @@ make sure browser-production works (require('jellypromise/production') with brow
 add hash links to README
 
 should .forEach also have .each alias?
+
+maybe throw unhandled rejections in production mode?
