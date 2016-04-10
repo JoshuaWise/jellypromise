@@ -52,10 +52,12 @@ Setting `process.env.NODE_ENV` only works in Nodejs. Even if you are using [brow
 
 #### new Promise(*handler*)
 
-This creates and returns a new promise. The `handler` must be a function with the following signature: `function handler(function *resolve*, function *reject*)`
+This creates and returns a new promise. `handler` must be a function with the following signature:
 
- 1. `resolve` should be called with a single argument. If it is called with a non-promise value then the promise is fulfilled with that value. If it is called with a promise, then the constructed promise takes on the state of that promise.
- 2. `reject` should be called with a single argument. The returned promise will be rejected with that argument.
+`function handler(resolve, reject)`
+
+ 1. `resolve` is a function that should be called with a single argument. If it is called with a non-promise value then the promise is fulfilled with that value. If it is called with a promise, then the constructed promise takes on the state of that promise.
+ 2. `reject` is a function that should be called with a single argument. The returned promise will be rejected with that argument.
 
 #### *static* Promise.resolve(*value*) -> *promise*
 
@@ -108,7 +110,9 @@ Promise.props({users: getUsers(), news: getNews()})
 
 #### *static* Promise.partition(*iterable*, [*handler*]) -> *promise*
 
-Waits for each promise in the `iterable` argument to either resolve or reject, and then invokes the `handler` function with the following signature: `function handler(Array *resolvedValues*, Array *rejectionReasons*)`
+Waits for each promise in the `iterable` argument to either resolve or reject, and then invokes the `handler` function with the following signature:
+
+`function handler(resolvedValues, rejectionReasons)`
 
  1. `resolvedValues` is an array containing each fulfillment value of each resolved promise from the `iterable` argument.
  2. `rejectionReasons` is an array containing each rejection reason of each rejected promise from the `iterable` argument.
