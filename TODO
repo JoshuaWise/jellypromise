@@ -19,3 +19,5 @@ make sure browser-production works (require('jellypromise/production') with brow
 decide if I really want .log()
 
 add hash links to README
+
+should .forEach also have .each alias?

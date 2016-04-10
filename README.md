@@ -123,7 +123,7 @@ Non-promise values in the `iterable` are treated like already-fulfilled promises
 
 ##### *static* Promise.iterate(*iterable*, [*callback*]) -> *promise*
 
-Asynchronously iterates through each value in `iterable`, in order, and invokes the `callback` function for each value. Promises yielded by `iterable` are awaited before their values are passed to the next invocation of `callback`. If `callback` returns a promise, the next iteration is delayed until that promise resolves.
+Asynchronously iterates through each value in `iterable`, in order, and invokes the `callback` function for each value. Promises yielded by `iterable` are awaited for before their values are passed to the next invocation of `callback`. If `callback` returns a promise, the next iteration is delayed until that promise resolves.
 
 `Promise.iterate` returns a promise that is resolved when `iterable` is done being iterated through. Its fulfillment value is always `undefined`.
 
@@ -234,9 +234,46 @@ If you specify a string `reason`, the `TimeoutError` will have `reason` as its m
 
 `TimeoutError` is available at `Promise.TimeoutError`.
 
-##### .log(*prefix*) -> *promise*
+##### .log([*prefix*]) -> *promise*
 
 Sugar for `.then(function (value) {console.log(value)})`. If `prefix` is provided, it is prepended to the logged `value`, separated by a space character.
+
+##### .filter(*callback*, [*thisArg*]) -> *promise*
+
+Used on a promise whose value is (or will be) an iterable object of promises or values (or a mix thereof). This method returns a new promise that is fulfilled with an array of the values that pass the filter function `callback`. Promises returned by `callback` are awaited for (i.e., the promise returned by this method doesn't fulfill until all mapped promises have fulfilled as well).
+
+If any of the iterable's promises are rejected, or if `callback` throws, or if `callback` returns a rejected promise, the promise returned by this method is rejected with the associated exception.
+
+`callback` has the following signature: `function callback(value, index, length)`
+
+Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
+
+##### .map(*callback*, [*thisArg*]) -> *promise*
+
+In the same spirit as `.filter`, but instead of filtering the iterable/array, it transforms each value through the mapper `callback` function.
+
+`callback` has the following signature: `function callback(value, index, length)`
+
+Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
+
+##### .forEach(*callback*, [*thisArg*]) -> *promise*
+
+In the same spirit as `.map`, but instead of transforming each value in the iterable, the resulting array will contain the same values as the original iterable. You can still delay the returned promise's fulfillment by returning
+promises from the `callback` function. This method is primarily used for side effects.
+
+`callback` has the following signature: `function callback(value, index, length)`
+
+Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
+
+##### .reduce(*callback*, [*initialValue*]) -> *promise*
+
+Used on a promise whose value is (or will be) an iterable object of promises or values (or a mix thereof). The `callback` function is applied against an accumulator and each fulfilled value of the iterable, in order, to reduce it to a single value which will become the fulfillment value of the promise returned by this method.
+
+If the `callback` function returns a promise, then the result of that promise is awaited before continuing with the next iteration.
+
+If any of the iterable's promises are rejected, or if `callback` throws, or if `callback` returns a rejected promise, the promise returned by this method is rejected with the associated exception.
+
+`callback` has the following signature: `function callback(value, index, length)`
 
 ## License
 
