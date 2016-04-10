@@ -110,7 +110,7 @@ Promise.props({users: getUsers(), news: getNews()})
 
 #### *static* Promise.partition(*iterable*, [*handler*]) -> *promise*
 
-Waits for each promise in the `iterable` argument to either fulfill or reject, and then invokes the `handler` function with the following signature:
+Waits for each promise in the `iterable` argument to settle, and then invokes the `handler` function with the following signature:
 
 `function handler(fulfillmentValues, rejectionReasons)`
 
