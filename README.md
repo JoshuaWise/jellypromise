@@ -146,7 +146,7 @@ Values are passed through the `callback` as soon as possible. They are not passe
 
 ### .reduce(*callback*, [*initialValue*]) -> *promise*
 
-Used on a promise whose value is (or will be) an iterable object of promises or values (or a mix thereof). The `callback` function is applied against an accumulator and each value yielded by the iterable, in order, to reduce it to a single value which will become the fulfillment value of the promise returned by this method.
+Used on a promise whose value is (or will be) an iterable object of promises or values (or a mix thereof). The `callback` function is applied against an accumulator and each value yielded by the iterable, **in order**, to reduce it to a single value which will become the fulfillment value of the promise returned by this method.
 
 If the `callback` function returns a promise, then the result of that promise will be awaited before continuing with the next iteration.
 
