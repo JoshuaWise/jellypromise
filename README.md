@@ -226,7 +226,7 @@ This function returns a promise that will be fulfilled when `iterable` is done p
 
 If any promises yielded by `iterable` are rejected, or if `callback` throws, or if `callback` returns a rejected promise, then the returned promise will be rejected and iteration is stopped.
 
-`Promise.iterate` allows you to potentially iterate indefinitely (if `iterable` never stops producing values). Each iteration takes place asynchronously, so the program will never be blocked by infinite iteration.
+This function allows you to potentially iterate indefinitely (if `iterable` never stops producing values). Each iteration takes place asynchronously, so the program will never be blocked by infinite iteration.
 
 ### *static* Promise.join(*valueA*, *valueB*, [*handler*]) -> *promise*
 
