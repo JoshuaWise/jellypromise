@@ -117,17 +117,17 @@ Waits for each promise in the `iterable` argument to either resolve or reject, a
  1. `resolvedValues` is an array containing each fulfillment value of each resolved promise from the `iterable` argument.
  2. `rejectionReasons` is an array containing each rejection reason of each rejected promise from the `iterable` argument.
 
-Both `resolvedValues` and `rejectionReasons` are sorted by first-resolved/rejected to last-resolved/rejected.
+Both `resolvedValues` and `rejectionReasons` are sorted by first-resolved-to-last-resolved.
 
 The promise returned by `Promise.partition` is resolved with the return value of the `handler`, or is rejected if `handler` throws an error.
 
-If a `handler` argument is not provided (or is not a function), the returned promise is simply resolved with `resolvedValues`. In this case, `rejectionReasons` are discarded.
+If a `handler` argument is not provided (or is not a function), the returned promise is simply resolved with `resolvedValues`. In such a case, `rejectionReasons` are discarded.
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
 #### *static* Promise.iterate(*iterable*, [*callback*]) -> *promise*
 
-Asynchronously iterates through each value in `iterable`, in order, and invokes the `callback` function for each value. Promises yielded by `iterable` are awaited for before their values are passed to the next invocation of `callback`. If `callback` returns a promise, the next iteration is delayed until that promise resolves.
+Asynchronously iterates through each value in `iterable`, in order, and invokes the `callback` function for each value. If `iterable` yields a promise, that promise's fulfillment value is awaited before being passed to `callback` for that iteration. If `callback` returns a promise, the next iteration is delayed until that promise resolves.
 
 `Promise.iterate` returns a promise that is resolved when `iterable` is done being iterated through. Its fulfillment value is always `undefined`.
 
