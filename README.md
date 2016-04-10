@@ -214,7 +214,7 @@ Waits for each promise in the `iterable` argument to settle, and then invokes th
 
 This function returns a promise that will be resolved with the return value of `handler` (it will be rejected if `handler` throws).
 
-If a `handler` argument is not provided (or is not a function), the returned promise will simply be fulfilled with `fulfillmentValues`. In such a case, `rejectionReasons` will be discarded.
+If a `handler` argument is not provided (or is not a function), the returned promise will be fulfilled with `fulfillmentValues`. In such a case, `rejectionReasons` will be discarded.
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
@@ -236,7 +236,7 @@ The returned promise will be resolved with the return value of the `handler`.
 
 If either `valueA` or `valueB` rejects, or if `handler` throws, or if `handler` returns a rejected promise, then the returned promise will be rejected.
 
-If a `handler` function is not provided, the returned promise will simply be fulfilled with the fulfillment of `valueA` (after both `valueA` and `valueB` have been fulfilled)
+If a `handler` function is not provided, the returned promise will be fulfilled with the fulfillment of `valueA` (after both `valueA` and `valueB` have been fulfilled)
 
 ### *static* Promise.isPromise(*value*) -> *boolean*
 
