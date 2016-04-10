@@ -114,8 +114,8 @@ Waits for each promise in the `iterable` argument to settle, and then invokes th
 
 `function handler(fulfillmentValues, rejectionReasons)`
 
- 1. `fulfillmentValues` is an array containing each value of each fulfilled promise from the `iterable` argument, sorted by first-resolved-to-last-resolved.
- 2. `rejectionReasons` is an array containing each rejection reason of each rejected promise from the `iterable` argument, sorted by first-resolved-to-last-resolved.
+ 1. `fulfillmentValues` is an array containing the values of each fulfilled promise from the `iterable` argument, sorted by first-resolved-to-last-resolved.
+ 2. `rejectionReasons` is an array containing the rejection reasons of each rejected promise from the `iterable` argument, sorted by first-resolved-to-last-resolved.
 
 The promise returned by `Promise.partition` is resolved with the return value of the `handler`, or is rejected if `handler` throws an error.
 
