@@ -50,7 +50,7 @@ Setting `process.env.NODE_ENV` only works in Nodejs. Even if you are using [brow
 
 # API
 
-#### new Promise(*handler*)
+### new Promise(*handler*)
 
 This creates and returns a new promise. `handler` must be a function with the following signature:
 
@@ -58,6 +58,101 @@ This creates and returns a new promise. `handler` must be a function with the fo
 
  1. `resolve` is a function that should be called with a single argument. If it is called with a non-promise value then the promise is fulfilled with that value. If it is called with a promise, then the constructed promise takes on the state of that promise.
  2. `reject` is a function that should be called with a single argument. The returned promise will be rejected with that argument.
+
+#### .then([*onFulfilled*], [*onRejected*]) -> *promise*
+
+This method conforms to the [Promises/A+ spec](http://promises-aplus.github.io/promises-spec/).
+
+If you are new to promises, the following resources are available:
+ - [Matt Greer's promise tutorial](http://www.mattgreer.org/articles/promises-in-wicked-detail/)
+ - [HTML5 Rocks's promise tutorial](http://www.html5rocks.com/en/tutorials/es6/promises/)
+ - [Promises.org's introduction to promises](https://www.promisejs.org/)
+ - [David Walsh's article on promises](https://davidwalsh.name/promises)
+
+If they are provided, `onFulfilled` and `onRejected` should be functions.
+
+#### .catch([*...predicates*], *onRejected*) -> *promise*
+
+Sugar for `.then(null, onRejected)`, to mirror `catch` in synchronous code.
+
+If any `predicates` are specified, the `onRejected` handler will only catch exceptions that match one of the `predicates`.
+
+A `predicate` can be...
+- an `Error` class: `.catch(TypeError, SyntaxError, func)`
+- an object defining required property values: `.catch({code: 'ENOENT'}, func)`
+- a filter function: `.catch(function (err) {return err.statusCode === 404}, func)`
+
+#### .catchLater() -> *this*
+
+Prevents an error from being logged if the promise gets rejected but does not yet have a rejection handler (see [Unhandled Rejections](#unhandled-rejections)).
+
+#### .finally(*handler*) -> *promise*
+
+Pass a `handler` that will be called regardless of this promise's fate. The `handler` will be invoked with no arguments, and cannot change the promise chain's current fulfillment value or rejection reason. If `handler` returns a promise, the promise returned by `.finally` will not be settled until that promise is settled.
+
+This method is primarily used for cleanup operations.
+
+#### .tap(*handler*) -> *promise*
+
+Like `.finally`, but the `handler` will not be called if this promise is rejected. The `handler` cannot change the promise chain's fulfillment value, but it can delay chained promises by returning an unsettled promise (just like `.finally`).
+
+This method is primarily used for side-effects.
+
+#### .else([*...predicates*], *value*) -> *promise*
+
+Sugar for `.catch(function () {return value})`. This method is used for providing default values on a rejected promise chain. Predicates are supported, just like with the `.catch` method.
+
+#### .delay(*milliseconds*) -> *promise*
+
+Returns a new promise chained from this one, whose fulfillment is delayed by the specified number of `milliseconds` from when it would've been fulfilled otherwise. Rejections are not delayed.
+
+#### .timeout(*milliseconds*, [*reason*]) -> *promise*
+
+Returns a new promise chained from this one. However, if this promise does not settle within the specified number of `milliseconds`, the returned promise will be rejected with a `TimeoutError`.
+
+If you specify a string `reason`, the `TimeoutError` will have `reason` as its message. Otherwise, a default message will be used. If `reason` is an `instanceof Error`, it will be used instead of a `TimeoutError`.
+
+`TimeoutError` is available at `Promise.TimeoutError`.
+
+#### .log([*prefix*]) -> *promise*
+
+Sugar for `.then(function (value) {console.log(value)})`. If `prefix` is provided, it will be prepended to the logged `value`, separated by a space character.
+
+#### .filter(*callback*, [*thisArg*]) -> *promise*
+
+Used on a promise whose value is (or will be) an iterable object of promises or values (or a mix thereof). This method returns a new promise that will be fulfilled with an array of the values that pass the filter function `callback`. Promises returned by `callback` are awaited for (i.e., the promise returned by this method won't fulfill until all mapped promises have fulfilled as well).
+
+If any of the iterable's promises are rejected, or if `callback` throws, or if `callback` returns a rejected promise, the promise returned by this method will be rejected.
+
+`callback` has the following signature: `function callback(value, index, length)`
+
+Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
+
+#### .map(*callback*, [*thisArg*]) -> *promise*
+
+In the same spirit as `.filter`, but instead of filtering the iterable/array, it transforms each value through the mapper `callback` function.
+
+`callback` has the following signature: `function callback(value, index, length)`
+
+Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
+
+#### .forEach(*callback*, [*thisArg*]) -> *promise*
+
+In the same spirit as `.map`, but instead of transforming each value in the iterable, the resulting array will always contain the same values as the original iterable. You can still delay the returned promise's fulfillment by returning unsettled promises from the `callback` function. This method is primarily used for side effects.
+
+`callback` has the following signature: `function callback(value, index, length)`
+
+Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
+
+#### .reduce(*callback*, [*initialValue*]) -> *promise*
+
+Used on a promise whose value is (or will be) an iterable object of promises or values (or a mix thereof). The `callback` function is applied against an accumulator and each value yielded by the iterable, in order, to reduce it to a single value which will become the fulfillment value of the promise returned by this method.
+
+If the `callback` function returns a promise, then the result of that promise will be awaited before continuing with the next iteration.
+
+If any of the iterable's promises are rejected, or if `callback` throws, or if `callback` returns a rejected promise, the promise returned by this method will be rejected.
+
+`callback` has the following signature: `function callback(value, index, length)`
 
 #### *static* Promise.resolve(*value*) -> *promise*
 
@@ -176,101 +271,6 @@ callbackAPI('foo', 'bar', function (err, result) {
   // handle error or result here
 })
 ```
-
-#### .then([*onFulfilled*], [*onRejected*]) -> *promise*
-
-This method conforms to the [Promises/A+ spec](http://promises-aplus.github.io/promises-spec/).
-
-If you are new to promises, the following resources are available:
- - [Matt Greer's promise tutorial](http://www.mattgreer.org/articles/promises-in-wicked-detail/)
- - [HTML5 Rocks's promise tutorial](http://www.html5rocks.com/en/tutorials/es6/promises/)
- - [Promises.org's introduction to promises](https://www.promisejs.org/)
- - [David Walsh's article on promises](https://davidwalsh.name/promises)
-
-If provided, `onFulfilled` and `onRejected` should be functions.
-
-#### .catch([*...predicates*], *onRejected*) -> *promise*
-
-Sugar for `.then(null, onRejected)`, to mirror `catch` in synchronous code.
-
-If any `predicates` are specified, the `onRejected` handler will only catch exceptions that match one of the `predicates`.
-
-A `predicate` can be...
-- an `Error` class: `.catch(TypeError, SyntaxError, func)`
-- an object defining required property values: `.catch({code: 'ENOENT'}, func)`
-- a filter function: `.catch(function (err) {return err.statusCode === 404}, func)`
-
-#### .catchLater() -> *this*
-
-Prevents an error from being logged if the promise gets rejected but does not yet have a rejection handler (see [Unhandled Rejections](#unhandled-rejections)).
-
-#### .finally(*handler*) -> *promise*
-
-Pass a `handler` that will be called regardless of this promise's fate. The `handler` will be invoked with no arguments, and cannot change the promise chain's current fulfillment value or rejection reason. If `handler` returns a promise, the promise returned by `.finally` will not be settled until that promise is settled.
-
-This method is primarily used for cleanup operations.
-
-#### .tap(*handler*) -> *promise*
-
-Like `.finally`, but the `handler` will not be called if this promise is rejected. The `handler` cannot change the promise chain's fulfillment value, but it can delay chained promises by returning an unsettled promise (just like `.finally`).
-
-This method is primarily used for side-effects.
-
-#### .else([*...predicates*], *value*) -> *promise*
-
-Sugar for `.catch(function () {return value})`. This method is used for providing default values on a rejected promise chain. Predicates are supported, just like with the `.catch` method.
-
-#### .delay(*milliseconds*) -> *promise*
-
-Returns a new promise chained from this one, whose fulfillment is delayed by the specified number of `milliseconds` from when it would've been fulfilled otherwise. Rejections are not delayed.
-
-#### .timeout(*milliseconds*, [*reason*]) -> *promise*
-
-Returns a new promise chained from this one. However, if this promise does not settle within the specified number of `milliseconds`, the returned promise will be rejected with a `TimeoutError`.
-
-If you specify a string `reason`, the `TimeoutError` will have `reason` as its message. Otherwise, a default message will be used. If `reason` is an `instanceof Error`, it will be used instead of a `TimeoutError`.
-
-`TimeoutError` is available at `Promise.TimeoutError`.
-
-#### .log([*prefix*]) -> *promise*
-
-Sugar for `.then(function (value) {console.log(value)})`. If `prefix` is provided, it will be prepended to the logged `value`, separated by a space character.
-
-#### .filter(*callback*, [*thisArg*]) -> *promise*
-
-Used on a promise whose value is (or will be) an iterable object of promises or values (or a mix thereof). This method returns a new promise that will be fulfilled with an array of the values that pass the filter function `callback`. Promises returned by `callback` are awaited for (i.e., the promise returned by this method won't fulfill until all mapped promises have fulfilled as well).
-
-If any of the iterable's promises are rejected, or if `callback` throws, or if `callback` returns a rejected promise, the promise returned by this method will be rejected.
-
-`callback` has the following signature: `function callback(value, index, length)`
-
-Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
-
-#### .map(*callback*, [*thisArg*]) -> *promise*
-
-In the same spirit as `.filter`, but instead of filtering the iterable/array, it transforms each value through the mapper `callback` function.
-
-`callback` has the following signature: `function callback(value, index, length)`
-
-Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
-
-#### .forEach(*callback*, [*thisArg*]) -> *promise*
-
-In the same spirit as `.map`, but instead of transforming each value in the iterable, the resulting array will always contain the same values as the original iterable. You can still delay the returned promise's fulfillment by returning unsettled promises from the `callback` function. This method is primarily used for side effects.
-
-`callback` has the following signature: `function callback(value, index, length)`
-
-Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
-
-#### .reduce(*callback*, [*initialValue*]) -> *promise*
-
-Used on a promise whose value is (or will be) an iterable object of promises or values (or a mix thereof). The `callback` function is applied against an accumulator and each value yielded by the iterable, in order, to reduce it to a single value which will become the fulfillment value of the promise returned by this method.
-
-If the `callback` function returns a promise, then the result of that promise will be awaited before continuing with the next iteration.
-
-If any of the iterable's promises are rejected, or if `callback` throws, or if `callback` returns a rejected promise, the promise returned by this method will be rejected.
-
-`callback` has the following signature: `function callback(value, index, length)`
 
 ## License
 
