@@ -3,7 +3,7 @@ var assert = require('assert')
 var Promise = require('../')
 
 module.exports = function (callback) {
-	var baseCount = 1000 // 100000
+	var baseCount = 10000
 	var i = 0
 	var sampleA
 	var sampleB
