@@ -1,4 +1,7 @@
-add long stack traces for development mode
+finish long stack traces
+- prevent memory leak by somehow dereferencing irrelevant stack traces
+- traces of warnings?
+- test trace coverage (throwing inside handler, throwing inside new promise, static methods)
 
 make sure browser-production works (require('jellypromise/production') with browserify)
 
