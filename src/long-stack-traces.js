@@ -6,6 +6,11 @@ Promise.prototype._addStackTrace = function addStackTrace(caller) {
 	Error.captureStackTrace(temp, caller || addStackTrace)
 	this._trace = new _Stack(temp.stack, this._trace)
 }
+Promise.prototype._addStackTraceFromError = function (err) {
+	if (err instanceof Error && err.stack) {
+		this._trace = new _Stack(err.stack, this._trace)
+	}
+}
 Promise.prototype._parentStackTrace = function (parentPromise) {
 	setNonEnumerable(this._trace, 'parent', parentPromise)
 }
@@ -20,14 +25,25 @@ Promise.prototype._stealStackTrace = function (otherPromise) {
 	setNonEnumerable(end, 'parent', otherPromise._trace)
 	otherPromise._trace = this._trace
 }
+Promise.prototype._voidStackTrace = function () {
+	setNonEnumerable(this._trace, 'void', true)
+}
 
 function _Stack(stackPoint, parent) {
 	setNonEnumerable(this, 'stackPoint', stackPoint)
 	setNonEnumerable(this, 'parent', parent)
+	setNonEnumerable(this, 'void', false)
 }
 _Stack.prototype.getTrace = function () {
-	var stacks = [formatStackPoint(this.stackPoint, true)]
-	var parent = this.parent
+	var self = this
+	while (self.void && self.parent) {
+		self = self.parent
+		if (self instanceof Promise) {
+			self = self._trace
+		}
+	}
+	var stacks = [formatStackPoint(self.stackPoint, true)]
+	var parent = self.parent
 	while (parent && stacks.length < 6) {
 		if (parent instanceof Promise) {
 			parent = parent._trace

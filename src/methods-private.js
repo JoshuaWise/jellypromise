@@ -12,6 +12,7 @@ Promise.prototype._resolveFromHandler = function (handler) {
 		self._reject(reason)
 	})
 	if (res === IS_ERROR) {
+		self._addStackTraceFromError(LAST_ERROR) // @[/development]
 		self._reject(LAST_ERROR)
 	}
 }
@@ -25,6 +26,7 @@ Promise.prototype._resolve = function (newValue) {
 	if (newValue != null && (typeof newValue === 'object' || typeof newValue === 'function')) {
 		var then = getThen(newValue)
 		if (then === IS_ERROR) {
+			this._addStackTraceFromError(LAST_ERROR) // @[/development]
 			return this._reject(LAST_ERROR)
 		}
 		if (typeof then === 'function') {
@@ -108,6 +110,7 @@ function handleSettled(self, deferred) {
 		var isFulfilled = self._state & $IS_FULFILLED
 		var cb = isFulfilled ? deferred.onFulfilled : deferred.onRejected
 		if (cb === null) {
+			deferred.promise._voidStackTrace() // @[/development]
 			if (isFulfilled) {
 				deferred.promise._resolve(self._value)
 			} else {
@@ -116,6 +119,7 @@ function handleSettled(self, deferred) {
 		} else {
 			var ret = tryCallOne(cb, self._value)
 			if (ret === IS_ERROR) {
+				deferred.promise._addStackTraceFromError(LAST_ERROR) // @[/development]
 				deferred.promise._reject(LAST_ERROR)
 			} else {
 				deferred.promise._resolve(ret)
