@@ -13,6 +13,7 @@ function Promise(fn) {
 	this._state = $NO_STATE
 	this._value = null
 	this._deferreds = null
+	this._addStackTrace(Promise) // @[/development]
 	if (fn !== INTERNAL) {
 		this._resolveFromHandler(fn)
 	}
@@ -20,6 +21,7 @@ function Promise(fn) {
 Promise.prototype.then = function (onFulfilled, onRejected) {
 	var res = new Promise(INTERNAL)
 	this._handleNew(onFulfilled, onRejected, res)
+	res._parentStackTrace(this) // @[/development]
 	return res
 }
 Promise.prototype.catch = function (onRejected) {

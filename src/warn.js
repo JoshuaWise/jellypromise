@@ -4,7 +4,7 @@ var clc = require('cli-color') // @[/development node]
 module.exports = function (str) {
 	var err = new Error(str)
 	err.name = 'Warning'
-	console.warn(clc.yellow(err.stack || (err.name + ': ' + err.message))) // @[/development node]
-	console.warn(err.stack || (err.name + ': ' + err.message)) // @[/production node]
-	console.warn(err.stack || (err.name + ': ' + err.message)) // @[/browser]
+	console.warn(clc.yellow(err.stack || String(err))) // @[/development node]
+	console.warn(err.stack || String(err)) // @[/production node]
+	console.warn(err.stack || String(err)) // @[/browser]
 }

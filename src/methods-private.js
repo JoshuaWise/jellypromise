@@ -32,6 +32,7 @@ Promise.prototype._resolve = function (newValue) {
 				// Foreign promises must be converted to trusted promises.
 				newValue = new Promise(then.bind(newValue))
 			}
+			newValue._stealStackTrace(this) // @[/development]
 			this._state |= $IS_FOLLOWING
 			this._value = newValue
 			finale(this)
@@ -141,9 +142,9 @@ function onUnhandledRejection(self, reason) {
 		if (!(self._state & $SUPRESS_UNHANDLED_REJECTIONS)) {
 			console.error(
 				clc.red( // @[/development node]
-					'Unhandled rejection ' + (reason instanceof Error
-						? reason.stack || (reason.name + ': ' + reason.message)
-						: String(reason))
+					'Unhandled rejection '
+					+ String(reason) + '\n' + self._trace.getTrace().join('\n') // @[/development]
+					+ reason instanceof Error && reason.stack || String(reason) // @[/production]
 				) // @[/development node]
 			)
 		}
