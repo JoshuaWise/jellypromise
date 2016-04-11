@@ -1,7 +1,7 @@
 'use strict'
 var Promise = require('./promise')
 var asap = require('asap/raw')
-var clc = require('cli-color') // @[/development node]
+var clc = require('cli-color') // @[/node]
 var warn = require('./warn') // @[/development]
 
 Promise.prototype._resolveFromHandler = function (handler) {
