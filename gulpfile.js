@@ -88,13 +88,21 @@ function replaceTokens(sources) {
 				if (node.computed) return
 				if (node.property.type !== 'Identifier') return
 				if (node.property.name[0] !== '_') return
+				if (node.property.name[1] === '_') return
 				replace(node.property, getIdFor(node.property.name))
 			},
 			Identifier: function (node) {
 				if (constants.indexOf(node.name) !== -1) {
 					replace(node, constantMap[node.name])
+				} else if (node.name[0] === '_') {
+					replace(node, getIdFor(node.name))
 				}
-			}	
+			},
+			Function: function (node) {
+				if (!node.id) return
+				if (node.id.name[0] !== '_') return
+				replace(node.id, getIdFor(node.id.name))
+			}
 		})
 		function replace(node, str) {
 			for (var i=node.start; i<node.end; i++) {source[i] = ''}
