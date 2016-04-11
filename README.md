@@ -152,7 +152,7 @@ If the `callback` function returns a promise, then the result of that promise wi
 
 If any of the iterable's promises are rejected, or if `callback` throws, or if `callback` returns a rejected promise, the promise returned by this method will be rejected.
 
-`callback` has the following signature: `function callback(value, index, length)`
+`callback` has the following signature: `function callback(previousValue, currentValue, currentIndex, length)`
 
 ### *static* Promise.resolve(*value*) -> *promise*
 
@@ -191,7 +191,7 @@ Non-promise values in the `iterable` are treated like already-fulfilled promises
 
 ### *static* Promise.props(*object*) -> *promise*
 
-Like `Promise.all`, but for an object's properties instead of iterated values. Returns a promise that will be resolved with an object with fulfillment values at respective keys to the original `object`. Only the `object`'s own enumerable properties are considered (those retrieved by [`Object.keys`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys)).
+Like `Promise.all`, but for an object's properties instead of iterated values. Returns a promise that will be resolved with an object that has fulfillment values at respective keys to the original `object`. Only the `object`'s own enumerable properties are considered (those retrieved by [`Object.keys`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys)).
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
