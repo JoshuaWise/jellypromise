@@ -65,7 +65,7 @@ Promise.race = function (iterable) {
 	return new Promise(function (res, rej) {
 		var input = asArray(iterable)
 		for (var i=0, len=input.length; i<len; i++) {
-			cast(input[i]).then(res, rej)
+			cast(input[i])._then(res, rej)
 		}
 	})
 }
@@ -78,7 +78,7 @@ Promise.all = function (iterable) {
 			return res(result)
 		}
 		input.forEach(function (item, i) {
-			cast(item).then(function (value) {
+			cast(item)._then(function (value) {
 				result[i] = value
 				if (--pendings === 0) {res(result)}
 			}, rej)

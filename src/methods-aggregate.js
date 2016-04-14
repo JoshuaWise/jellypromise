@@ -2,6 +2,7 @@
 var Promise = require('./promise')
 var asArray = require('./util').asArray
 var cast = require('./util').cast
+var INTERNAL = require('./util').INTERNAL
 
 // In these implementations, all values from the iterable are plucked before a
 // single callback is invoked. Modifying the input array after the handler has
@@ -18,42 +19,42 @@ var cast = require('./util').cast
 // All indexes are processed, even deleted or non-existent values of an array.
 
 Promise.prototype.filter = function (fn, ctx) {
-	return this.then(function (iterable) {
+	return this._then(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
 		var array = asArrayCopy(iterable)
-		return mapArray(array, fn, ctx).then(function (bools) {
+		return mapArray(array, fn, ctx)._then(function (bools) {
 			var result = []
 			for (var i=0, len=bools.length; i<len; i++) {
 				bools[i] && result.push(array[i])
 			}
 			return result
 		})
-	})
+	})._parent(this)
 }
 Promise.prototype.map = function (fn, ctx) {
-	return this.then(function (iterable) {
+	return this._then(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
 		return mapArray(asArray(iterable), fn, ctx)
-	})
+	})._parent(this)
 }
 Promise.prototype.forEach = function (fn, ctx) {
-	return this.then(function (iterable) {
+	return this._then(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
 		var array = asArrayCopy(iterable)
-		return mapArray(array, fn, ctx).then(function () {
+		return mapArray(array, fn, ctx)._then(function () {
 			return array
 		})
-	})
+	})._parent(this)
 }
 Promise.prototype.reduce = function (fn, seed) {
 	var useSeed = arguments.length > 1
-	return this.then(function (iterable) {
+	return this._then(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
@@ -74,30 +75,33 @@ Promise.prototype.reduce = function (fn, seed) {
 				result = item
 				return
 			}
-			return cast(fn(result, item, i++, len)).then(setResult)
-		}).then(function () {return result})
-	})
+			return cast(fn(result, item, i++, len))._then(setResult)
+		})._then(function () {return result})
+	})._parent(this)
 }
 
 function mapArray(input, fn, ctx) {
-	return new Promise(function (res, rej) {
-		var pendings = input.length
-		var result = new Array(pendings)
-		if (pendings === 0) {
-			return res(result)
+	var promise = new Promise(INTERNAL)
+	var pendings = input.length
+	var result = new Array(pendings)
+	if (pendings === 0) {
+		return promise._resolve(result)
+	}
+	
+	var rej = promise._rejector()
+	var each = function (i) {
+		return function (value) {
+			return cast(fn.call(ctx, value, i, len))._then(function (value) {
+				result[i] = value
+				if (--pendings === 0) {promise._resolve(result)}
+			})
 		}
-		var each = function (i) {
-			return function (value) {
-				return cast(fn.call(ctx, value, i, len)).then(function (value) {
-					result[i] = value
-					if (--pendings === 0) {res(result)}
-				})
-			}
-		}
-		for (var i=0, len=pendings; i<len; i++) {
-			cast(input[i]).then(each(i)).catch(rej)
-		}
-	})
+	}
+	for (var i=0, len=pendings; i<len; i++) {
+		cast(input[i])._then(each(i)).catch(rej)
+	}
+	
+	return promise
 }
 
 function asArrayCopy(iterable) {

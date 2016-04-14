@@ -1,36 +1,37 @@
 'use strict'
 var Promise = require('./promise')
 var TimeoutError = require('./timeout-error')
-var warn = require('./warn')
+var warn = require('./warn') // @[/development]
 var asArray = require('./util').asArray
 var iterator = require('./util').iterator
 var cast = require('./util').cast
+var INTERNAL = require('./util').INTERNAL
 
 Promise.prototype.finally = function (fn) {
 	if (typeof fn !== 'function') {
 		// Will be bypassed, but produces a warning in development mode.
-		return this.then(fn)
+		return this._then(fn)._parent(this)
 	}
-	return this.then(function (value) {
-		return cast(fn()).then(function () {
+	return this._then(function (value) {
+		return cast(fn())._then(function () {
 			return value
 		})
 	}, function (reason) {
-		return cast(fn()).then(function () {
+		return cast(fn())._then(function () {
 			throw reason
 		})
-	})
+	})._parent(this)
 }
 Promise.prototype.tap = function (fn) {
 	if (typeof fn !== 'function') {
 		// Will be bypassed, but produces a warning in development mode.
-		return this.then(fn)
+		return this._then(fn)._parent(this)
 	}
-	return this.then(function (value) {
-		return cast(fn()).then(function () {
+	return this._then(function (value) {
+		return cast(fn())._then(function () {
 			return value
 		})
-	})
+	})._parent(this)
 }
 Promise.prototype.else = function (value) {
 	if (arguments.length > 1) {
@@ -46,32 +47,34 @@ Promise.prototype.else = function (value) {
 	return this.catch(function () {return value})
 }
 Promise.prototype.delay = function (ms) {
-	return this.then(function (value) {
-		return new Promise(function (res, rej) {
-			setTimeout(function () {
-				res(value)
-			}, ~~ms)
-		})
-	})
+	return this._then(function (value) {
+		var promise = new Promise(INTERNAL)
+		setTimeout(function () {
+			promise._resolve(value)
+		}, ~~ms)
+		return promise
+	})._parent(this)
 }
 Promise.prototype.timeout = function (ms, reason) {
 	var self = this
-	return new Promise(function (res, rej) {
+	var promise = new Promise(INTERNAL)._parent(this)
+	promise._resolveFromHandler(function (res, rej) {
 		if (reason == null) {
 			reason = new TimeoutError('The operation timed out after ' + ~~ms + ' milliseconds.')
 		} else if (!(reason instanceof Error)) {
 			reason = new TimeoutError(String(reason))
 		}
 		setTimeout(function () {rej(reason)}, ~~ms)
-		self.then(res, rej)
+		self._then(res, rej)
 	})
+	return promise
 }
 Promise.prototype.log = function (prefix) {
 	var usePrefix = arguments.length > 0
-	return this.then(function (value) {
+	return this._then(function (value) {
 		usePrefix ? console.log(prefix, value)
 		          : console.log(value)
-	})
+	})._parent(this)
 }
 Promise.any = function (iterable) {
 	return new Promise(function (res, rej) {
@@ -84,7 +87,7 @@ Promise.any = function (iterable) {
 			if (--pendings === 0) {rej(reason)}
 		}
 		for (var i=0; i<pendings; i++) {
-			cast(input[i]).then(res, fail)
+			cast(input[i])._then(res, fail)
 		}
 	})
 }
@@ -97,7 +100,7 @@ Promise.props = function (obj) {
 			return res(result)
 		}
 		keys.forEach(function (key) {
-			cast(obj[key]).then(function (value) {
+			cast(obj[key])._then(function (value) {
 				result[key] = value
 				if (--pendings === 0) {res(result)}
 			}, rej)
@@ -134,7 +137,7 @@ Promise.partition = function (iterable, handler) {
 			}
 		}
 		for (var i=0; i<pendings; i++) {
-			cast(input[i]).then(pushFulfilled, pushRejected)
+			cast(input[i])._then(pushFulfilled, pushRejected)
 		}
 	})
 }
@@ -158,7 +161,7 @@ Promise.iterate = function (iterable, fn) {
 		;(function next() {
 			var item = it.next()
 			item.done ? res()
-				: cast(item.value).then(fn).then(next).catch(rej)
+				: cast(item.value)._then(fn)._then(next).catch(rej)
 		}())
 	})
 }
@@ -185,8 +188,8 @@ Promise.join = function (a, b, handler) {
 			return value
 		}
 		var halfDone = false
-		var p1 = cast(a).then(done)
-		var p2 = cast(b).then(done)
+		var p1 = cast(a)._then(done)
+		var p2 = cast(b)._then(done)
 		p1.catch(rej)
 		p2.catch(rej)
 	})

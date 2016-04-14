@@ -1,6 +1,6 @@
 'use strict'
 var Promise = require('./promise')
-var TRACE_SIZE = 6
+var TRACE_SIZE = 7
 
 // Creates a new stack trace that is void.
 Promise.prototype._initStackTrace = function () {
