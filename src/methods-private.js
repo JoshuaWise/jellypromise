@@ -137,7 +137,7 @@ function handleSettled(self, deferred) {
 			}
 		} else {
 			LST.currentStack = deferred.promise._trace // @[/development]
-			var ret = tryCallOne(cb, self._value)
+			var ret = tryCallOne_c9d565ea_0267_11e6_8d22_5e5517507c66(cb, self._value)
 			LST.currentStack = null // @[/development]
 			if (ret === IS_ERROR) {
 				deferred.promise._addStackTraceFromError(LAST_ERROR) // @[/development]
@@ -191,7 +191,7 @@ function getThen(obj) {
 		return IS_ERROR
 	}
 }
-function tryCallOne(fn, a) {
+function tryCallOne_c9d565ea_0267_11e6_8d22_5e5517507c66(fn, a) {
 	try {
 		return fn(a)
 	} catch (ex) {

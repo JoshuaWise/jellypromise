@@ -1,14 +1,14 @@
 'use strict'
 var Promise = require('./promise')
+var ErrorStackParser = require('error-stack-parser')
 var TRACE_SIZE = 7
 exports.currentStack = null
 
 // Captures the current stack info and pushes it onto the stack trace.
 // Optionally trims a certain number of lines from the stack info.
 Promise.prototype._addStackTrace = function _addStackTrace(trim) {
-	var temp = {}
-	Error.captureStackTrace(temp, _addStackTrace)
-	this._trace = new _Stack(temp.stack, this._trace, trim, null)
+	var stackPoint = captureStackTrace(_addStackTrace)
+	this._trace = new _Stack(stackPoint, this._trace, trim, null)
 	if (exports.currentStack && !this._trace.parent) {
 		this._trace.parent = exports.currentStack
 	}
@@ -50,22 +50,25 @@ function setNonEnumerable(obj, prop, value) {
 	})
 }
 
-function formatStack(stack, i) {
-	var lines = stack.stackPoint.split('\n').slice(1)
-	lines = lines.map(shrinkPath).slice(stack.trim, stack.trim + 2)
-	if (i > 0) {
-		lines.unshift('From previous event:')
+if (typeof Error.captureStackTrace === 'function') {
+	var captureStackTrace = function (caller) {
+		var temp = {}
+		Error.captureStackTrace(temp, caller)
+		return temp.stack
 	}
-	return lines.join('\n')
-}
-
-function shrinkPath(str) {
-	return str.replace(/([A-Z]:\\?)?(([/\\])[^/\\:]+)+/, pathShrinker)
-}
-
-function pathShrinker(path, a, b, sep) {
-	var parts = path.split(/[/\\]/)
-	return '...' + parts.slice(-2).join(sep)
+} else {
+	var captureStackTrace = function () {
+		try {
+			throw new Error('YOU SHOULD NEVER SEE THIS')
+		} catch (err) {
+			if (!err.stack || typeof err.stack !== 'string') {
+				throw new Error('Could not generate stack trace.')
+			}
+			var lines = err.stack.split('\n')
+			lines.splice(1, 2) // This simulates the "caller" argument of Error.captureStackTrace
+			return lines.join('\n')
+		}
+	}
 }
 
 function cleanStackTrace(point) {
@@ -77,4 +80,45 @@ function cleanStackTrace(point) {
 		}
 		point = point.parent
 	}
+}
+
+function formatStack(stack, i) {
+	var parsedLines = ErrorStackParser.parse({stack: stack.stackPoint})
+	var lines = stack.stackPoint.split('\n')
+	if (lines.length > parsedLines.length) {
+		lines.shift(1)
+	}
+	if (lines.length !== parsedLines.length) {
+		throw new Error('Failed to parse stack trace.')
+	}
+	
+	var indexOfInternal = indexOfFunction(parsedLines, 'tryCallOne_c9d565ea_0267_11e6_8d22_5e5517507c66')
+	lines = lines.map(shrinkPath, parsedLines)
+	lines = lines.slice(stack.trim, indexOfInternal === -1 ? lines.length : indexOfInternal)
+	
+	if (i > 0) {
+		lines.unshift('From previous event:')
+	}
+	return lines.join('\n')
+}
+
+function indexOfFunction(parsedLines, name) {
+	for (var i=0, len=parsedLines.length; i<len; i++) {
+		var functionName = parsedLines[i].functionName || ''
+		if (functionName.indexOf(name) !== -1) {
+			return i
+		}
+	}
+	return -1
+}
+
+function shrinkPath(line, i) {
+	var fullPath = this[i].fileName || ''
+	if (fullPath) {
+		var parts = fullPath.split(/[/\\]/)
+		if (parts.length > 2) {
+			return line.replace(fullPath, '...' + parts.slice(-2).join('/'))
+		}
+	}
+	return line
 }
