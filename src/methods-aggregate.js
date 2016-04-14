@@ -1,7 +1,6 @@
 'use strict'
 var Promise = require('./promise')
 var asArray = require('./util').asArray
-var INTERNAL = require('./util').INTERNAL
 
 // In these implementations, all values from the iterable are plucked before a
 // single callback is invoked. Modifying the input array after the handler has

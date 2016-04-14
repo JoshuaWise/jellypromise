@@ -2,11 +2,10 @@
 var Promise = require('./promise')
 var TRACE_SIZE = 6
 
-Promise.prototype._addStackTrace = function addStackTrace(caller) {
+Promise.prototype._newStackTrace = function _newStackTrace(caller) {
 	var temp = {}
-	Error.captureStackTrace(temp, caller || addStackTrace)
-	this._trace = new _Stack(temp.stack, this._trace)
-	cleanStackTrace(this._trace)
+	Error.captureStackTrace(temp, caller || _newStackTrace)
+	this._trace = new _Stack(temp.stack, undefined)
 }
 Promise.prototype._addStackTraceFromError = function (err) {
 	if (err instanceof Error && err.stack) {

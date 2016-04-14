@@ -3,7 +3,19 @@ var Promise = require('./promise')
 var asap = require('asap/raw')
 var clc = require('cli-color') // @[/node]
 var warn = require('./warn') // @[/development]
+var INTERNAL = require('./util').INTERNAL
 
+Promise.prototype._chain = function _chain() {
+	// @[development]
+	var chained = new Promise(INTERNAL)
+	chained._newStackTrace(_chain)
+	chained._parentStackTrace(this)
+	return chained
+	// @[/]
+	// @[production]
+	return new Promise(INTERNAL)
+	// @[/]
+}
 Promise.prototype._resolveFromHandler = function (handler) {
 	var self = this
 	var res = tryCallTwo(handler, function (value) {
@@ -147,8 +159,8 @@ function onUnhandledRejection(self, reason) {
 			console.error(
 				clc.red( // @[/node]
 					'Unhandled rejection '
-					+ String(reason) + '\n' + self._trace.getTrace().join('\n') // @[/development]
-					+ reason instanceof Error && reason.stack || String(reason) // @[/production]
+					+ (String(reason) + '\n' + self._trace.getTrace().join('\n')) // @[/development]
+					+ (reason instanceof Error && reason.stack || String(reason)) // @[/production]
 				) // @[/node]
 			)
 		}

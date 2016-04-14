@@ -2,6 +2,7 @@
 var warn = require('./warn') // @[/development]
 
 var iterator = exports.iterator = typeof Symbol === 'function' && Symbol.iterator || undefined
+
 exports.INTERNAL = function () {}
 
 // Returns an array or throws. The returned object may or may not be a safe

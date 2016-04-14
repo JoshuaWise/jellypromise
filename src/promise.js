@@ -1,7 +1,7 @@
 'use strict'
 var asArray = require('./util').asArray
-var INTERNAL = require('./util').INTERNAL
 var catchesError = require('./util').catchesError
+var INTERNAL = require('./util').INTERNAL
 
 function Promise(fn) {
 	if (typeof this !== 'object') {
@@ -13,15 +13,14 @@ function Promise(fn) {
 	this._state = $NO_STATE
 	this._value = null
 	this._deferreds = null
-	this._addStackTrace(Promise) // @[/development]
 	if (fn !== INTERNAL) {
+		this._newStackTrace(Promise) // @[/development]
 		this._resolveFromHandler(fn)
 	}
 }
 Promise.prototype.then = function (onFulfilled, onRejected) {
-	var res = new Promise(INTERNAL)
+	var res = this._chain()
 	this._handleNew(onFulfilled, onRejected, res)
-	res._parentStackTrace(this) // @[/development]
 	return res
 }
 Promise.prototype.catch = function (onRejected) {
@@ -53,11 +52,13 @@ Promise.resolve = function (value) {
 		return value
 	}
 	var promise = new Promise(INTERNAL)
+	promise._newStackTrace() // @[/development]
 	promise._resolve(value)
 	return promise
 }
 Promise.reject = function (reason) {
 	var promise = new Promise(INTERNAL)
+	promise._newStackTrace() // @[/development]
 	promise._reject(reason)
 	return promise
 }
