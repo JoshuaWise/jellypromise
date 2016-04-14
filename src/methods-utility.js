@@ -64,7 +64,9 @@ Promise.prototype.timeout = function (ms, reason) {
 		} else if (!(reason instanceof Error)) {
 			reason = new TimeoutError(String(reason))
 		}
-		setTimeout(function () {rej(reason)}, ~~ms)
+		var timer = setTimeout(function () {rej(reason)}, ~~ms)
+		function cancel() {clearTimeout(timer);}
+		self._then(cancel, cancel)
 		self._then(res, rej)
 	})
 	return promise
