@@ -52,7 +52,7 @@ function tryApply(fn, args) {
 	try {
 		return fn.apply(this, args)
 	} catch (err) {
-		args[args.length - 1](err == null ? : new Error(err) : err)
+		args[args.length - 1](err == null ? new Error(err) : err)
 	}
 }
 
@@ -63,7 +63,7 @@ function tryCatcher() {
 		tryCatchFunction = null
 		return fn.apply(this, arguments)
 	} catch (err) {
-		arguments[arguments.length - 1](err == null ? : new Error(err) : err)
+		arguments[arguments.length - 1](err == null ? new Error(err) : err)
 	}
 }
 function tryCatch(fn) {
