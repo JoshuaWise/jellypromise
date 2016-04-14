@@ -4,34 +4,33 @@ var TimeoutError = require('./timeout-error')
 var warn = require('./warn') // @[/development]
 var asArray = require('./util').asArray
 var iterator = require('./util').iterator
-var cast = require('./util').cast
 var INTERNAL = require('./util').INTERNAL
 
 Promise.prototype.finally = function (fn) {
 	if (typeof fn !== 'function') {
 		// Will be bypassed, but produces a warning in development mode.
-		return this._then(fn)._traceFrom(this)
+		return this._then(fn)
 	}
 	return this._then(function (value) {
-		return cast(fn())._then(function () {
+		return Promise.resolve(fn())._then(function () {
 			return value
 		})
 	}, function (reason) {
-		return cast(fn())._then(function () {
+		return Promise.resolve(fn())._then(function () {
 			throw reason
 		})
-	})._traceFrom(this)
+	})
 }
 Promise.prototype.tap = function (fn) {
 	if (typeof fn !== 'function') {
 		// Will be bypassed, but produces a warning in development mode.
-		return this._then(fn)._traceFrom(this)
+		return this._then(fn)
 	}
 	return this._then(function (value) {
-		return cast(fn())._then(function () {
+		return Promise.resolve(fn())._then(function () {
 			return value
 		})
-	})._traceFrom(this)
+	})
 }
 Promise.prototype.else = function (value) {
 	if (arguments.length > 1) {
@@ -42,23 +41,23 @@ Promise.prototype.else = function (value) {
 		}
 		value = arguments[i]
 		args[i] = function () {return value}
-		return this.catch.apply(this, args)._traceFrom(this)
+		return this.catch.apply(this, args)
 	}
-	return this._then(null, function () {return value})._traceFrom(this)
+	return this._then(null, function () {return value})
 }
 Promise.prototype.delay = function (ms) {
 	return this._then(function (value) {
 		var promise = new Promise(INTERNAL)
+		promise._addStackTrace(0) // @[/development]
 		setTimeout(function () {
 			promise._resolve(value)
 		}, ~~ms)
 		return promise
-	})._traceFrom(this)
+	})
 }
 Promise.prototype.timeout = function (ms, reason) {
 	var self = this
-	var promise = new Promise(INTERNAL)._traceFrom(this)
-	promise._resolveFromHandler(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		if (reason == null) {
 			reason = new TimeoutError('The operation timed out after ' + ~~ms + ' milliseconds.')
 		} else if (!(reason instanceof Error)) {
@@ -69,17 +68,16 @@ Promise.prototype.timeout = function (ms, reason) {
 		self._then(cancel, cancel)
 		self._then(res, rej)
 	})
-	return promise
 }
 Promise.prototype.log = function (prefix) {
 	var usePrefix = arguments.length > 0
 	return this._then(function (value) {
 		usePrefix ? console.log(prefix, value)
 		          : console.log(value)
-	})._traceFrom(this)
+	})
 }
 Promise.any = function (iterable) {
-	return new Promise(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		if (pendings === 0) {
@@ -89,12 +87,12 @@ Promise.any = function (iterable) {
 			if (--pendings === 0) {rej(reason)}
 		}
 		for (var i=0; i<pendings; i++) {
-			cast(input[i])._then(res, fail)
+			Promise.resolve(input[i])._then(res, fail)
 		}
 	})
 }
 Promise.props = function (obj) {
-	return new Promise(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		var keys = Object.keys(obj)
 		var pendings = keys.length
 		var result = {}
@@ -102,7 +100,7 @@ Promise.props = function (obj) {
 			return res(result)
 		}
 		keys.forEach(function (key) {
-			cast(obj[key])._then(function (value) {
+			Promise.resolve(obj[key])._then(function (value) {
 				result[key] = value
 				if (--pendings === 0) {res(result)}
 			}, rej)
@@ -110,7 +108,7 @@ Promise.props = function (obj) {
 	})
 }
 Promise.partition = function (iterable, handler) {
-	return new Promise(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		// @[development]
 		if (typeof handler !== 'function' && handler != null) {
 			warn('Handlers must be functions (' + typeof handler + 's will be ignored).')
@@ -139,12 +137,12 @@ Promise.partition = function (iterable, handler) {
 			}
 		}
 		for (var i=0; i<pendings; i++) {
-			cast(input[i])._then(pushFulfilled, pushRejected)
+			Promise.resolve(input[i])._then(pushFulfilled, pushRejected)
 		}
 	})
 }
 Promise.iterate = function (iterable, fn) {
-	return new Promise(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		// @[development]
 		if (typeof fn !== 'function' && fn != null) {
 			warn('Handlers must be functions (' + typeof fn + 's will be ignored).')
@@ -163,12 +161,12 @@ Promise.iterate = function (iterable, fn) {
 		;(function next() {
 			var item = it.next()
 			item.done ? res()
-				: cast(item.value)._then(fn)._then(next)._then(null, rej)
+				: Promise.resolve(item.value)._then(fn)._then(next)._then(null, rej)
 		}())
 	})
 }
 Promise.join = function (a, b, handler) {
-	return new Promise(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		// @[development]
 		if (typeof handler !== 'function' && handler != null) {
 			warn('Handlers must be functions (' + typeof handler + 's will be ignored).')
@@ -190,8 +188,8 @@ Promise.join = function (a, b, handler) {
 			return value
 		}
 		var halfDone = false
-		var p1 = cast(a)._then(done)
-		var p2 = cast(b)._then(done)
+		var p1 = Promise.resolve(a)._then(done)
+		var p2 = Promise.resolve(b)._then(done)
 		p1._then(null, rej)
 		p2._then(null, rej)
 	})

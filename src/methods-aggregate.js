@@ -1,7 +1,6 @@
 'use strict'
 var Promise = require('./promise')
 var asArray = require('./util').asArray
-var cast = require('./util').cast
 var INTERNAL = require('./util').INTERNAL
 
 // In these implementations, all values from the iterable are plucked before a
@@ -31,7 +30,7 @@ Promise.prototype.filter = function (fn, ctx) {
 			}
 			return result
 		})
-	})._traceFrom(this)
+	})
 }
 Promise.prototype.map = function (fn, ctx) {
 	return this._then(function (iterable) {
@@ -39,7 +38,7 @@ Promise.prototype.map = function (fn, ctx) {
 			throw new TypeError('Expected first argument to be a function.')
 		}
 		return mapArray(asArray(iterable), fn, ctx)
-	})._traceFrom(this)
+	})
 }
 Promise.prototype.forEach = function (fn, ctx) {
 	return this._then(function (iterable) {
@@ -50,7 +49,7 @@ Promise.prototype.forEach = function (fn, ctx) {
 		return mapArray(array, fn, ctx)._then(function () {
 			return array
 		})
-	})._traceFrom(this)
+	})
 }
 Promise.prototype.reduce = function (fn, seed) {
 	var useSeed = arguments.length > 1
@@ -75,13 +74,14 @@ Promise.prototype.reduce = function (fn, seed) {
 				result = item
 				return
 			}
-			return cast(fn(result, item, i++, len))._then(setResult)
+			return Promise.resolve(fn(result, item, i++, len))._then(setResult)
 		})._then(function () {return result})
-	})._traceFrom(this)
+	})
 }
 
 function mapArray(input, fn, ctx) {
 	var promise = new Promise(INTERNAL)
+	promise._addStackTrace(2) // @[/development]
 	var pendings = input.length
 	var result = new Array(pendings)
 	if (pendings === 0) {
@@ -91,14 +91,14 @@ function mapArray(input, fn, ctx) {
 	var rej = promise._rejector()
 	var each = function (i) {
 		return function (value) {
-			return cast(fn.call(ctx, value, i, len))._then(function (value) {
+			return Promise.resolve(fn.call(ctx, value, i, len))._then(function (value) {
 				result[i] = value
 				if (--pendings === 0) {promise._resolve(result)}
 			})
 		}
 	}
 	for (var i=0, len=pendings; i<len; i++) {
-		cast(input[i])._then(each(i))._then(null, rej)
+		Promise.resolve(input[i])._then(each(i))._then(null, rej)
 	}
 	
 	return promise

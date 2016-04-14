@@ -1,93 +1,44 @@
 'use strict'
 var Promise = require('./promise')
 var TRACE_SIZE = 7
+exports.currentStack = null
 
-// Creates a new stack trace that is void.
-Promise.prototype._initStackTrace = function () {
-	this._trace = new _Stack()
-}
-
-// Captures a stack trace and uses it to unvoid the current stack trace.
-Promise.prototype._unvoidStackTrace = function _unvoidStackTrace(caller) {
+// Captures the current stack info and pushes it onto the stack trace.
+// Optionally trims a certain number of lines from the stack info.
+Promise.prototype._addStackTrace = function _addStackTrace(trim) {
 	var temp = {}
-	Error.captureStackTrace(temp, caller || _unvoidStackTrace)
-	this._trace.stackPoint = temp.stack
-	this._trace.void = false
+	Error.captureStackTrace(temp, _addStackTrace)
+	this._trace = new _Stack(temp.stack, this._trace, trim, null)
+	if (exports.currentStack && !this._trace.parent) {
+		this._trace.parent = exports.currentStack
+	}
 	if (this._trace.parent) {
 		cleanStackTrace(this._trace)
 	}
 }
 
-// Sets the current parent to the given promise.
-Promise.prototype._parentStackTrace = function (parentPromise) {
-	var previousParent = this._trace.parent
-	this._trace.parent = parentPromise
-	parentPromise._trace.children++
-	if (previousParent) {
-		if (previousParent instanceof Promise) {
-			previousParent = previousParent._trace
-		}
-		previousParent.children--
-	}
-	if (!this._trace.void) {
-		cleanStackTrace(this._trace)
-	}
-}
-
-// A combination of _unvoidStackTrace() and _parentStackTrace().
-// Also conveniently returns this.
-Promise.prototype._traceFrom = function _traceFrom(parentPromise) {
-	this._unvoidStackTrace(_traceFrom)
-	parentPromise && this._parentStackTrace(parentPromise)
-	return this
-}
-
-// Pushes to the current stack trace, using an exception.
+// Pushes an Error's stack info onto the stak trace.
 Promise.prototype._addStackTraceFromError = function (err) {
-	if (err instanceof Error && err.stack) {
-		this._trace = new _Stack(err.stack, this._trace)
+	if (err instanceof Error && err.stack && this._trace.error !== err) {
+		this._trace = new _Stack(err.stack, this._trace, 0, err)
 		cleanStackTrace(this._trace)
 	}
 }
 
-// Unshifts the stack trace of another promise into this promise's stack trace,
-// and upgrades the other promise's stack trace to this one's.
-Promise.prototype._stealStackTrace = function (otherPromise) {
-	var end = this._trace
-	while (end.parent) {
-		end = end.parent
-		if (end instanceof Promise) {
-			end = end._trace
-		}
-	}
-	end.parent = otherPromise._trace
-	otherPromise._trace.children++
-	otherPromise._trace = this._trace
-	cleanStackTrace(this._trace)
-}
-
-// Sets the current stack trace as void, meaning it will be ignored.
-Promise.prototype._voidStackTrace = function () {
-	this._trace.void = true
-}
-
-function _Stack(stackPoint, parent) {
+function _Stack(stackPoint, parent, trim, err) {
 	setNonEnumerable(this, 'stackPoint', stackPoint || '')
 	setNonEnumerable(this, 'parent', parent)
-	setNonEnumerable(this, 'void', stackPoint ? false : true)
-	setNonEnumerable(this, 'children', 0)
+	setNonEnumerable(this, 'trim', trim >>> 0)
+	setNonEnumerable(this, 'error', err)
 }
 _Stack.prototype.getTrace = function () {
 	var point = this
 	var stacks = []
 	do {
-		if (!point.void) {stacks.push(point.stackPoint)}
+		stacks.push(point)
 		point = point.parent
-		if (point instanceof Promise) {
-			point = point._trace
-		}
 	} while (point && stacks.length < TRACE_SIZE)
-	return stacks.map(formatStackPoint)
+	return stacks.map(formatStack)
 }
 
 function setNonEnumerable(obj, prop, value) {
@@ -99,10 +50,13 @@ function setNonEnumerable(obj, prop, value) {
 	})
 }
 
-function formatStackPoint(stack, i) {
-	var lines = stack.split('\n')
-	lines[0] = 'From previous event:'
-	return lines.map(shrinkPath).slice(i === 0 ? 1 : 0, 3).join('\n')
+function formatStack(stack, i) {
+	var lines = stack.stackPoint.split('\n').slice(1)
+	lines = lines.map(shrinkPath).slice(stack.trim, stack.trim + 2)
+	if (i > 0) {
+		lines.unshift('From previous event:')
+	}
+	return lines.join('\n')
 }
 
 function shrinkPath(str) {
@@ -116,19 +70,11 @@ function pathShrinker(path, a, b, sep) {
 
 function cleanStackTrace(point) {
 	var stacks = 0
-	while (point && point.children < 2) {
-		if (!point.void) {
-			if (++stacks === TRACE_SIZE) {
-				point.parent = undefined
-				break
-			}
+	while (point) {
+		if (++stacks === TRACE_SIZE) {
+			point.parent = undefined
+			break
 		}
 		point = point.parent
-		if (point instanceof Promise) {
-			if (!(point._state & $SUPRESS_UNHANDLED_REJECTIONS)) {
-				break
-			}
-			point = point._trace
-		}
 	}
 }

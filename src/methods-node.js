@@ -20,7 +20,8 @@ Promise.promisify = function (fn) {
 				'var args = new Array(len + 1)',
 				'for (var i=0; i<len; i++) {args[i] = arguments[i]}',
 			'}',
-			'var promise = new Promise(INTERNAL)._traceFrom()',
+			'var promise = new Promise(INTERNAL)',
+			'promise._addStackTrace(1)', // @[/development]
 			'var cb = function (err, val) {err == null ? promise._resolve(val) : promise._reject(val)}',
 			'switch (len) {',
 				argGuesses.map(generateSwitchCase).join('\n'),

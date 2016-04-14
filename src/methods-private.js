@@ -4,13 +4,29 @@ var asap = require('asap/raw')
 var clc = require('cli-color') // @[/node]
 var warn = require('./warn') // @[/development]
 var INTERNAL = require('./util').INTERNAL
+var PASSTHROUGH_REJECTION = false // @[/development]
 
-Promise.prototype._traceFrom = function () {return this}
+// This is the .then() method used by all internal functions.
+// It automatically captures stack traces at the correct depth.
 Promise.prototype._then = function (onFulfilled, onRejected) {
 	var promise = new Promise(INTERNAL)
+	promise._addStackTrace(2) // @[/development]
 	this._handleNew(onFulfilled, onRejected, promise)
 	return promise
 }
+
+// This is used instead of new Promise(handler), for all internal functions.
+// It automatically captures stack traces at the correct depth.
+Promise.prototype._resolveFromHandler = function (handler) {
+	this._addStackTrace(2) // @[/development]
+	var ret = tryCallTwo(handler, this._resolver(), this._rejector())
+	if (ret === IS_ERROR) {
+		this._addStackTraceFromError(LAST_ERROR) // @[/development]
+		this._reject(LAST_ERROR)
+	}
+	return this
+}
+
 Promise.prototype._resolver = function () {
 	var self = this
 	return function (value) {self._resolve(value)}
@@ -19,13 +35,7 @@ Promise.prototype._rejector = function () {
 	var self = this
 	return function (reason) {self._reject(reason)}
 }
-Promise.prototype._resolveFromHandler = function (handler) {
-	var ret = tryCallTwo(handler, this._resolver(), this._rejector())
-	if (ret === IS_ERROR) {
-		this._addStackTraceFromError(LAST_ERROR) // @[/development]
-		this._reject(LAST_ERROR)
-	}
-}
+
 Promise.prototype._resolve = function (newValue) {
 	if (this._state & $IS_RESOLVED) {
 		return
@@ -40,17 +50,8 @@ Promise.prototype._resolve = function (newValue) {
 			return this._reject(LAST_ERROR)
 		}
 		if (typeof then === 'function') {
-			if (newValue instanceof Promise) {
-				newValue._stealStackTrace(this) // @[/development]
-			} else {
-				// Foreign promises must be converted to trusted promises.
-				var ctx = newValue
-				newValue = new Promise(INTERNAL)
-				newValue._parentStackTrace(this) // @[/development]
-				newValue._resolveFromHandler(function () {return then.apply(ctx, arguments)})
-			}
 			this._state |= $IS_FOLLOWING
-			this._value = newValue
+			this._value = newValue instanceof Promise ? newValue : foreignPromise(newValue, then)
 			finale(this)
 			return
 		}
@@ -67,12 +68,13 @@ Promise.prototype._reject = function (newValue) {
 	this._value = newValue
 	
 	// @[development]
-	if (!(newValue instanceof Error)) {
+	if (!PASSTHROUGH_REJECTION && !(newValue instanceof Error)) {
 		var type = newValue === null ? null :
 			typeof newValue === 'object' ? Object.prototype.toString.call(newValue) :
 			typeof newValue
 		warn('A promise was rejected with a non-error: ' + type)
 	}
+	this._addStackTraceFromError(newValue)
 	// @[/]
 	
 	if (!(this._state & $SUPRESS_UNHANDLED_REJECTIONS)) {
@@ -80,6 +82,7 @@ Promise.prototype._reject = function (newValue) {
 	}
 	finale(this)
 }
+
 Promise.prototype._handleNew = function (onFulfilled, onRejected, promise) {
 	// @[development]
 	if (typeof onFulfilled !== 'function' && onFulfilled != null) {
@@ -124,14 +127,18 @@ function handleSettled(self, deferred) {
 		var isFulfilled = self._state & $IS_FULFILLED
 		var cb = isFulfilled ? deferred.onFulfilled : deferred.onRejected
 		if (cb === null) {
-			deferred.promise._voidStackTrace() // @[/development]
+			deferred.promise._trace = self._trace // @[/development]
 			if (isFulfilled) {
 				deferred.promise._resolve(self._value)
 			} else {
+				PASSTHROUGH_REJECTION = true // @[/development]
 				deferred.promise._reject(self._value)
+				PASSTHROUGH_REJECTION = false // @[/development]
 			}
 		} else {
+			LST.currentStack = deferred.promise._trace // @[/development]
 			var ret = tryCallOne(cb, self._value)
+			LST.currentStack = null // @[/development]
 			if (ret === IS_ERROR) {
 				deferred.promise._addStackTraceFromError(LAST_ERROR) // @[/development]
 				deferred.promise._reject(LAST_ERROR)
@@ -169,6 +176,10 @@ function onUnhandledRejection(self, reason) {
 	}
 }
 
+function foreignPromise(promise, then) {
+	return new Promise(function (res, rej) {return then.call(promise, res, rej)})
+}
+
 // To avoid using try/catch inside critical functions, we extract them to here.
 var LAST_ERROR = null
 var IS_ERROR = {}
@@ -196,3 +207,5 @@ function tryCallTwo(fn, a, b) {
 		return IS_ERROR
 	}
 }
+
+var LST = require('./long-stack-traces') // @[/development]
