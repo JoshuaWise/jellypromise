@@ -1,10 +1,10 @@
 'use strict'
 var Promise = require('./promise')
 var TimeoutError = require('./timeout-error')
-var warn = require('./warn') // @[/development]
 var asArray = require('./util').asArray
 var iterator = require('./util').iterator
 var INTERNAL = require('./util').INTERNAL
+var warn = require('./warn') // @[/development]
 
 Promise.prototype.finally = function (fn) {
 	if (typeof fn !== 'function') {

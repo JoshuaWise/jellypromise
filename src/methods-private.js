@@ -2,8 +2,9 @@
 var Promise = require('./promise')
 var asap = require('asap/raw')
 var clc = require('cli-color') // @[/node]
-var warn = require('./warn') // @[/development]
 var INTERNAL = require('./util').INTERNAL
+var warn = require('./warn') // @[/development]
+var LST = require('./long-stack-traces') // @[/development]
 var PASSTHROUGH_REJECTION = false // @[/development]
 
 // This is the .then() method used by all internal functions.
@@ -207,5 +208,3 @@ function tryCallTwo(fn, a, b) {
 		return IS_ERROR
 	}
 }
-
-var LST = require('./long-stack-traces') // @[/development]

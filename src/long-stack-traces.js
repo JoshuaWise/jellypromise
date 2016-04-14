@@ -4,9 +4,17 @@ var ErrorStackParser = require('error-stack-parser')
 var TRACE_SIZE = 7
 exports.currentStack = null
 
-// Captures the current stack info and pushes it onto the stack trace.
-// Optionally trims a certain number of lines from the stack info.
-Promise.prototype._addStackTrace = function _addStackTrace(trim) {
+exports.init = function () {
+	// Captures the current stack info and pushes it onto the stack trace.
+	// Optionally trims a certain number of lines from the stack info.
+	Promise.prototype._addStackTrace = _addStackTrace
+	
+	// Pushes an Error's stack info onto the stak trace.
+	// This shouldn't be used as a promise's first stack.
+	Promise.prototype._addStackTraceFromError = _addStackTraceFromError
+}
+
+function _addStackTrace(trim) {
 	var stackPoint = captureStackTrace(_addStackTrace)
 	this._trace = new _Stack(stackPoint, this._trace, trim, null)
 	if (exports.currentStack) {
@@ -18,10 +26,7 @@ Promise.prototype._addStackTrace = function _addStackTrace(trim) {
 		cleanStackTrace(this._trace)
 	}
 }
-
-// Pushes an Error's stack info onto the stak trace.
-// This shouldn't be used as a promise's first stack.
-Promise.prototype._addStackTraceFromError = function (err) {
+function _addStackTraceFromError(err) {
 	if (err instanceof Error
 			&& err.stack
 			&& typeof err.stack === 'string'
@@ -44,7 +49,7 @@ _Stack.prototype.getTrace = function () {
 		stacks.push(point)
 		point = point.parent
 	} while (point && stacks.length < TRACE_SIZE)
-	return stacks.map(formatStack)
+	return stacks.map(formatStack).filter(notEmpty)
 }
 
 function setNonEnumerable(obj, prop, value) {
@@ -127,4 +132,8 @@ function shrinkPath(line, i) {
 		}
 	}
 	return line
+}
+
+function notEmpty(stack, i) {
+	return i === 0 || stack.indexOf('\n') !== -1
 }
