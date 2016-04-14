@@ -31,7 +31,7 @@ Promise.prototype.filter = function (fn, ctx) {
 			}
 			return result
 		})
-	})._parent(this)
+	})._traceFrom(this)
 }
 Promise.prototype.map = function (fn, ctx) {
 	return this._then(function (iterable) {
@@ -39,7 +39,7 @@ Promise.prototype.map = function (fn, ctx) {
 			throw new TypeError('Expected first argument to be a function.')
 		}
 		return mapArray(asArray(iterable), fn, ctx)
-	})._parent(this)
+	})._traceFrom(this)
 }
 Promise.prototype.forEach = function (fn, ctx) {
 	return this._then(function (iterable) {
@@ -50,7 +50,7 @@ Promise.prototype.forEach = function (fn, ctx) {
 		return mapArray(array, fn, ctx)._then(function () {
 			return array
 		})
-	})._parent(this)
+	})._traceFrom(this)
 }
 Promise.prototype.reduce = function (fn, seed) {
 	var useSeed = arguments.length > 1
@@ -77,7 +77,7 @@ Promise.prototype.reduce = function (fn, seed) {
 			}
 			return cast(fn(result, item, i++, len))._then(setResult)
 		})._then(function () {return result})
-	})._parent(this)
+	})._traceFrom(this)
 }
 
 function mapArray(input, fn, ctx) {
@@ -98,7 +98,7 @@ function mapArray(input, fn, ctx) {
 		}
 	}
 	for (var i=0, len=pendings; i<len; i++) {
-		cast(input[i])._then(each(i)).catch(rej)
+		cast(input[i])._then(each(i))._then(null, rej)
 	}
 	
 	return promise

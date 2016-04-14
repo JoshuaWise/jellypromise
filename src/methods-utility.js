@@ -10,7 +10,7 @@ var INTERNAL = require('./util').INTERNAL
 Promise.prototype.finally = function (fn) {
 	if (typeof fn !== 'function') {
 		// Will be bypassed, but produces a warning in development mode.
-		return this._then(fn)._parent(this)
+		return this._then(fn)._traceFrom(this)
 	}
 	return this._then(function (value) {
 		return cast(fn())._then(function () {
@@ -20,18 +20,18 @@ Promise.prototype.finally = function (fn) {
 		return cast(fn())._then(function () {
 			throw reason
 		})
-	})._parent(this)
+	})._traceFrom(this)
 }
 Promise.prototype.tap = function (fn) {
 	if (typeof fn !== 'function') {
 		// Will be bypassed, but produces a warning in development mode.
-		return this._then(fn)._parent(this)
+		return this._then(fn)._traceFrom(this)
 	}
 	return this._then(function (value) {
 		return cast(fn())._then(function () {
 			return value
 		})
-	})._parent(this)
+	})._traceFrom(this)
 }
 Promise.prototype.else = function (value) {
 	if (arguments.length > 1) {
@@ -42,9 +42,9 @@ Promise.prototype.else = function (value) {
 		}
 		value = arguments[i]
 		args[i] = function () {return value}
-		return this.catch.apply(this, args)
+		return this.catch.apply(this, args)._traceFrom(this)
 	}
-	return this.catch(function () {return value})
+	return this._then(null, function () {return value})._traceFrom(this)
 }
 Promise.prototype.delay = function (ms) {
 	return this._then(function (value) {
@@ -53,11 +53,11 @@ Promise.prototype.delay = function (ms) {
 			promise._resolve(value)
 		}, ~~ms)
 		return promise
-	})._parent(this)
+	})._traceFrom(this)
 }
 Promise.prototype.timeout = function (ms, reason) {
 	var self = this
-	var promise = new Promise(INTERNAL)._parent(this)
+	var promise = new Promise(INTERNAL)._traceFrom(this)
 	promise._resolveFromHandler(function (res, rej) {
 		if (reason == null) {
 			reason = new TimeoutError('The operation timed out after ' + ~~ms + ' milliseconds.')
@@ -74,7 +74,7 @@ Promise.prototype.log = function (prefix) {
 	return this._then(function (value) {
 		usePrefix ? console.log(prefix, value)
 		          : console.log(value)
-	})._parent(this)
+	})._traceFrom(this)
 }
 Promise.any = function (iterable) {
 	return new Promise(function (res, rej) {
@@ -161,7 +161,7 @@ Promise.iterate = function (iterable, fn) {
 		;(function next() {
 			var item = it.next()
 			item.done ? res()
-				: cast(item.value)._then(fn)._then(next).catch(rej)
+				: cast(item.value)._then(fn)._then(next)._then(null, rej)
 		}())
 	})
 }
@@ -190,8 +190,8 @@ Promise.join = function (a, b, handler) {
 		var halfDone = false
 		var p1 = cast(a)._then(done)
 		var p2 = cast(b)._then(done)
-		p1.catch(rej)
-		p2.catch(rej)
+		p1._then(null, rej)
+		p2._then(null, rej)
 	})
 }
 Promise.isPromise = function (value) {

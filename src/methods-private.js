@@ -5,7 +5,7 @@ var clc = require('cli-color') // @[/node]
 var warn = require('./warn') // @[/development]
 var INTERNAL = require('./util').INTERNAL
 
-Promise.prototype._parent = function () {return this}
+Promise.prototype._traceFrom = function () {return this}
 Promise.prototype._then = function (onFulfilled, onRejected) {
 	var promise = new Promise(INTERNAL)
 	this._handleNew(onFulfilled, onRejected, promise)

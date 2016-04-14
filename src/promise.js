@@ -20,7 +20,7 @@ function Promise(fn) {
 	}
 }
 Promise.prototype.then = function (onFulfilled, onRejected) {
-	return this._then(onFulfilled, onRejected)._parent(this)
+	return this._then(onFulfilled, onRejected)._traceFrom(this)
 }
 Promise.prototype.catch = function (onRejected) {
 	if (arguments.length > 1) {
@@ -37,9 +37,9 @@ Promise.prototype.catch = function (onRejected) {
 				}
 			}
 			throw reason
-		})._parent(this)
+		})._traceFrom(this)
 	}
-	return this._then(null, onRejected)._parent(this)
+	return this._then(null, onRejected)._traceFrom(this)
 }
 Promise.prototype.catchLater = function () {
 	this._state |= $SUPRESS_UNHANDLED_REJECTIONS

@@ -20,16 +20,24 @@ Promise.prototype._unvoidStackTrace = function _unvoidStackTrace(caller) {
 
 // Sets the current parent to the given promise.
 Promise.prototype._parentStackTrace = function (parentPromise) {
+	var previousParent = this._trace.parent
 	this._trace.parent = parentPromise
 	parentPromise._trace.children++
+	if (previousParent) {
+		if (previousParent instanceof Promise) {
+			previousParent = previousParent._trace
+		}
+		previousParent.children--
+	}
 	if (!this._trace.void) {
 		cleanStackTrace(this._trace)
 	}
 }
 
-// A combination of _unvoidStackTrace() and _parentStackTrace()
-Promise.prototype._parent = function _parent(parentPromise) {
-	this._unvoidStackTrace(_parent)
+// A combination of _unvoidStackTrace() and _parentStackTrace().
+// Also conveniently returns this.
+Promise.prototype._traceFrom = function _traceFrom(parentPromise) {
+	this._unvoidStackTrace(_traceFrom)
 	this._parentStackTrace(parentPromise)
 	return this
 }
