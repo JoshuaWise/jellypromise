@@ -9,8 +9,10 @@ exports.currentStack = null
 Promise.prototype._addStackTrace = function _addStackTrace(trim) {
 	var stackPoint = captureStackTrace(_addStackTrace)
 	this._trace = new _Stack(stackPoint, this._trace, trim, null)
-	if (exports.currentStack && !this._trace.parent) {
-		this._trace.parent = exports.currentStack
+	if (exports.currentStack) {
+		var end = this._trace
+		while (end.parent) {end = end.parent}
+		end.parent = exports.currentStack
 	}
 	if (this._trace.parent) {
 		cleanStackTrace(this._trace)
@@ -18,8 +20,12 @@ Promise.prototype._addStackTrace = function _addStackTrace(trim) {
 }
 
 // Pushes an Error's stack info onto the stak trace.
+// This shouldn't be used as a promise's first stack.
 Promise.prototype._addStackTraceFromError = function (err) {
-	if (err instanceof Error && err.stack && this._trace.error !== err) {
+	if (err instanceof Error
+			&& err.stack
+			&& typeof err.stack === 'string'
+			&& this._trace.error !== err) {
 		this._trace = new _Stack(err.stack, this._trace, 0, err)
 		cleanStackTrace(this._trace)
 	}
