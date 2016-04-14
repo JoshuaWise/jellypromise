@@ -47,12 +47,9 @@ Promise.prototype.else = function (value) {
 }
 Promise.prototype.delay = function (ms) {
 	return this._then(function (value) {
-		var promise = new Promise(INTERNAL)
-		promise._addStackTrace(0) // @[/development]
-		setTimeout(function () {
-			promise._resolve(value)
-		}, ~~ms)
-		return promise
+		return new Promise(function (res, rej) {
+			setTimeout(function () {res(value)}, ~~ms)
+		})
 	})
 }
 Promise.prototype.timeout = function (ms, reason) {

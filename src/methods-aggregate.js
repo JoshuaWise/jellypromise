@@ -80,28 +80,24 @@ Promise.prototype.reduce = function (fn, seed) {
 }
 
 function mapArray(input, fn, ctx) {
-	var promise = new Promise(INTERNAL)
-	promise._addStackTrace(2) // @[/development]
-	var pendings = input.length
-	var result = new Array(pendings)
-	if (pendings === 0) {
-		return promise._resolve(result)
-	}
-	
-	var rej = promise._rejector()
-	var each = function (i) {
-		return function (value) {
-			return Promise.resolve(fn.call(ctx, value, i, len))._then(function (value) {
-				result[i] = value
-				if (--pendings === 0) {promise._resolve(result)}
-			})
+	return new Promise(function (res, rej) {
+		var pendings = input.length
+		var result = new Array(pendings)
+		if (pendings === 0) {
+			return res(result)
 		}
-	}
-	for (var i=0, len=pendings; i<len; i++) {
-		Promise.resolve(input[i])._then(each(i))._then(null, rej)
-	}
-	
-	return promise
+		var each = function (i) {
+			return function (value) {
+				return Promise.resolve(fn.call(ctx, value, i, len))._then(function (value) {
+					result[i] = value
+					if (--pendings === 0) {res(result)}
+				})
+			}
+		}
+		for (var i=0, len=pendings; i<len; i++) {
+			Promise.resolve(input[i])._then(each(i))._then(null, rej)
+		}
+	})
 }
 
 function asArrayCopy(iterable) {
