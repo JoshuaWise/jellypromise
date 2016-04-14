@@ -1,5 +1,6 @@
 'use strict'
 var Promise = require('./promise.js')
+var INTERNAL = require('./util.js').INTERNAL
 
 Promise.promisify = function (fn) {
 	if (typeof fn !== 'function') {
@@ -19,18 +20,18 @@ Promise.promisify = function (fn) {
 				'var args = new Array(len + 1)',
 				'for (var i=0; i<len; i++) {args[i] = arguments[i]}',
 			'}',
-			'return new Promise(function (res, rej) {',
-				'var cb = function (err, val) {err ? rej(err) : res(val)}',
-				'switch (len) {',
-					argGuesses.map(generateSwitchCase).join('\n'),
-					'default:',
-						'args[len] = cb',
-						'fn.apply(self, args)',
-				'}',
-			'})',
+			'var promise = new Promise(INTERNAL)._traceFrom()',
+			'var cb = function (err, val) {err == null ? promise._resolve(val) : promise._reject(val)}',
+			'switch (len) {',
+				argGuesses.map(generateSwitchCase).join('\n'),
+				'default:',
+					'args[len] = cb',
+					'tryApply.call(self, fn, args)',
+			'}',
+			'return promise',
 		'}'
 	].join('\n')
-	return new Function(['Promise', 'fn'], body)(Promise, fn)
+	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch'], body)(Promise, fn, INTERNAL, tryApply, tryCatch)
 }
 function generateArgumentList(count) {
 	var args = new Array(count)
@@ -43,9 +44,31 @@ function generateSwitchCase(argLength) {
 	var args = generateArgumentList(argLength)
 	return [
 		'case ' + argLength + ':',
-			'fn.call(' + ['self'].concat(args).concat('cb').join(', ') + ')',
+			'tryCatch(fn).call(' + ['self'].concat(args).concat('cb').join(', ') + ')',
 			'break'
 	].join('\n')
+}
+function tryApply(fn, args) {
+	try {
+		return fn.apply(this, args)
+	} catch (err) {
+		args[args.length - 1](err == null ? : new Error(err) : err)
+	}
+}
+
+var tryCatchFunction = null
+function tryCatcher() {
+	try {
+		var fn = tryCatchFunction
+		tryCatchFunction = null
+		return fn.apply(this, arguments)
+	} catch (err) {
+		arguments[arguments.length - 1](err == null ? : new Error(err) : err)
+	}
+}
+function tryCatch(fn) {
+	tryCatchFunction = fn
+	return tryCatcher
 }
 
 Promise.nodeify = function (fn) {

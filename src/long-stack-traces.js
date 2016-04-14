@@ -38,7 +38,7 @@ Promise.prototype._parentStackTrace = function (parentPromise) {
 // Also conveniently returns this.
 Promise.prototype._traceFrom = function _traceFrom(parentPromise) {
 	this._unvoidStackTrace(_traceFrom)
-	this._parentStackTrace(parentPromise)
+	parentPromise && this._parentStackTrace(parentPromise)
 	return this
 }
 
