@@ -134,7 +134,7 @@ Promise.partition = function (iterable, handler) {
 			}
 		}
 		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i])._then(pushFulfilled, pushRejected)
+			Promise.resolve(input[i])._then(pushFulfilled, pushRejected)._then(null, rej)
 		}
 	})
 }
