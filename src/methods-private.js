@@ -42,11 +42,15 @@ Promise.prototype._resolve = function (newValue) {
 			return this._reject(LAST_ERROR)
 		}
 		if (typeof then === 'function') {
-			if (!(newValue instanceof Promise)) {
+			if (newValue instanceof Promise) {
+				newValue._stealStackTrace(this) // @[/development]
+			} else {
 				// Foreign promises must be converted to trusted promises.
-				newValue = new Promise(then.bind(newValue))
+				var ctx = newValue
+				newValue = new Promise(INTERNAL)
+				newValue._copyStackTrace(this) // @[/development]
+				newValue._resolveFromHandler(function () {return then.apply(ctx, arguments)})
 			}
-			newValue._stealStackTrace(this) // @[/development]
 			this._state |= $IS_FOLLOWING
 			this._value = newValue
 			finale(this)

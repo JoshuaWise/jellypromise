@@ -37,6 +37,9 @@ Promise.prototype._stealStackTrace = function (otherPromise) {
 	otherPromise._trace = this._trace
 	cleanStackTrace(this._trace)
 }
+Promise.prototype._copyStackTrace = function (otherPromise) {
+	this._trace = otherPromise._trace
+}
 Promise.prototype._voidStackTrace = function () {
 	this._trace.void = true
 }
