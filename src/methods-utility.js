@@ -4,6 +4,7 @@ var TimeoutError = require('./timeout-error')
 var warn = require('./warn')
 var asArray = require('./util').asArray
 var iterator = require('./util').iterator
+var cast = require('./util').cast
 
 Promise.prototype.finally = function (fn) {
 	if (typeof fn !== 'function') {
@@ -11,11 +12,11 @@ Promise.prototype.finally = function (fn) {
 		return this.then(fn)
 	}
 	return this.then(function (value) {
-		return Promise.resolve(fn()).then(function () {
+		return cast(fn()).then(function () {
 			return value
 		})
 	}, function (reason) {
-		return Promise.resolve(fn()).then(function () {
+		return cast(fn()).then(function () {
 			throw reason
 		})
 	})
@@ -26,7 +27,7 @@ Promise.prototype.tap = function (fn) {
 		return this.then(fn)
 	}
 	return this.then(function (value) {
-		return Promise.resolve(fn()).then(function () {
+		return cast(fn()).then(function () {
 			return value
 		})
 	})
@@ -83,7 +84,7 @@ Promise.any = function (iterable) {
 			if (--pendings === 0) {rej(reason)}
 		}
 		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i]).then(res, fail)
+			cast(input[i]).then(res, fail)
 		}
 	})
 }
@@ -96,7 +97,7 @@ Promise.props = function (obj) {
 			return res(result)
 		}
 		keys.forEach(function (key) {
-			Promise.resolve(obj[key]).then(function (value) {
+			cast(obj[key]).then(function (value) {
 				result[key] = value
 				if (--pendings === 0) {res(result)}
 			}, rej)
@@ -133,7 +134,7 @@ Promise.partition = function (iterable, handler) {
 			}
 		}
 		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i]).then(pushFulfilled, pushRejected)
+			cast(input[i]).then(pushFulfilled, pushRejected)
 		}
 	})
 }
@@ -157,7 +158,7 @@ Promise.iterate = function (iterable, fn) {
 		;(function next() {
 			var item = it.next()
 			item.done ? res()
-				: Promise.resolve(item.value).then(fn).then(next).catch(rej)
+				: cast(item.value).then(fn).then(next).catch(rej)
 		}())
 	})
 }
@@ -184,8 +185,8 @@ Promise.join = function (a, b, handler) {
 			return value
 		}
 		var halfDone = false
-		var p1 = Promise.resolve(a).then(done)
-		var p2 = Promise.resolve(b).then(done)
+		var p1 = cast(a).then(done)
+		var p2 = cast(b).then(done)
 		p1.catch(rej)
 		p2.catch(rej)
 	})

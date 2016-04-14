@@ -2,28 +2,48 @@
 var Promise = require('./promise')
 var TRACE_SIZE = 6
 
-Promise.prototype._newStackTrace = function _newStackTrace(caller) {
-	var temp = {}
-	Error.captureStackTrace(temp, caller || _newStackTrace)
-	this._trace = new _Stack(temp.stack, undefined)
+// Creates a new stack trace that is void.
+Promise.prototype._initStackTrace = function () {
+	this._trace = new _Stack()
 }
+
+// Captures a stack trace and uses it to unvoid the current stack trace.
+Promise.prototype._unvoidStackTrace = function _unvoidStackTrace(caller) {
+	var temp = {}
+	Error.captureStackTrace(temp, caller || _unvoidStackTrace)
+	this._trace.stackPoint = temp.stack
+	this._trace.void = false
+	if (this._trace.parent) {
+		cleanStackTrace(this._trace)
+	}
+}
+
+// Sets the current parent to the given promise.
+Promise.prototype._parentStackTrace = function (parentPromise) {
+	this._trace.parent = parentPromise
+	parentPromise._trace.children++
+	if (!this._trace.void) {
+		cleanStackTrace(this._trace)
+	}
+}
+
+// A combination of _unvoidStackTrace() and _parentStackTrace()
+Promise.prototype._parent = function _parent(parentPromise) {
+	this._unvoidStackTrace(_parent)
+	this._parentStackTrace(parentPromise)
+	return this
+}
+
+// Pushes to the current stack trace, using an exception.
 Promise.prototype._addStackTraceFromError = function (err) {
 	if (err instanceof Error && err.stack) {
 		this._trace = new _Stack(err.stack, this._trace)
 		cleanStackTrace(this._trace)
 	}
 }
-Promise.prototype._parentStackTrace = function (parentPromise) {
-	var previousParent = this._trace.parent
-	if (previousParent !== parentPromise) {
-		this._trace.parent = parentPromise
-		parentPromise._trace.children++
-		if (previousParent instanceof Promise) {
-			previousParent._trace.children--
-		}
-		cleanStackTrace(this._trace)
-	}
-}
+
+// Unshifts the stack trace of another promise into this promise's stack trace,
+// and upgrades the other promise's stack trace to this one's.
 Promise.prototype._stealStackTrace = function (otherPromise) {
 	var end = this._trace
 	while (end.parent) {
@@ -37,17 +57,16 @@ Promise.prototype._stealStackTrace = function (otherPromise) {
 	otherPromise._trace = this._trace
 	cleanStackTrace(this._trace)
 }
-Promise.prototype._copyStackTrace = function (otherPromise) {
-	this._trace = otherPromise._trace
-}
+
+// Sets the current stack trace as void, meaning it will be ignored.
 Promise.prototype._voidStackTrace = function () {
 	this._trace.void = true
 }
 
 function _Stack(stackPoint, parent) {
-	setNonEnumerable(this, 'stackPoint', stackPoint)
+	setNonEnumerable(this, 'stackPoint', stackPoint || '')
 	setNonEnumerable(this, 'parent', parent)
-	setNonEnumerable(this, 'void', false)
+	setNonEnumerable(this, 'void', stackPoint ? false : true)
 	setNonEnumerable(this, 'children', 0)
 }
 _Stack.prototype.getTrace = function () {

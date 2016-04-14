@@ -5,27 +5,25 @@ var clc = require('cli-color') // @[/node]
 var warn = require('./warn') // @[/development]
 var INTERNAL = require('./util').INTERNAL
 
-Promise.prototype._chain = function _chain() {
-	// @[development]
-	var chained = new Promise(INTERNAL)
-	chained._newStackTrace(_chain)
-	chained._parentStackTrace(this)
-	return chained
-	// @[/]
-	// @[production]
-	return new Promise(INTERNAL)
-	// @[/]
+Promise.prototype._parent = function () {return this}
+Promise.prototype._then = function (onFulfilled, onRejected) {
+	var promise = new Promise(INTERNAL)
+	this._handleNew(onFulfilled, onRejected, promise)
+	return promise
+}
+Promise.prototype._resolver = function () {
+	var self = this
+	return function (value) {self._resolve(value)}
+}
+Promise.prototype._rejector = function () {
+	var self = this
+	return function (reason) {self._reject(reason)}
 }
 Promise.prototype._resolveFromHandler = function (handler) {
-	var self = this
-	var res = tryCallTwo(handler, function (value) {
-		self._resolve(value)
-	}, function (reason) {
-		self._reject(reason)
-	})
-	if (res === IS_ERROR) {
-		self._addStackTraceFromError(LAST_ERROR) // @[/development]
-		self._reject(LAST_ERROR)
+	var ret = tryCallTwo(handler, this._resolver(), this._rejector())
+	if (ret === IS_ERROR) {
+		this._addStackTraceFromError(LAST_ERROR) // @[/development]
+		this._reject(LAST_ERROR)
 	}
 }
 Promise.prototype._resolve = function (newValue) {
@@ -48,7 +46,7 @@ Promise.prototype._resolve = function (newValue) {
 				// Foreign promises must be converted to trusted promises.
 				var ctx = newValue
 				newValue = new Promise(INTERNAL)
-				newValue._copyStackTrace(this) // @[/development]
+				newValue._parentStackTrace(this) // @[/development]
 				newValue._resolveFromHandler(function () {return then.apply(ctx, arguments)})
 			}
 			this._state |= $IS_FOLLOWING

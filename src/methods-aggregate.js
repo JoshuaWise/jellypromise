@@ -1,6 +1,7 @@
 'use strict'
 var Promise = require('./promise')
 var asArray = require('./util').asArray
+var cast = require('./util').cast
 
 // In these implementations, all values from the iterable are plucked before a
 // single callback is invoked. Modifying the input array after the handler has
@@ -60,7 +61,7 @@ Promise.prototype.reduce = function (fn, seed) {
 		if (useSeed) {
 			array.unshift(seed)
 		} else if (array.length === 0) {
-			return Promise.reject(new Error('Cannot reduce an empty iterable with no initial value.'))
+			throw new Error('Cannot reduce an empty iterable with no initial value.')
 		}
 		var result
 		var firstItem = true
@@ -73,7 +74,7 @@ Promise.prototype.reduce = function (fn, seed) {
 				result = item
 				return
 			}
-			return Promise.resolve(fn(result, item, i++, len)).then(setResult)
+			return cast(fn(result, item, i++, len)).then(setResult)
 		}).then(function () {return result})
 	})
 }
@@ -87,14 +88,14 @@ function mapArray(input, fn, ctx) {
 		}
 		var each = function (i) {
 			return function (value) {
-				return Promise.resolve(fn.call(ctx, value, i, len)).then(function (value) {
+				return cast(fn.call(ctx, value, i, len)).then(function (value) {
 					result[i] = value
 					if (--pendings === 0) {res(result)}
 				})
 			}
 		}
 		for (var i=0, len=pendings; i<len; i++) {
-			Promise.resolve(input[i]).then(each(i)).catch(rej)
+			cast(input[i]).then(each(i)).catch(rej)
 		}
 	})
 }

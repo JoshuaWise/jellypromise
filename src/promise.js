@@ -13,15 +13,14 @@ function Promise(fn) {
 	this._state = $NO_STATE
 	this._value = null
 	this._deferreds = null
+	this._initStackTrace() // @[/development]
 	if (fn !== INTERNAL) {
-		this._newStackTrace(Promise) // @[/development]
+		this._unvoidStackTrace(Promise) // @[/development]
 		this._resolveFromHandler(fn)
 	}
 }
 Promise.prototype.then = function (onFulfilled, onRejected) {
-	var res = this._chain()
-	this._handleNew(onFulfilled, onRejected, res)
-	return res
+	return this._then(onFulfilled, onRejected)._parent(this)
 }
 Promise.prototype.catch = function (onRejected) {
 	if (arguments.length > 1) {
@@ -31,16 +30,16 @@ Promise.prototype.catch = function (onRejected) {
 			args[i] = arguments[i]
 		}
 		onRejected = arguments[i]
-		return this.then(null, function (reason) {
+		return this._then(null, function (reason) {
 			for (var i=0; i<len; i++) {
 				if (catchesError(args[i], reason)) {
 					return onRejected(reason)
 				}
 			}
 			throw reason
-		})
+		})._parent(this)
 	}
-	return this.then(null, onRejected)
+	return this._then(null, onRejected)._parent(this)
 }
 Promise.prototype.catchLater = function () {
 	this._state |= $SUPRESS_UNHANDLED_REJECTIONS
@@ -52,13 +51,13 @@ Promise.resolve = function (value) {
 		return value
 	}
 	var promise = new Promise(INTERNAL)
-	promise._newStackTrace() // @[/development]
+	promise._unvoidStackTrace() // @[/development]
 	promise._resolve(value)
 	return promise
 }
 Promise.reject = function (reason) {
 	var promise = new Promise(INTERNAL)
-	promise._newStackTrace() // @[/development]
+	promise._unvoidStackTrace() // @[/development]
 	promise._reject(reason)
 	return promise
 }
@@ -66,7 +65,7 @@ Promise.race = function (iterable) {
 	return new Promise(function (res, rej) {
 		var input = asArray(iterable)
 		for (var i=0, len=input.length; i<len; i++) {
-			Promise.resolve(input[i]).then(res, rej)
+			cast(input[i]).then(res, rej)
 		}
 	})
 }
@@ -79,10 +78,25 @@ Promise.all = function (iterable) {
 			return res(result)
 		}
 		input.forEach(function (item, i) {
-			Promise.resolve(item).then(function (value) {
+			cast(item).then(function (value) {
 				result[i] = value
 				if (--pendings === 0) {res(result)}
 			}, rej)
 		})
 	})
 }
+
+// Like Promise.resolve(), but without capturing a stack trace.
+// @[development]
+var cast = require('./util').cast = function (value) {
+	if (value instanceof Promise) {
+		return value
+	}
+	var promise = new Promise(INTERNAL)
+	promise._resolve(value)
+	return promise
+}
+// @[/]
+// @[production]
+var cast = require('./util').cast = Promise.resolve
+// @[/]
