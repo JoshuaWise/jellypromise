@@ -1,20 +1,19 @@
-make sure all prototype methods that generate a new, linked promise, use _handleNew, _handle, or then, so that `this` promise sets SUPRESS_UNHANDLED_REJECTIONS to 1
-and make sure that all new, linked promises have their parent stack trace set to `this` promise
-
-long stack traces of warnings?
-
-make sure browser-production works (require('jellypromise/production') with browserify)
-
-redo tests
-
-add hash links to README
-
-maybe throw unhandled rejections in production mode?
+add real tests
 
 optimizations for index.js to import on the server only:
 - make use of private handle/resolve/reject functions, instead of using new Promise() with closures, to speed up methods and static functions
 - add optimized case for .catch() with single predicate
 - split Promise.partition() processing paths based on whether handler was provided
 - use fake promise class (e.g., PromiseArray) for optimized aggregate methods.
+
+long stack traces of warnings?
+
+make sure browser-production works (require('jellypromise/production') with browserify)
+
+add hash links to README
+
+maybe throw unhandled rejections in production mode?
+
+make sure all prototype methods that generate a new, linked promise, use _handleNew, _handle, or then, so that `this` promise sets SUPRESS_UNHANDLED_REJECTIONS to 1
 
 generator (seperate module?)
