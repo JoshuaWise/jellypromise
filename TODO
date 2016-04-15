@@ -1,4 +1,5 @@
-test all methods/functions for long stack traces
+test all aggregate methods for long stack traces
+test all static functions for long stack traces
 
 add real tests
 
