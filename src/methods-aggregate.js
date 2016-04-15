@@ -13,7 +13,7 @@ var INTERNAL = require('./util').INTERNAL
 // Each item is processed as soon as it becomes available (in order of promise
 // resolution). The index passed to the callback functions are the item's
 // position in the input array, NOT their index in the order of processing.
-// Of course, in reduce and reduceRight, the execution is ordered.
+// Of course, in .reduce(), the execution is ordered.
 
 // All indexes are processed, even deleted or non-existent values of an array.
 
