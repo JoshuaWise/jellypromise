@@ -1,3 +1,4 @@
+test long stack traces if the tap or finally handlers throw/reject
 test all aggregate methods for long stack traces
 test all static functions for long stack traces
 
