@@ -61,7 +61,7 @@ Promise.prototype.reduce = function (fn, seed) {
 		if (useSeed) {
 			array.unshift(seed)
 		} else if (array.length === 0) {
-			throw new Error('Cannot reduce an empty iterable with no initial value.')
+			throw new TypeError('Cannot reduce an empty iterable with no initial value.')
 		}
 		var result
 		var firstItem = true
