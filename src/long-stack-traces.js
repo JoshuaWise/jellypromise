@@ -1,10 +1,12 @@
 'use strict'
-var Promise = require('./promise')
 var ErrorStackParser = require('error-stack-parser')
 var TRACE_SIZE = 7
 exports.currentStack = null
+exports.traceOverride = null
 
 exports.init = function () {
+	var Promise = require('./promise')
+	
 	// Captures the current stack info and pushes it onto the stack trace.
 	// Optionally trims a certain number of lines from the stack info.
 	Promise.prototype._addStackTrace = _addStackTrace
@@ -12,6 +14,9 @@ exports.init = function () {
 	// Pushes an Error's stack info onto the stak trace.
 	// This shouldn't be used as a promise's first stack.
 	Promise.prototype._addStackTraceFromError = _addStackTraceFromError
+	
+	// Returns the _Stack object of the promise's final followee.
+	Promise.prototype._getStack = _getStack
 }
 
 function _addStackTrace(trim) {
@@ -34,6 +39,14 @@ function _addStackTraceFromError(err) {
 		this._trace = new _Stack(err.stack, this._trace, 0, err)
 		cleanStackTrace(this._trace)
 	}
+}
+
+function _getStack() {
+	var self = this
+	while (self._state & $IS_FOLLOWING) {
+		self = self._value
+	}
+	return self._trace
 }
 
 function _Stack(stackPoint, parent, trim, err) {

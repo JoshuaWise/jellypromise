@@ -5,18 +5,21 @@ var asArray = require('./util').asArray
 var iterator = require('./util').iterator
 var INTERNAL = require('./util').INTERNAL
 var warn = require('./warn') // @[/development]
+var LST = require('./long-stack-traces') // @[/development]
 
 Promise.prototype.finally = function (fn) {
 	if (typeof fn !== 'function') {
 		// Will be bypassed, but produces a warning in development mode.
 		return this._then(fn)
 	}
+	var self = this // @[/development]
 	return this._then(function (value) {
 		return Promise.resolve(fn())._then(function () {
 			return value
 		})
 	}, function (reason) {
 		return Promise.resolve(fn())._then(function () {
+			LST.traceOverride = self._getStack() // @[/development]
 			throw reason
 		})
 	})
@@ -55,13 +58,13 @@ Promise.prototype.delay = function (ms) {
 Promise.prototype.timeout = function (ms, reason) {
 	var self = this
 	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
-		if (reason == null) {
-			reason = new TimeoutError('The operation timed out after ' + ~~ms + ' milliseconds.')
-		} else if (!(reason instanceof Error)) {
-			reason = new TimeoutError(String(reason))
-		}
-		var timer = setTimeout(function () {rej(reason)}, ~~ms)
-		function cancel() {clearTimeout(timer);}
+		var timer = setTimeout(function () {
+			rej(
+				reason == null ? new TimeoutError('The operation timed out after ' + ~~ms + 'ms.')
+			  : reason instanceof Error ? rej(reason) : new TimeoutError(String(reason))
+			)
+		}, ~~ms)
+		var cancel = function () {clearTimeout(timer);}
 		self._then(cancel, cancel)
 		self._then(res, rej)
 	})

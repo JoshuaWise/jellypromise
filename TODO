@@ -1,4 +1,3 @@
-fix long stack traces for .finally() and .catch()/.else()
 test all methods/functions for long stack traces
 
 add real tests

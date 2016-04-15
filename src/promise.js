@@ -2,6 +2,7 @@
 var asArray = require('./util').asArray
 var catchesError = require('./util').catchesError
 var INTERNAL = require('./util').INTERNAL
+var LST = require('./long-stack-traces') // @[/development]
 
 function Promise(fn) {
 	if (typeof this !== 'object') {
@@ -28,12 +29,14 @@ Promise.prototype.catch = function (onRejected) {
 			args[i] = arguments[i]
 		}
 		onRejected = arguments[i]
+		var self = this // @[/development]
 		return this._then(null, function (reason) {
 			for (var i=0; i<len; i++) {
 				if (catchesError(args[i], reason)) {
 					return onRejected(reason)
 				}
 			}
+			LST.traceOverride = self._getStack() // @[/development]
 			throw reason
 		})
 	}

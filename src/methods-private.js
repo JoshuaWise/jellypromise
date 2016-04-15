@@ -139,7 +139,13 @@ function handleSettled(self, deferred) {
 		} else {
 			LST.currentStack = deferred.promise._trace // @[/development]
 			var ret = tryCallOne_c9d565ea_0267_11e6_8d22_5e5517507c66(cb, self._value)
-			LST.currentStack = null // @[/development]
+			// @[development]
+			LST.currentStack = null
+			if (LST.traceOverride) {
+				deferred.promise._trace = LST.traceOverride
+				LST.traceOverride = null
+			}
+			// @[/]
 			if (ret === IS_ERROR) {
 				deferred.promise._addStackTraceFromError(LAST_ERROR) // @[/development]
 				deferred.promise._reject(LAST_ERROR)
