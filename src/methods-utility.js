@@ -13,11 +13,11 @@ Promise.prototype.finally = function (fn) {
 		return this._then(fn)
 	}
 	var self = this // @[/development]
-	return this._then(function (value) {
+	return this._then(function _$(value) {
 		return Promise.resolve(fn())._then(function () {
 			return value
 		})
-	}, function (reason) {
+	}, function _$(reason) {
 		return Promise.resolve(fn())._then(function () {
 			LST.traceOverride = self._getStack() // @[/development]
 			throw reason
@@ -29,7 +29,7 @@ Promise.prototype.tap = function (fn) {
 		// Will be bypassed, but produces a warning in development mode.
 		return this._then(fn)
 	}
-	return this._then(function (value) {
+	return this._then(function _$(value) {
 		return Promise.resolve(fn())._then(function () {
 			return value
 		})

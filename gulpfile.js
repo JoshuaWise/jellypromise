@@ -7,6 +7,7 @@ var globPromise = Promise.promisify(require('glob'))
 var gulp = require('gulp')
 var acorn = require('acorn')
 var walk = require('acorn/dist/walk')
+var privateUUID = '_c9d565ea_0267_11e6_8d22_5e5517507c66'
 var dotRE = /(\\|\/|^)\./
 var directiveRE = /@\[(\/?[\w\s]+|\/)\]/g
 var directiveStartRE = /@\[([\w\s]+)\]/
@@ -63,14 +64,17 @@ function process(lib, directives) {
 		return arr
 	})
 	.map(readFile)
-	.then(replaceTokens)
+	.map(replaceTokens(directives))
 	.map(processDirectives(directives, filenames))
 	.map(function (data, i) {return fs.writeFileAsync(filenames[i], data)})
 }
 
-function replaceTokens(sources) {
+function replaceTokens(directives) {
 	var ids = []
 	var names = Object.create(null)
+	var privateUUIDName = directives.indexOf('development') !== -1
+		? privateUUID
+		: ''
 	function getIdFor(name) {
 		if (name in names) {return names[name]}
 		do {
@@ -80,7 +84,7 @@ function replaceTokens(sources) {
 		names[name] = id
 		return id
 	}
-	return sources.map(function (source) {
+	return function (source) {
 		var ast = acorn.parse(source)
 		source = source.split('')
 		walk.simple(ast, {
@@ -94,14 +98,19 @@ function replaceTokens(sources) {
 			Identifier: function (node) {
 				if (constants.indexOf(node.name) !== -1) {
 					replace(node, constantMap[node.name])
+				} else if (/_\$$/.test(node.name)) {
+					replace(node, node.name.replace(/_\$$/, privateUUIDName))
 				} else if (node.name[0] === '_') {
 					replace(node, getIdFor(node.name))
 				}
 			},
 			Function: function (node) {
 				if (!node.id) return
-				if (node.id.name[0] !== '_') return
-				replace(node.id, getIdFor(node.id.name))
+				if (/_\$$/.test(node.id.name)) {
+					replace(node.id, node.id.name.replace(/_\$$/, privateUUIDName))
+				} else if (node.id.name[0] === '_') {
+					replace(node.id, getIdFor(node.id.name))
+				}
 			}
 		})
 		function replace(node, str) {
@@ -109,7 +118,7 @@ function replaceTokens(sources) {
 			source[node.start] = str
 		}
 		return source.join('')
-	})
+	}
 }
 
 function processDirectives(directives, filenames) {

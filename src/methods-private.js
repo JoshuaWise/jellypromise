@@ -138,7 +138,7 @@ function handleSettled(self, deferred) {
 			}
 		} else {
 			LST.currentStack = deferred.promise._trace // @[/development]
-			var ret = tryCallOne_c9d565ea_0267_11e6_8d22_5e5517507c66(cb, self._value)
+			var ret = tryCallOne_$(cb, self._value)
 			// @[development]
 			LST.currentStack = null
 			if (LST.traceOverride) {
@@ -198,7 +198,7 @@ function getThen(obj) {
 		return IS_ERROR
 	}
 }
-function tryCallOne_c9d565ea_0267_11e6_8d22_5e5517507c66(fn, a) {
+function tryCallOne_$(fn, a) {
 	try {
 		return fn(a)
 	} catch (ex) {
