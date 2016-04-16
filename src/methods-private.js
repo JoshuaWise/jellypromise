@@ -138,7 +138,7 @@ function handleSettled(self, deferred) {
 			}
 		} else {
 			LST.currentStack = deferred.promise._trace // @[/development]
-			var ret = tryCallOne_$(cb, self._value)
+			var ret = tryCallOne$UUID(cb, self._value)
 			// @[development]
 			LST.currentStack = null
 			if (LST.traceOverride) {
@@ -198,7 +198,7 @@ function getThen(obj) {
 		return IS_ERROR
 	}
 }
-function tryCallOne_$(fn, a) {
+function tryCallOne$UUID(fn, a) {
 	try {
 		return fn(a)
 	} catch (ex) {

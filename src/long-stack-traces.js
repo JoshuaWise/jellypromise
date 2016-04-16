@@ -116,7 +116,7 @@ function formatStack(stack, i) {
 		throw new Error('Failed to parse stack trace.')
 	}
 	
-	var indexOfInternal = indexOfFunction(parsedLines, '_c9d565ea_0267_11e6_8d22_5e5517507c66')
+	var indexOfInternal = indexOfFunction(parsedLines, '$UUID')
 	lines = lines.map(shrinkPath, parsedLines)
 	lines = lines.slice(stack.trim, indexOfInternal === -1 ? lines.length : indexOfInternal)
 	
