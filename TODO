@@ -1,4 +1,3 @@
-test all static functions for long stack traces
 test .reduce() for long stack traces
 
 add real tests

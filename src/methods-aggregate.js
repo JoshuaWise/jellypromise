@@ -23,7 +23,7 @@ Promise.prototype.filter = function (fn, ctx) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		var array = asArrayCopy(iterable)
+		var array = asArrayCopy$UUID(iterable)
 		return mapArray(array, fn, ctx)._then(function (bools) {
 			var result = []
 			for (var i=0, len=bools.length; i<len; i++) {
@@ -46,7 +46,7 @@ Promise.prototype.forEach = function (fn, ctx) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		var array = asArrayCopy(iterable)
+		var array = asArrayCopy$UUID(iterable)
 		return mapArray(array, fn, ctx)._then(function () {
 			return array
 		})
@@ -54,11 +54,11 @@ Promise.prototype.forEach = function (fn, ctx) {
 }
 Promise.prototype.reduce = function (fn, seed) {
 	var useSeed = arguments.length > 1
-	return this._then(function (iterable) {
+	return this._then(function $UUID(iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		var array = asArrayCopy(iterable)
+		var array = asArrayCopy$UUID(iterable)
 		if (useSeed) {
 			array.unshift(seed)
 		} else if (array.length === 0) {
@@ -102,7 +102,7 @@ function mapArray(input, fn, ctx) {
 	})
 }
 
-function asArrayCopy(iterable) {
+function asArrayCopy$UUID(iterable) {
 	var array = asArray(iterable)
 	if (array === iterable) {
 		var len = array.length

@@ -9,7 +9,7 @@ exports.INTERNAL = function () {}
 // copy. The only safe operations are to synchronously loop through the object.
 // After control is given back to the caller, the object must not be used.
 // The returned array COULD be a subclass of Array.
-exports.asArray = function (iterable) {
+exports.asArray = function $UUID(iterable) {
 	if (Array.isArray(iterable)) {
 		return iterable
 	}

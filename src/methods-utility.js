@@ -77,12 +77,13 @@ Promise.prototype.log = function (prefix) {
 	})
 }
 Promise.any = function (iterable) {
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		if (pendings === 0) {
 			return rej(new Error('The iterable argument contained no items.'))
 		}
+		rej = LST.upgradeRejector(rej) // @[/development]
 		var fail = function (reason) {
 			if (--pendings === 0) {rej(reason)}
 		}
@@ -92,13 +93,14 @@ Promise.any = function (iterable) {
 	})
 }
 Promise.props = function (obj) {
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
 		var keys = Object.keys(obj)
 		var pendings = keys.length
 		var result = {}
 		if (pendings === 0) {
 			return res(result)
 		}
+		rej = LST.upgradeRejector(rej) // @[/development]
 		keys.forEach(function (key) {
 			Promise.resolve(obj[key])._then(function (value) {
 				result[key] = value
@@ -108,7 +110,7 @@ Promise.props = function (obj) {
 	})
 }
 Promise.partition = function (iterable, handler) {
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
 		// @[development]
 		if (typeof handler !== 'function' && handler != null) {
 			warn('Handlers must be functions (' + typeof handler + 's will be ignored).')
@@ -122,18 +124,18 @@ Promise.partition = function (iterable, handler) {
 		var fulfilled = []
 		var rejected = []
 		if (pendings === 0) {
-			return handler ? res(handler(fulfilled, rejected)) : res(fulfilled)
+			return handler ? Promise.resolve(handler(fulfilled, rejected)).then(res, rej) : res(fulfilled)
 		}
-		var pushFulfilled = function (value) {
+		var pushFulfilled = function $UUID(value) {
 			fulfilled.push(value)
 			if (--pendings === 0) {
-				handler ? res(handler(fulfilled, rejected)) : res(fulfilled)
+				handler ? Promise.resolve(handler(fulfilled, rejected)).then(res, rej) : res(fulfilled)
 			}
 		}
-		var pushRejected = function (reason) {
+		var pushRejected = function $UUID(reason) {
 			rejected.push(reason)
 			if (--pendings === 0) {
-				handler ? res(handler(fulfilled, rejected)) : res(fulfilled)
+				handler ? Promise.resolve(handler(fulfilled, rejected)).then(res, rej) : res(fulfilled)
 			}
 		}
 		for (var i=0; i<pendings; i++) {
@@ -142,7 +144,7 @@ Promise.partition = function (iterable, handler) {
 	})
 }
 Promise.iterate = function (iterable, fn) {
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
 		// @[development]
 		if (typeof fn !== 'function' && fn != null) {
 			warn('Handlers must be functions (' + typeof fn + 's will be ignored).')
@@ -158,11 +160,17 @@ Promise.iterate = function (iterable, fn) {
 		} else {
 			throw new TypeError('Expected first argument to be an iterable object.')
 		}
-		;(function next() {
+		var rejSelf = LST.upgradeRejector(rej) // @[/development]
+		var handler = function $UUID(value) {
+			return Promise.resolve(fn(value))._then(next)
+		}
+		var next = function $UUID() {
 			var item = it.next()
-			item.done ? res()
-				: Promise.resolve(item.value)._then(fn)._then(next)._then(null, rej)
-		}())
+			item.done ? res() :
+				Promise.resolve(item.value)._then(handler)._then(null, rej) // @[/production]
+				Promise.resolve(item.value)._then(handler, rejSelf)._then(null, rej) // @[/development]
+		}
+		next()
 	})
 }
 Promise.join = function (a, b, handler) {
@@ -175,12 +183,13 @@ Promise.join = function (a, b, handler) {
 		if (typeof handler !== 'function') {
 			handler = null
 		}
-		var done = function (value) {
+		var rejSelf = LST.upgradeRejector(rej) // @[/development]
+		var done = function $UUID(value) {
 			if (halfDone) {
 				if (p1._state & $IS_FULFILLED) {
-					handler ? res(handler(p1._value, value)) : res(p1._value)
+					handler ? Promise.resolve(handler(p1._value, value)).then(res, rej) : res(p1._value)
 				} else {
-					handler ? res(handler(value, p2._value)) : res(value)
+					handler ? Promise.resolve(handler(value, p2._value)).then(res, rej) : res(value)
 				}
 			} else {
 				halfDone = true
@@ -188,8 +197,10 @@ Promise.join = function (a, b, handler) {
 			return value
 		}
 		var halfDone = false
-		var p1 = Promise.resolve(a)._then(done)
-		var p2 = Promise.resolve(b)._then(done)
+		var p1 = Promise.resolve(a)._then(done) // @[/production]
+		var p2 = Promise.resolve(b)._then(done) // @[/production]
+		var p1 = Promise.resolve(a)._then(done, rejSelf) // @[/development]
+		var p2 = Promise.resolve(b)._then(done, rejSelf) // @[/development]
 		p1._then(null, rej)
 		p2._then(null, rej)
 	})

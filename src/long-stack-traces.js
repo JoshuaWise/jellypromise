@@ -103,7 +103,7 @@ _Stack.prototype.getTrace = function () {
 		stacks.push(point)
 		point = point.parent
 	} while (point && stacks.length < TRACE_SIZE)
-	return stacks.map(formatStack).filter(notEmpty)
+	return stacks.map(formatStack).filter(stackNotEmpty)
 }
 
 function setNonEnumerable(obj, prop, value) {
@@ -188,6 +188,6 @@ function shrinkPath(line, i) {
 	return line
 }
 
-function notEmpty(stack, i) {
-	return i === 0 || stack.indexOf('\n') !== -1
+function stackNotEmpty(stack, i) {
+	return i === 0 ? !!stack.trim() : stack.indexOf('\n') !== -1
 }

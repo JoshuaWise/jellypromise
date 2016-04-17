@@ -63,7 +63,7 @@ Promise.reject = function (reason) {
 	return promise
 }
 Promise.race = function (iterable) {
-	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		var input = asArray(iterable)
 		rej = LST.upgradeRejector(rej) // @[/development]
 		for (var i=0, len=input.length; i<len; i++) {
@@ -72,7 +72,7 @@ Promise.race = function (iterable) {
 	})
 }
 Promise.all = function (iterable) {
-	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		var result = new Array(pendings)
