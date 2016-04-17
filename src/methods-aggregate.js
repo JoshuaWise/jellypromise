@@ -64,12 +64,21 @@ Promise.prototype.reduce = function (fn, seed) {
 		} else if (array.length === 0) {
 			throw new TypeError('Cannot reduce an empty iterable with no initial value.')
 		}
+		
 		var result
 		var firstItem = true
 		var len = array.length
 		var i = useSeed ? 0 : 1
+		
+		for (var j=0; j<len; j++) {
+			var item = array[j]
+			if (item instanceof Promise) {
+				item.catchLater()
+			}
+		}
+		
 		var setResult = function (value) {result = value}
-		return Promise.iterate(array, function (item) {
+		return Promise.iterate(array, function $UUID(item) {
 			if (firstItem) {
 				firstItem = false
 				result = item
