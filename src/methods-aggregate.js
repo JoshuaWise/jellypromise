@@ -89,7 +89,7 @@ function mapArray(input, fn, ctx) {
 		}
 		// @[development]
 		var realRej = rej
-		var rej = function (err) {
+		rej = function (err) {
 			LST.setRejectionStack(LST.getPreviousStack())
 			realRej(err)
 		}
