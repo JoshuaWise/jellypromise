@@ -81,7 +81,7 @@ Promise.prototype.reduce = function (fn, seed) {
 }
 
 function mapArray(input, fn, ctx) {
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
 		var pendings = input.length
 		var result = new Array(pendings)
 		if (pendings === 0) {
@@ -95,7 +95,7 @@ function mapArray(input, fn, ctx) {
 		}
 		// @[/]
 		var each = function (i) {
-			return function (value) {
+			return function $UUID(value) {
 				return Promise.resolve(fn.call(ctx, value, i, len))._then(function (value) {
 					result[i] = value
 					if (--pendings === 0) {res(result)}
