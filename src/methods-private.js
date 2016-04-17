@@ -22,7 +22,6 @@ Promise.prototype._resolveFromHandler = function (handler) {
 	this._addStackTrace(2) // @[/development]
 	var ret = tryCallTwo(handler, this._resolver(), this._rejector())
 	if (ret === IS_ERROR) {
-		this._addStackTraceFromError(LAST_ERROR) // @[/development]
 		this._reject(LAST_ERROR)
 	}
 	return this
@@ -47,7 +46,6 @@ Promise.prototype._resolve = function (newValue) {
 	if (newValue != null && (typeof newValue === 'object' || typeof newValue === 'function')) {
 		var then = getThen(newValue)
 		if (then === IS_ERROR) {
-			this._addStackTraceFromError(LAST_ERROR) // @[/development]
 			return this._reject(LAST_ERROR)
 		}
 		if (typeof then === 'function') {
@@ -69,6 +67,7 @@ Promise.prototype._reject = function (newValue) {
 	this._value = newValue
 	
 	// @[development]
+	this._trace = LST.useRejectionStack() || this._trace
 	if (!PASSTHROUGH_REJECTION && !(newValue instanceof Error)) {
 		var type = newValue === null ? null :
 			typeof newValue === 'object' ? Object.prototype.toString.call(newValue) :
@@ -137,17 +136,10 @@ function handleSettled(self, deferred) {
 				PASSTHROUGH_REJECTION = false // @[/development]
 			}
 		} else {
-			LST.currentStack = deferred.promise._trace // @[/development]
+			LST.setContext(self, deferred) // @[/development]
 			var ret = tryCallOne$UUID(cb, self._value)
-			// @[development]
-			LST.currentStack = null
-			if (LST.traceOverride) {
-				deferred.promise._trace = LST.traceOverride
-				LST.traceOverride = null
-			}
-			// @[/]
+			LST.releaseContext() // @[/development]
 			if (ret === IS_ERROR) {
-				deferred.promise._addStackTraceFromError(LAST_ERROR) // @[/development]
 				deferred.promise._reject(LAST_ERROR)
 			} else {
 				deferred.promise._resolve(ret)

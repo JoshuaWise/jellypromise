@@ -36,7 +36,7 @@ Promise.prototype.catch = function (onRejected) {
 					return onRejected(reason)
 				}
 			}
-			LST.traceOverride = self._getStack() // @[/development]
+			LST.setRejectionStack(self._getStack()) // @[/development]
 			throw reason
 		})
 	}

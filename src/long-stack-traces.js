@@ -1,8 +1,8 @@
 'use strict'
 var ErrorStackParser = require('error-stack-parser')
 var TRACE_SIZE = 7
-exports.currentStack = null
-exports.traceOverride = null
+var rejectionStack = null
+var context = {stack: null, previousStack: null}
 
 exports.init = function () {
 	var Promise = require('./promise')
@@ -19,13 +19,50 @@ exports.init = function () {
 	Promise.prototype._getStack = _getStack
 }
 
+// Used before an asynchronous callback.
+exports.setContext = function (promise, deferred) {
+	context.stack = deferred.promise._trace
+	context.previousStack = promise._trace
+}
+// Used after an asynchronous callback.
+exports.releaseContext = function () {
+	context.stack = null
+	context.previousStack = null
+}
+
+// Returns the stack of the promise that this handler is chained from.
+exports.getPreviousStack = function () {
+	if (!context.previousStack) {
+		throw new Error('This function can only be used within an asynchronous callback.')
+	}
+	return context.previousStack
+}
+
+// By setting this, the next promise that is rejected will have this stack.
+exports.setRejectionStack = function (stack) {
+	if (!(stack instanceof _Stack)) {
+		throw new TypeError('Expected argument to be a Stack object.')
+	}
+	if (rejectionStack) {
+		throw new Error('Invoked .setRejectionStack() twice before a promise was rejected.')
+	}
+	rejectionStack = stack
+}
+// Returns whether there is a rejection stack to use.
+exports.useRejectionStack = function () {
+	var temp = rejectionStack
+	rejectionStack = null
+	return temp
+}
+
+
 function _addStackTrace(trim) {
 	var stackPoint = captureStackTrace(_addStackTrace)
 	this._trace = new _Stack(stackPoint, this._trace, trim, null)
-	if (exports.currentStack) {
+	if (context.stack) {
 		var end = this._trace
 		while (end.parent) {end = end.parent}
-		end.parent = exports.currentStack
+		end.parent = context.stack
 	}
 	if (this._trace.parent) {
 		cleanStackTrace(this._trace)

@@ -2,6 +2,7 @@
 var Promise = require('./promise')
 var asArray = require('./util').asArray
 var INTERNAL = require('./util').INTERNAL
+var LST = require('./long-stack-traces') // @[/development]
 
 // In these implementations, all values from the iterable are plucked before a
 // single callback is invoked. Modifying the input array after the handler has
@@ -80,12 +81,19 @@ Promise.prototype.reduce = function (fn, seed) {
 }
 
 function mapArray(input, fn, ctx) {
-	return new Promise(function (res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		var pendings = input.length
 		var result = new Array(pendings)
 		if (pendings === 0) {
 			return res(result)
 		}
+		// @[development]
+		var realRej = rej
+		var rej = function (err) {
+			LST.setRejectionStack(LST.getPreviousStack())
+			realRej(err)
+		}
+		// @[/]
 		var each = function (i) {
 			return function (value) {
 				return Promise.resolve(fn.call(ctx, value, i, len))._then(function (value) {

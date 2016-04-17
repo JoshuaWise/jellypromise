@@ -19,7 +19,7 @@ Promise.prototype.finally = function (fn) {
 		})
 	}, function $UUID(reason) {
 		return Promise.resolve(fn())._then(function () {
-			LST.traceOverride = self._getStack() // @[/development]
+			LST.setRejectionStack(self._getStack()) // @[/development]
 			throw reason
 		})
 	})
