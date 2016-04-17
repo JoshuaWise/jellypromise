@@ -30,12 +30,16 @@ exports.releaseContext = function () {
 	context.previousStack = null
 }
 
-// Returns the stack of the promise that this handler is chained from.
-exports.getPreviousStack = function () {
-	if (!context.previousStack) {
-		throw new Error('This function can only be used within an asynchronous callback.')
+// Upgrades a function returned by Promise#_rejector(), so that the rejected
+// promise receives the stack trace of the promise that handled its rejection.
+exports.upgradeRejector = function (rej) {
+	return function (err) {
+		if (!context.previousStack) {
+			throw new Error('This function can only be used within an asynchronous callback.')
+		}
+		exports.setRejectionStack(context.previousStack)
+		return rej(err)
 	}
-	return context.previousStack
 }
 
 // By setting this, the next promise that is rejected will have this stack.

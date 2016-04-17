@@ -87,13 +87,7 @@ function mapArray(input, fn, ctx) {
 		if (pendings === 0) {
 			return res(result)
 		}
-		// @[development]
-		var realRej = rej
-		rej = function (err) {
-			LST.setRejectionStack(LST.getPreviousStack())
-			realRej(err)
-		}
-		// @[/]
+		rej = LST.upgradeRejector(rej) // @[/development]
 		var each = function (i) {
 			return function $UUID(value) {
 				return Promise.resolve(fn.call(ctx, value, i, len))._then(function (value) {
