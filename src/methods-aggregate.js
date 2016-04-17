@@ -19,7 +19,7 @@ var LST = require('./long-stack-traces') // @[/development]
 // All indexes are processed, even deleted or non-existent values of an array.
 
 Promise.prototype.filter = function (fn, ctx) {
-	return this._then(function (iterable) {
+	return this._then(function $UUID(iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
@@ -34,7 +34,7 @@ Promise.prototype.filter = function (fn, ctx) {
 	})
 }
 Promise.prototype.map = function (fn, ctx) {
-	return this._then(function (iterable) {
+	return this._then(function $UUID(iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
@@ -42,7 +42,7 @@ Promise.prototype.map = function (fn, ctx) {
 	})
 }
 Promise.prototype.forEach = function (fn, ctx) {
-	return this._then(function (iterable) {
+	return this._then(function $UUID(iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
