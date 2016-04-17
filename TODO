@@ -1,4 +1,4 @@
-test .reduce() for long stack traces
+test .iterate() and .reduce() for long stack traces
 
 add real tests
 
