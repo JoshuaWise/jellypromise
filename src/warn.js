@@ -1,5 +1,6 @@
 'use strict'
 var clc = require('cli-color') // @[/node]
+var console = require('./util').console // @[/browser]
 
 module.exports = function (str) {
 	var err = new Error(str)

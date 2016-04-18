@@ -2,6 +2,7 @@
 var Promise = require('./promise')
 var asap = require('asap/raw')
 var clc = require('cli-color') // @[/node]
+var console = require('./util').console // @[/browser]
 var INTERNAL = require('./util').INTERNAL
 var warn = require('./warn') // @[/development]
 var LST = require('./long-stack-traces') // @[/development]
@@ -20,7 +21,7 @@ Promise.prototype._then = function (onFulfilled, onRejected) {
 // It automatically captures stack traces at the correct depth.
 Promise.prototype._resolveFromHandler = function (handler) {
 	this._addStackTrace(2) // @[/development]
-	var ret = tryCallTwo(handler, this._resolver(), this._rejector())
+	var ret = tryCallTwo$UUID(handler, this._resolver(), this._rejector())
 	if (ret === IS_ERROR) {
 		this._reject(LAST_ERROR)
 	}
@@ -44,7 +45,7 @@ Promise.prototype._resolve = function (newValue) {
 		return this._reject(new TypeError('A promise cannot be resolved with itself.'))
 	}
 	if (newValue != null && (typeof newValue === 'object' || typeof newValue === 'function')) {
-		var then = getThen(newValue)
+		var then = getThen$UUID(newValue)
 		if (then === IS_ERROR) {
 			return this._reject(LAST_ERROR)
 		}
@@ -167,8 +168,9 @@ function onUnhandledRejection(self, reason) {
 			console.error(
 				clc.red( // @[/node]
 					'Unhandled rejection '
-					+ (String(reason) + '\n' + self._trace.getTrace()) // @[/development]
-					+ (reason instanceof Error && reason.stack || String(reason)) // @[/production]
+					+ String(reason) + '\n' + self._trace.getTrace() // @[/development]
+					+ String(reason instanceof Error ? reason.stack : reason) // @[/production node]
+					+ (typeof reason === 'symbol' ? String(reason) : reason) // @[/production browser]
 				) // @[/node]
 			)
 		}
@@ -182,7 +184,7 @@ function foreignPromise(promise, then) {
 // To avoid using try/catch inside critical functions, we extract them to here.
 var LAST_ERROR = null
 var IS_ERROR = {}
-function getThen(obj) {
+function getThen$UUID(obj) {
 	try {
 		return obj.then
 	} catch (ex) {
@@ -198,7 +200,7 @@ function tryCallOne$UUID(fn, a) {
 		return IS_ERROR
 	}
 }
-function tryCallTwo(fn, a, b) {
+function tryCallTwo$UUID(fn, a, b) {
 	try {
 		fn(a, b)
 	} catch (ex) {

@@ -1,6 +1,7 @@
 'use strict'
 var Promise = require('./promise')
 var TimeoutError = require('./timeout-error')
+var console = require('./util').console // @[/browser]
 var asArray = require('./util').asArray
 var iterator = require('./util').iterator
 var INTERNAL = require('./util').INTERNAL
@@ -167,13 +168,9 @@ Promise.iterate = function (iterable, fn) {
 		}
 		var next = function $UUID() {
 			var item = it.next()
-			if (item.done) {
-				res()
-			} else {
-				var p = Promise.resolve(item.value)._then(handler)
-				p._trace.parent = promise._getStack()
-				p._then(null, rej)
-			}
+			item.done
+				? res()
+				: Promise.resolve(item.value)._then(handler)._then(null, rej)
 		}
 		next()
 	})

@@ -48,3 +48,26 @@ exports.catchesError = function (predicate, reason) {
 	warn('The predicate passed to .catch() is invalid, and will be ignored.') // @[/development]
 	return false
 }
+
+// @[browser]
+// A safe, cross-browser log function.
+exports.console = {
+	log: function () {
+		if (typeof console === 'object' && console) {
+			Function.prototype.apply.call(console.log, console, arguments)
+		}
+	},
+	// @[development]
+	warn: function () {
+		if (typeof console === 'object' && console) {
+			Function.prototype.apply.call(console.warn, console, arguments)
+		}
+	},
+	// @[/]
+	error: function () {
+		if (typeof console === 'object' && console) {
+			Function.prototype.apply.call(console.error, console, arguments)
+		}
+	}
+}
+// @[/]

@@ -90,16 +90,13 @@ Promise.prototype.reduce = function (fn, seed) {
 					i++
 					return setResult(item)
 				}
+				
 				return Promise.resolve(fn(result, item, i++, len))._then(setResult)
 			}
 			var next = function $UUID() {
-				if (i === len) {
-					res(result)
-				} else {
-					var p = Promise.resolve(array[i])._then(handler)
-					p._trace.parent = promise._getStack()
-					p._then(null, rej)
-				}
+				i === len
+					? res(result)
+					: Promise.resolve(array[i])._then(handler)._then(null, rej)
 			}
 			next()
 		})
