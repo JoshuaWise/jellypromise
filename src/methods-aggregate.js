@@ -58,34 +58,51 @@ Promise.prototype.reduce = function (fn, seed) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		var array = asArrayCopy$UUID(iterable)
+		var arr = asArrayCopy$UUID(iterable)
 		if (useSeed) {
-			array.unshift(seed)
-		} else if (array.length === 0) {
+			arr.unshift(seed)
+		} else if (arr.length === 0) {
 			throw new TypeError('Cannot reduce an empty iterable with no initial value.')
 		}
-		
-		var result
-		var firstItem = true
-		var len = array.length
-		var i = useSeed ? 0 : 1
-		
-		for (var j=0; j<len; j++) {
-			var item = array[j]
-			if (item instanceof Promise) {
-				item.catchLater()
+		var promise = new Promise(INTERNAL)
+		return promise._resolveFromHandler(function (res, rej) {
+			var result
+			var array = arr
+			var firstItem = true
+			var len = array.length
+			var i = useSeed ? 0 : 1
+			
+			for (var j=0; j<len; j++) {
+				var item = array[j]
+				if (item instanceof Promise) {
+					item.catchLater()
+				}
 			}
-		}
-		
-		var setResult = function (value) {result = value}
-		return Promise.iterate(array, function $UUID(item) {
-			if (firstItem) {
-				firstItem = false
-				result = item
-				return
+			
+			rej = LST.upgradeRejector(rej) // @[/development]
+			var setResult = function (value) {
+				result = value
+				next()
 			}
-			return Promise.resolve(fn(result, item, i++, len))._then(setResult)
-		})._then(function () {return result})
+			var handler = function $UUID(item) {
+				if (firstItem) {
+					firstItem = false
+					i++
+					return setResult(item)
+				}
+				return Promise.resolve(fn(result, item, i++, len))._then(setResult)
+			}
+			var next = function $UUID() {
+				if (i === len) {
+					res(result)
+				} else {
+					var p = Promise.resolve(array[i])._then(handler)
+					p._trace.parent = promise._getStack()
+					p._then(null, rej)
+				}
+			}
+			next()
+		})
 	})
 }
 

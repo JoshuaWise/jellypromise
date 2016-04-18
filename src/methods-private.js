@@ -167,7 +167,7 @@ function onUnhandledRejection(self, reason) {
 			console.error(
 				clc.red( // @[/node]
 					'Unhandled rejection '
-					+ (String(reason) + '\n' + self._trace.getTrace().join('\n')) // @[/development]
+					+ (String(reason) + '\n' + self._trace.getTrace()) // @[/development]
 					+ (reason instanceof Error && reason.stack || String(reason)) // @[/production]
 				) // @[/node]
 			)

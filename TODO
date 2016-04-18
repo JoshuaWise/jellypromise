@@ -1,5 +1,3 @@
-test .reduce() for long stack traces
-
 add real tests
 
 optimizations for index.js to import on the server only:

@@ -144,7 +144,8 @@ Promise.partition = function (iterable, handler) {
 	})
 }
 Promise.iterate = function (iterable, fn) {
-	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
+	var promise = new Promise(INTERNAL)
+	return promise._resolveFromHandler(function $UUID(res, rej) {
 		// @[development]
 		if (typeof fn !== 'function' && fn != null) {
 			warn('Handlers must be functions (' + typeof fn + 's will be ignored).')
@@ -160,15 +161,19 @@ Promise.iterate = function (iterable, fn) {
 		} else {
 			throw new TypeError('Expected first argument to be an iterable object.')
 		}
-		var rejSelf = LST.upgradeRejector(rej) // @[/development]
+		rej = LST.upgradeRejector(rej) // @[/development]
 		var handler = function $UUID(value) {
 			return Promise.resolve(fn(value))._then(next)
 		}
 		var next = function $UUID() {
 			var item = it.next()
-			item.done ? res() :
-				Promise.resolve(item.value)._then(handler)._then(null, rej) // @[/production]
-				Promise.resolve(item.value)._then(handler, rejSelf)._then(null, rej) // @[/development]
+			if (item.done) {
+				res()
+			} else {
+				var p = Promise.resolve(item.value)._then(handler)
+				p._trace.parent = promise._getStack()
+				p._then(null, rej)
+			}
 		}
 		next()
 	})

@@ -103,7 +103,7 @@ _Stack.prototype.getTrace = function () {
 		stacks.push(point)
 		point = point.parent
 	} while (point && stacks.length < TRACE_SIZE)
-	return stacks.map(formatStack).filter(stackNotEmpty)
+	return stacks.map(formatStack).filter(stackNotEmpty).join('\n') + '\n'
 }
 
 function setNonEnumerable(obj, prop, value) {
