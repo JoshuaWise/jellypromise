@@ -116,7 +116,15 @@ If you specify a string `reason`, the `TimeoutError` will have `reason` as its m
 
 ### .log([*prefix*]) -> *promise*
 
-Sugar for `.then(function (value) {console.log(value)})`. If `prefix` is provided, it will be prepended to the logged `value`, separated by a space character.
+Sugar for:
+```js
+.then(function (value) {
+  console.log(value)
+  return value
+})
+```
+
+If `prefix` is provided, it will be prepended to the logged `value`, separated by a space character.
 
 ### .filter(*callback*, [*thisArg*]) -> *promise*
 
