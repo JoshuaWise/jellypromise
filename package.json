@@ -12,7 +12,7 @@
     "postpublish": "./postpublish",
     "build": "$(npm bin)/gulp",
     "pretest": "$(npm bin)/gulp",
-    "test": "$(npm bin)/mocha --bail --timeout 200 --slow 99999 && node --expose-gc test-memory-leak"
+    "test": "$(npm bin)/mocha --bail --timeout 200 --slow 99999 -R dot && node --expose-gc test-memory-leak"
   },
   "repository": {
     "type": "git",
@@ -23,10 +23,18 @@
     "url": "https://github.com/JoshuaWise/jellypromise/issues"
   },
   "homepage": "https://github.com/JoshuaWise/jellypromise#readme",
+  "keywords":[
+    "promise",
+    "async",
+    "A+",
+    "modern",
+    "long stack traces"
+  ],
   "license": "MIT",
   "devDependencies": {
     "acorn": "^3.0.4",
     "bluebird": "^3.3.4",
+    "chai": "^3.5.0",
     "fs-extra-promise": "^0.3.1",
     "glob": "^7.0.3",
     "gulp": "^3.9.1",

@@ -1,8 +1,7 @@
 'use strict'
 var assert = require('assert')
-var Promise = require('../')
 
-module.exports = function (callback) {
+module.exports = function (Promise, callback) {
 	var baseCount = 10000
 	var i = 0
 	var sampleA
