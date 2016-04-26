@@ -145,8 +145,7 @@ Promise.partition = function (iterable, handler) {
 	})
 }
 Promise.iterate = function (iterable, fn) {
-	var promise = new Promise(INTERNAL)
-	return promise._resolveFromHandler(function $UUID(res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
 		// @[development]
 		if (typeof fn !== 'function' && fn != null) {
 			warn('Handlers must be functions (' + typeof fn + 's will be ignored).')

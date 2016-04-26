@@ -64,8 +64,7 @@ Promise.prototype.reduce = function (fn, seed) {
 		} else if (arr.length === 0) {
 			throw new TypeError('Cannot reduce an empty iterable with no initial value.')
 		}
-		var promise = new Promise(INTERNAL)
-		return promise._resolveFromHandler(function (res, rej) {
+		return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 			var result
 			var array = arr
 			var firstItem = true

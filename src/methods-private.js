@@ -167,10 +167,10 @@ function onUnhandledRejection(self, reason) {
 		if (!(self._state & $SUPRESS_UNHANDLED_REJECTIONS)) {
 			console.error(
 				clc.red( // @[/node]
-					'Unhandled rejection '
-					+ String(reason) + '\n' + self._trace.getTrace() // @[/development]
-					+ String(reason instanceof Error ? reason.stack : reason) // @[/production node]
-					+ (typeof reason === 'symbol' ? String(reason) : reason) // @[/production browser]
+					'Unhandled rejection'
+					+ ' ' + String(reason) + '\n' + self._trace.getTrace() // @[/development]
+					+ ' ' + String(reason instanceof Error && reason.stack || reason) // @[/production node]
+					, reason // @[/production browser]
 				) // @[/node]
 			)
 		}
