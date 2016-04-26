@@ -1,6 +1,6 @@
 'use strict'
 require('../tools/describe')('.catch', function (Promise, expect) {
-	it('should catch exceptions', function () {
+	it('should catch rejected promises', function () {
 		return expect(new Promise(function (res, rej) {
 			rej(44)
 		}).catch(function (reason) {
