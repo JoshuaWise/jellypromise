@@ -2,7 +2,7 @@
 # jellypromise
 
 This is an implementation of Promises that achieves the following design goals:
-- Tiny size (3.41 kB minified and gzipped)
+- Tiny size (3.39 kB minified and gzipped)
 - Fast performance (almost as fast as [bluebird](https://github.com/petkaantonov/bluebird/))
 - A superset of the [ES6 Promise](http://www.ecma-international.org/ecma-262/6.0/#sec-promise-objects)
 - Has a very useful, carefully-selected set of utilities, without bloat
