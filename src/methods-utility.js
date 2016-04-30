@@ -102,12 +102,16 @@ Promise.props = function (obj) {
 			return res(result)
 		}
 		rej = LST.upgradeRejector(rej) // @[/development]
-		keys.forEach(function (key) {
-			Promise.resolve(obj[key])._then(function (value) {
+		var resolveItem = function (key) {
+			return function (value) {
 				result[key] = value
 				if (--pendings === 0) {res(result)}
-			}, rej)
-		})
+			}
+		}
+		for (var i=0; i<pendings; i++) {
+			var key = keys[i]
+			Promise.resolve(obj[key])._then(resolveItem(key), rej)
+		}
 	})
 }
 Promise.partition = function (iterable, handler) {

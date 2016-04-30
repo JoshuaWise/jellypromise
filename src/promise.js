@@ -80,11 +80,14 @@ Promise.all = function (iterable) {
 			return res(result)
 		}
 		rej = LST.upgradeRejector(rej) // @[/development]
-		input.forEach(function (item, i) {
-			Promise.resolve(item)._then(function (value) {
+		var resolveItem = function (i) {
+			return function (value) {
 				result[i] = value
 				if (--pendings === 0) {res(result)}
-			}, rej)
-		})
+			}
+		}
+		for (var i=0; i<pendings; i++) {
+			Promise.resolve(input[i])._then(resolveItem(i), rej)
+		}
 	})
 }

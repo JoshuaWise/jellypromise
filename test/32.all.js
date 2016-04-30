@@ -37,6 +37,28 @@ require('../tools/describe')('Promise.all', function (Promise, expect) {
 				&& arr[3] === obj
 		})
 	})
+	it('should be resolved with a sparse array of values and promises', function () {
+		var obj = {}
+		var input = ['c', obj, Promise.resolve('x'), 555]
+		delete input[0]
+		delete input[3]
+		input[800] = 'very high index'
+		return expect(Promise.all(input)).to.eventually.be.an.instanceof(Array).and.satisfy(function (arr) {
+			if (arr.length !== 801
+				|| !(0 in arr) || arr[0] !== undefined
+				|| !(1 in arr) || arr[1] !== obj
+				|| !(2 in arr) || arr[2] !== 'x'
+				|| !(3 in arr) || arr[3] !== undefined) {
+				return false
+			}
+			for (var i=4; i<800; i++) {
+				if (!(i in arr) || arr[i] !== undefined) {
+					return false
+				}
+			}
+			return 800 in arr && arr[800] === 'very high index'
+		})
+	})
 	it('should be resolved with an iterable of values and promises', function () {
 			var obj = {}
 			return expect(Promise.all(makeIterable([
@@ -60,7 +82,6 @@ require('../tools/describe')('Promise.all', function (Promise, expect) {
 		})
 	})
 	it('should test being given foreign thenables')
-	it('should test being given sparse arrays')
 })
 
 function makeIterable(arr) {
