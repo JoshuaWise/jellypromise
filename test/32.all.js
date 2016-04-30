@@ -3,10 +3,10 @@ require('../tools/describe')('Promise.all', function (Promise, expect) {
 	it('should be rejected on invalid input', function () {
 		return expect(Promise.all(123)).to.be.rejectedWith(TypeError)
 	})
-	it('should be resolved given an empty array', function () {
+	it('should be fulfilled given an empty array', function () {
 		return expect(Promise.all([])).to.eventually.be.an.instanceof(Array).and.be.empty
 	})
-	it('should be resolved with an array of values', function () {
+	it('should be fulfilled with an array of values', function () {
 		var obj = {}
 		return expect(Promise.all(['a', 123, 'z', obj])).to.eventually.be.an.instanceof(Array).and.satisfy(function (arr) {
 			return arr[0] === 'a'
@@ -15,7 +15,7 @@ require('../tools/describe')('Promise.all', function (Promise, expect) {
 				&& arr[3] === obj
 		})
 	})
-	it('should be resolved with an array of promises', function () {
+	it('should be fulfilled with an array of promises', function () {
 		var obj = {}
 		return expect(Promise.all([
 			Promise.resolve('b'), Promise.resolve(321), Promise.resolve('y'), Promise.resolve(obj)
@@ -26,7 +26,7 @@ require('../tools/describe')('Promise.all', function (Promise, expect) {
 				&& arr[3] === obj
 		})
 	})
-	it('should be resolved with an array of values and promises', function () {
+	it('should be fulfilled with an array of values and promises', function () {
 		var obj = {}
 		return expect(Promise.all([
 			'c', 555, Promise.resolve('x'), obj
@@ -37,7 +37,7 @@ require('../tools/describe')('Promise.all', function (Promise, expect) {
 				&& arr[3] === obj
 		})
 	})
-	it('should be resolved with a sparse array of values and promises', function () {
+	it('should be fulfilled with a sparse array of values and promises', function () {
 		var obj = {}
 		var input = ['c', obj, Promise.resolve('x'), 555]
 		delete input[0]
@@ -59,7 +59,7 @@ require('../tools/describe')('Promise.all', function (Promise, expect) {
 			return 800 in arr && arr[800] === 'very high index'
 		})
 	})
-	it('should be resolved with an iterable of values and promises', function () {
+	it('should be fulfilled with an iterable of values and promises', function () {
 			var obj = {}
 			return expect(Promise.all(makeIterable([
 				'd', 999, Promise.resolve('w'), obj
