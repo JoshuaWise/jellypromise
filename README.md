@@ -47,8 +47,6 @@ var Promise = require('jellypromise/production');
 
 Setting `process.env.NODE_ENV` only works in Nodejs. Even if you are using [browserify](https://github.com/substack/node-browserify), to use production mode in the browser, you must require `jellypromise/production`, as shown above.
 
-While *not* using production mode, you can toggle off the logging of warnings unhandled rejections with `Promise.suppressWarnings = true` and `Promise.suppressUnhandledRejections = true`, respectively.
-
 # API
 
 ## new Promise(*handler*)
