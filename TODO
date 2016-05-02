@@ -15,6 +15,6 @@ add hash links to README
 
 maybe throw unhandled rejections in production mode?
 
-make sure all prototype methods that generate a new, linked promise, use _handleNew, _handle, or then, so that `this` promise sets SUPRESS_UNHANDLED_REJECTIONS to 1
+make sure all prototype methods that generate a new, linked promise, use _handleNew, _handle, or then, so that `this` promise sets SUPPRESS_UNHANDLED_REJECTIONS to 1
 
 generator (seperate module?)

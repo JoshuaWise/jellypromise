@@ -2,6 +2,8 @@ var PromiseDev = require('../.')
 var Promise = require('../production')
 var expect = require('chai').expect
 require('chai').use(require('chai-as-promised'))
+PromiseDev.suppressWarnings = true
+PromiseDev.suppressUnhandledRejections = true
 
 module.exports = function (description, fn) {
 	describe(description, function () {

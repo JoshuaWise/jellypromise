@@ -43,7 +43,7 @@ Promise.prototype.catch = function (onRejected) {
 	return this._then(null, onRejected)
 }
 Promise.prototype.catchLater = function () {
-	this._state |= $SUPRESS_UNHANDLED_REJECTIONS
+	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	return this
 }
 module.exports = Promise

@@ -1,5 +1,15 @@
 'use strict'
 require('../tools/describe')('.catch', function (Promise, expect) {
+	if (Promise.suppressUnhandledRejections) {
+		var originalSuppressionValue = Promise.suppressUnhandledRejections
+		before(function () {
+			Promise.suppressUnhandledRejections = false
+		})
+		after(function () {
+			Promise.suppressUnhandledRejections = originalSuppressionValue
+		})
+	}
+	
 	it('should log an error for unhandled rejections', function (done) {
 		new Promise(function (res, rej) {rej(new Error('foo bar'))})
 		var timer = setTimeout(function () {

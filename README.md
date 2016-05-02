@@ -33,7 +33,7 @@ var promise = new Promise(function (resolve, reject) {
 
 When a promise is rejected but has no rejection handlers, the rejection will be logged to the console unless a rejection handler is added before the next event loop cycle. This helps the programmer quickly identify and fix errors.
 
-However, in some situations, you may wish to refrain from adding a rejection handler until a later time. In these cases, you can use the `.catchLater()` utility method to supress this behavior.
+However, in some situations, you may wish to refrain from adding a rejection handler until a later time. In these cases, you can use the `.catchLater()` utility method to suppress this behavior.
 
 ## Production Mode
 
@@ -47,6 +47,7 @@ var Promise = require('jellypromise/production');
 
 Setting `process.env.NODE_ENV` only works in Nodejs. Even if you are using [browserify](https://github.com/substack/node-browserify), to use production mode in the browser, you must require `jellypromise/production`, as shown above.
 
+While *not* using production mode, you can toggle off the logging of warnings unhandled rejections with `Promise.suppressWarnings = true` and `Promise.suppressUnhandledRejections = true`, respectively.
 
 # API
 

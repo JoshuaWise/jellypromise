@@ -12,7 +12,7 @@
     "postpublish": "./postpublish",
     "build": "$(npm bin)/gulp",
     "pretest": "$(npm bin)/gulp",
-    "test": "IS_TEST_ENVIRONMENT=yup $(npm bin)/mocha --bail --timeout 200 --slow 99999 -R dot && node --expose-gc test-memory-leak"
+    "test": "$(npm bin)/mocha --bail --timeout 1000 --slow 99999 -R dot && node --expose-gc test-memory-leak"
   },
   "repository": {
     "type": "git",

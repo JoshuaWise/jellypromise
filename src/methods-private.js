@@ -78,7 +78,7 @@ Promise.prototype._reject = function (newValue) {
 	this._addStackTraceFromError(newValue)
 	// @[/]
 	
-	if (!(this._state & $SUPRESS_UNHANDLED_REJECTIONS)) {
+	if (!(this._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
 		asap(onUnhandledRejection(this, newValue))
 	}
 	finale(this)
@@ -105,8 +105,8 @@ Promise.prototype._handle = function (deferred) {
 		self = self._value
 	}
 	var state = self._state
-	if (!(state & $SUPRESS_UNHANDLED_REJECTIONS)) {
-		self._state |= $SUPRESS_UNHANDLED_REJECTIONS
+	if (!(state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
+		self._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	}
 	if (!(state & $IS_FINAL)) {
 		if (!(state & $HAS_SOME_HANDLER)) {
@@ -164,7 +164,13 @@ function finale(self) {
 
 function onUnhandledRejection(self, reason) {
 	return function () {
-		if (!(self._state & $SUPRESS_UNHANDLED_REJECTIONS)) {
+		if (!(self._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
+			// @[development]
+			if (Promise.suppressUnhandledRejections) {
+				var originalError = console.error
+				console.error = function () {console.error = originalError}
+			}
+			// @[/]
 			console.error(
 				clc.red( // @[/node]
 					'Unhandled rejection'
