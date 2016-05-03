@@ -45,7 +45,7 @@ You can also exclude these debugging features by using:
 var Promise = require('jellypromise/production');
 ```
 
-Setting `process.env.NODE_ENV` only works in Nodejs. Even if you are using [browserify](https://github.com/substack/node-browserify), to use production mode in the browser, you must require `jellypromise/production`, as shown above.
+Setting `process.env.NODE_ENV` only works in Node.js. Even if you are using [browserify](https://github.com/substack/node-browserify), to use production mode in the browser, you must require `jellypromise/production`, as shown above.
 
 # API
 
@@ -127,14 +127,14 @@ If `prefix` is provided, it will be prepended to the logged `value`, separated b
 
 ### .inspect() -> *object*
 
-Returns an object that describes the current state of the promise. The returned object is not live, and will not update over time—it is just a snapshot.
+Returns an object that describes the current state of the promise. The returned object is not live, and will not update over time—it's just a snapshot.
 
 If the promise is:
  - pending, the descriptor will be `{ state: 'pending' }`
  - fulfilled, the descriptor will be `{ state: 'fulfilled', value: <fulfillmentValue> }`
  - rejected, the descriptor will be `{ state: 'rejected', reason: <rejectionReason> }`
 
-In Nodejs, you will always see this descriptor object when passing a `jellypromise` Promise to `console.log()`.
+In Node.js, you'll always see this descriptor object when passing a `jellypromise` to `console.log()`.
 
 ### .filter(*callback*, [*thisArg*]) -> *promise*
 
