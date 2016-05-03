@@ -78,11 +78,11 @@ If any `predicates` are specified, the `onRejected` handler will only catch exce
 
 A `predicate` can be:
 - an `Error` class
- - e.g., `.catch(TypeError, SyntaxError, func)`
+ - example: `.catch(TypeError, SyntaxError, func)`
 - an object defining required property values
- - e.g., `.catch({code: 'ENOENT'}, func)`
+ - example: `.catch({code: 'ENOENT'}, func)`
 - a filter function
- - e.g., `.catch(function (err) {return err.statusCode === 404}, func)`
+ - example: `.catch(function (err) {return err.statusCode === 404}, func)`
 
 ### .catchLater() -> *this*
 
