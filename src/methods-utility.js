@@ -77,6 +77,9 @@ Promise.prototype.log = function (prefix) {
 		return value
 	})
 }
+Promise.prototype.inspect = function () {
+	return new PromiseDescriptor(this)
+}
 Promise.any = function (iterable) {
 	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
 		var input = asArray(iterable)
@@ -124,12 +127,7 @@ Promise.settle = function (iterable) {
 		}
 		var resolveItem = function (promise, i) {
 			return function (value) {
-				while (promise._state & $IS_FOLLOWING) {
-					promise = promise._value
-				}
-				result[i] = promise._state & $IS_FULFILLED
-					? {state: 'fulfilled', value: promise._value}
-					: {state: 'rejected', reason: promise._value}
+				result[i] = new PromiseDescriptor(promise)
 				if (--pendings === 0) {res(result)}
 			}
 		}
@@ -147,9 +145,6 @@ Promise.iterate = function (iterable, fn) {
 			warn('Handlers must be functions (' + typeof fn + 's will be ignored).')
 		}
 		// @[/]
-		if (typeof fn !== 'function') {
-			fn = null
-		}
 		if (iterator && iterable != null && typeof iterable[iterator] === 'function') {
 			var it = iterable[iterator]()
 		} else if (Array.isArray(iterable)) {
@@ -158,15 +153,15 @@ Promise.iterate = function (iterable, fn) {
 			throw new TypeError('Expected first argument to be an iterable object.')
 		}
 		rej = LST.upgradeRejector(rej) // @[/development]
-		var handler = function $UUID(value) {
-			return Promise.resolve(fn(value))._then(next)
-		}
 		var next = function $UUID() {
 			var item = it.next()
 			item.done
 				? res()
 				: Promise.resolve(item.value)._then(handler)._then(null, rej)
 		}
+		var handler = typeof fn === 'function'
+			? function $UUID(value) {return Promise.resolve(fn(value))._then(next)}
+			: next
 		next()
 	})
 }
@@ -184,4 +179,19 @@ function makeIterator(array) {
 			? {done: false, value: array[i++]}
 			: {done: true}
 	}}
+}
+
+var PromiseDescriptor = function Promise(promise) {
+	while (promise._state & $IS_FOLLOWING) {
+		promise = promise._value
+	}
+	if (promise._state & $IS_FULFILLED) {
+		this.state = 'fulfilled'
+		this.value = promise._value
+	} else if (promise._state & $IS_REJECTED) {
+		this.state = 'rejected'
+		this.reason = promise._value
+	} else {
+		this.state = 'pending'
+	}
 }

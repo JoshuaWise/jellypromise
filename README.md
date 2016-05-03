@@ -2,7 +2,7 @@
 # jellypromise
 
 This is an implementation of Promises that achieves the following design goals:
-- Tiny size (3.31 kB minified and gzipped)
+- Tiny size (3.35 kB minified and gzipped)
 - Fast performance (almost as fast as [bluebird](https://github.com/petkaantonov/bluebird/))
 - A superset of the [ES6 Promise](http://www.ecma-international.org/ecma-262/6.0/#sec-promise-objects)
 - Has a very useful, carefully-selected set of utilities, without bloat
@@ -125,6 +125,17 @@ Sugar for:
 
 If `prefix` is provided, it will be prepended to the logged `value`, separated by a space character.
 
+### .inspect() -> *object*
+
+Returns an object that describes the current state of the promise. The returned object is not live, and will not update over time—it is just a snapshot.
+
+If the promise is:
+ - pending, the descriptor will be `{ state: 'pending' }`
+ - fulfilled, the descriptor will be `{ state: 'fulfilled', value: <fulfillmentValue> }`
+ - rejected, the descriptor will be `{ state: 'rejected', reason: <rejectionReason> }`
+
+In Nodejs, you will always see this descriptor object when passing a `jellypromise` Promise to `console.log()`.
+
 ### .filter(*callback*, [*thisArg*]) -> *promise*
 
 Used on a promise whose value is (or will be) an iterable object of promises or values (or a mix thereof). This method returns a new promise that will be fulfilled with an array of the values that pass the filter function `callback`. Promises returned by `callback` are awaited for (i.e., the promise returned by this method won't fulfill until all mapped promises have fulfilled as well).
@@ -216,7 +227,7 @@ Given an `iterable` of promises, returns a promise that fulfills with array of p
 
 If the corresponding input promise is:
  - fulfilled, the descriptor will be `{ state: 'fulfilled', value: <fulfillmentValue> }`
- - rejected, the descriptor will be `{ state: 'rejected', value: <rejectionReason> }`
+ - rejected, the descriptor will be `{ state: 'rejected', reason: <rejectionReason> }`
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
@@ -228,7 +239,7 @@ This function returns a promise that will be fulfilled when `iterable` is done p
 
 If any promises yielded by `iterable` are rejected, or if `callback` throws, or if `callback` returns a rejected promise, then the returned promise will be rejected and iteration is stopped.
 
-This function allows you to potentially iterate indefinitely (if `iterable` never stops producing values). Each iteration takes place asynchronously, so the program will never be blocked by infinite iteration.
+This function allows you to potentially iterate indefinitely (if `iterable` never stops producing values). As long as each iteration involves an asynchronous operation, the program will never be blocked by infinite iteration.
 
 ### *static* Promise.isPromise(*value*) -> *boolean*
 
