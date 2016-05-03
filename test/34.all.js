@@ -1,4 +1,5 @@
 'use strict'
+var asap = require('asap/raw')
 require('../tools/describe')('Promise.all', function (Promise, expect) {
 	it('should be rejected on invalid input', function () {
 		return expect(Promise.all(123)).to.be.rejectedWith(TypeError)
@@ -79,6 +80,62 @@ require('../tools/describe')('Promise.all', function (Promise, expect) {
 			if (reason !== err) {
 				throw new Error('Rejection reason is not the correct error object.')
 			}
+		})
+	})
+	it('should not be affected by changing the input array after invocation (1)', function () {
+		var input = ['a', 'b', 'c']
+		var ret = Promise.all(input)
+		input[1] = 'z'
+		return expect(ret).to.eventually.be.an.instanceof(Array).and.satisfy(function (arr) {
+			return arr[0] === 'a' && arr[1] === 'b' && arr[2] === 'c'
+		})
+	})
+	it('should not be affected by changing the input array after invocation (2)', function () {
+		var input = [Promise.resolve('a'), Promise.resolve('b'), 'c']
+		var ret = Promise.all(input)
+		input[0] = Promise.resolve('z')
+		return expect(ret).to.eventually.be.an.instanceof(Array).and.satisfy(function (arr) {
+			return arr[0] === 'a' && arr[1] === 'b' && arr[2] === 'c'
+		})
+	})
+	it('should not be affected by changing the input array after invocation (3)', function () {
+		var input = [Promise.resolve('a'), Promise.resolve('b'), 'c']
+		var ret = Promise.all(input)
+		input[0] = Promise.reject(new Error('not this one')).catchLater()
+		return expect(ret).to.eventually.be.an.instanceof(Array).and.satisfy(function (arr) {
+			return arr[0] === 'a' && arr[1] === 'b' && arr[2] === 'c'
+		})
+	})
+	it('should not be affected by changing the input array after invocation (4)', function () {
+		var err = new Error('foo')
+		var input = ['a', Promise.reject(err), 'c']
+		var ret = Promise.all(input)
+		input[1] = 'z'
+		return ret.then(function () {
+			throw new Error('The promise should have bee rejected.')
+		}, function (reason) {
+			if (reason !== err) {
+				throw new Error('An incorrect rejection reason was used.')
+			}
+		})
+	})
+	it('should not be affected by changing the input array after invocation (5)', function () {
+		var delayed = new Promise(function (res, rej) {
+			asap(function () {res(555)})
+		})
+		var input = [delayed, 'b', 'c']
+		var ret = Promise.all(input)
+		input[0] = 'z'
+		return expect(ret).to.eventually.be.an.instanceof(Array).and.satisfy(function (arr) {
+			return arr[0] === 555 && arr[1] === 'b' && arr[2] === 'c'
+		})
+	})
+	it('should not be affected by changing the input array after invocation (6)', function () {
+		var input = ['a', 'b', 'c']
+		var ret = Promise.all(makeIterable(input))
+		input[1] = 'z'
+		return expect(ret).to.eventually.be.an.instanceof(Array).and.satisfy(function (arr) {
+			return arr[0] === 'a' && arr[1] === 'b' && arr[2] === 'c'
 		})
 	})
 	it('should test being given foreign thenables')

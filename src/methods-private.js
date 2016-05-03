@@ -62,6 +62,7 @@ Promise.prototype._resolve = function (newValue) {
 }
 Promise.prototype._reject = function (newValue) {
 	if (this._state & $IS_RESOLVED) {
+		LST.useRejectionStack() // @[/development]
 		return
 	}
 	this._state |= $IS_REJECTED

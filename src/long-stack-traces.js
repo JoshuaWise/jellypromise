@@ -32,12 +32,21 @@ exports.releaseContext = function () {
 
 // Upgrades a function returned by Promise#_rejector(), so that the rejected
 // promise receives the stack trace of the promise that handled its rejection.
+// Rejector functions are not allowed to throw, so if something goes wrong, we
+// reject the promise with a FatalError.
 exports.upgradeRejector = function (rej) {
 	return function (err) {
 		if (!context.previousStack) {
-			throw new Error('This function can only be used within an asynchronous callback.')
+			err = new SyntaxError('This rejector can only be used within an asynchronous callback.')
+			err.name = 'FatalError'
+		} else {
+			try {
+				exports.setRejectionStack(context.previousStack)
+			} catch (e) {
+				err = e
+				err.name = 'FatalError'
+			}
 		}
-		exports.setRejectionStack(context.previousStack)
 		return rej(err)
 	}
 }
@@ -48,7 +57,7 @@ exports.setRejectionStack = function (stack) {
 		throw new TypeError('Expected argument to be a Stack object.')
 	}
 	if (rejectionStack) {
-		throw new Error('Invoked .setRejectionStack() twice before a promise was rejected.')
+		throw new SyntaxError('Invoked .setRejectionStack() twice before a promise was rejected.')
 	}
 	rejectionStack = stack
 }
