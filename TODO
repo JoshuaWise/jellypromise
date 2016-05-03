@@ -1,6 +1,6 @@
 add real tests
 reimplement Promise.partition as Promise.settle
-reimplement Promise.join to fulfill with an array if no handler is given
+remove Promise.join
 
 
 optimizations for index.js to import on the server only:
