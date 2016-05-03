@@ -76,10 +76,13 @@ Sugar for `.then(null, onRejected)`, to mirror `catch` in synchronous code.
 
 If any `predicates` are specified, the `onRejected` handler will only catch exceptions that match one of the `predicates`.
 
-A `predicate` can be...
-- an `Error` class: `.catch(TypeError, SyntaxError, func)`
-- an object defining required property values: `.catch({code: 'ENOENT'}, func)`
-- a filter function: `.catch(function (err) {return err.statusCode === 404}, func)`
+A `predicate` can be:
+- an `Error` class
+ - e.g., `.catch(TypeError, SyntaxError, func)`
+- an object defining required property values
+ - e.g., `.catch({code: 'ENOENT'}, func)`
+- a filter function
+ - e.g., `.catch(function (err) {return err.statusCode === 404}, func)`
 
 ### .catchLater() -> *this*
 
