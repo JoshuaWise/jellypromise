@@ -9,7 +9,9 @@ var LST = require('./long-stack-traces') // @[/development]
 // returned will have no effect on the items that are processed, or the result
 // array. The result array is always a safe, clean, base array.
 
-// No items are processed synchronously.
+// No callback functions are invoked synchronously.
+// This is important for predictability, but also to prevent modifying the input
+// array in a callback function, before all input values have been plucked.
 
 // Each item is processed as soon as it becomes available (in order of promise
 // resolution). The index passed to the callback functions are the item's
