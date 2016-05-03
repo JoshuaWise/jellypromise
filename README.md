@@ -2,7 +2,7 @@
 # jellypromise
 
 This is an implementation of Promises that achieves the following design goals:
-- Tiny size (3.39 kB minified and gzipped)
+- Tiny size (3.31 kB minified and gzipped)
 - Fast performance (almost as fast as [bluebird](https://github.com/petkaantonov/bluebird/))
 - A superset of the [ES6 Promise](http://www.ecma-international.org/ecma-262/6.0/#sec-promise-objects)
 - Has a very useful, carefully-selected set of utilities, without bloat
@@ -210,18 +210,13 @@ Promise.props({users: getUsers(), news: getNews()})
   })
 ```
 
-### *static* Promise.partition(*iterable*, [*handler*]) -> *promise*
+### *static* Promise.settle(*iterable*) -> *promise*
 
-Waits for each promise in the `iterable` argument to settle, and then invokes the `handler` function with the following signature:
+Given an `iterable` of promises, returns a promise that fulfills with array of promise descriptor objects.
 
-`function handler(fulfillmentValues, rejectionReasons)`
-
- 1. `fulfillmentValues` is an array containing the values of each fulfilled promise from the `iterable` argument, sorted by first-resolved-to-last-resolved.
- 2. `rejectionReasons` is an array containing the rejection reasons of each rejected promise from the `iterable` argument, sorted by first-resolved-to-last-resolved.
-
-This function returns a promise that will be resolved with the return value of `handler` (it will be rejected if `handler` throws).
-
-If a `handler` argument is not provided (or is not a function), the returned promise will be fulfilled with `fulfillmentValues`. In such a case, `rejectionReasons` will be discarded.
+If the corresponding input promise is:
+ - fulfilled, the descriptor will be `{ state: 'fulfilled', value: <fulfillmentValue> }`
+ - rejected, the descriptor will be `{ state: 'rejected', value: <rejectionReason> }`
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
@@ -234,16 +229,6 @@ This function returns a promise that will be fulfilled when `iterable` is done p
 If any promises yielded by `iterable` are rejected, or if `callback` throws, or if `callback` returns a rejected promise, then the returned promise will be rejected and iteration is stopped.
 
 This function allows you to potentially iterate indefinitely (if `iterable` never stops producing values). Each iteration takes place asynchronously, so the program will never be blocked by infinite iteration.
-
-### *static* Promise.join(*valueA*, *valueB*, [*handler*]) -> *promise*
-
-A simpler, more performant alternative to `Promise.all`. This function waits for both `valueA` and `valueB` to be fulfilled (if they are not promises, they are fulfilled right away), and then invokes `handler` with the fulfillment values of `valueA` and `valueB` as its two arguments, respectively.
-
-The returned promise will be resolved with the return value of the `handler`.
-
-If either `valueA` or `valueB` rejects, or if `handler` throws, or if `handler` returns a rejected promise, then the returned promise will be rejected.
-
-If a `handler` function is not provided, the returned promise will be fulfilled with the fulfillment of `valueA` (after both `valueA` and `valueB` have been fulfilled)
 
 ### *static* Promise.isPromise(*value*) -> *boolean*
 

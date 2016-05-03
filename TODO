@@ -1,7 +1,4 @@
 add real tests
-reimplement Promise.partition as Promise.settle
-remove Promise.join
-
 
 optimizations for index.js to import on the server only:
 - make use of private handle/resolve/reject functions, instead of using new Promise() with closures, to speed up methods and static functions.

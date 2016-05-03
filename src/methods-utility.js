@@ -114,37 +114,29 @@ Promise.props = function (obj) {
 		}
 	})
 }
-Promise.partition = function (iterable, handler) {
-	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
-		// @[development]
-		if (typeof handler !== 'function' && handler != null) {
-			warn('Handlers must be functions (' + typeof handler + 's will be ignored).')
-		}
-		// @[/]
-		if (typeof handler !== 'function') {
-			handler = null
-		}
+Promise.settle = function (iterable) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
-		var fulfilled = []
-		var rejected = []
+		var result = new Array(pendings)
 		if (pendings === 0) {
-			return handler ? Promise.resolve(handler(fulfilled, rejected)).then(res, rej) : res(fulfilled)
+			return res(result)
 		}
-		var pushFulfilled = function $UUID(value) {
-			fulfilled.push(value)
-			if (--pendings === 0) {
-				handler ? Promise.resolve(handler(fulfilled, rejected)).then(res, rej) : res(fulfilled)
-			}
-		}
-		var pushRejected = function $UUID(reason) {
-			rejected.push(reason)
-			if (--pendings === 0) {
-				handler ? Promise.resolve(handler(fulfilled, rejected)).then(res, rej) : res(fulfilled)
+		var resolveItem = function (promise, i) {
+			return function (value) {
+				while (promise._state & $IS_FOLLOWING) {
+					promise = promise._value
+				}
+				result[i] = promise._state & $IS_FULFILLED
+					? {state: 'fulfilled', value: promise._value}
+					: {state: 'rejected', reason: promise._value}
+				if (--pendings === 0) {res(result)}
 			}
 		}
 		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i])._then(pushFulfilled, pushRejected)._then(null, rej)
+			var promise = Promise.resolve(input[i])
+			var handler = resolveItem(promise, i)
+			promise._then(handler, handler)
 		}
 	})
 }
@@ -176,38 +168,6 @@ Promise.iterate = function (iterable, fn) {
 				: Promise.resolve(item.value)._then(handler)._then(null, rej)
 		}
 		next()
-	})
-}
-Promise.join = function (a, b, handler) {
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
-		// @[development]
-		if (typeof handler !== 'function' && handler != null) {
-			warn('Handlers must be functions (' + typeof handler + 's will be ignored).')
-		}
-		// @[/]
-		if (typeof handler !== 'function') {
-			handler = null
-		}
-		var rejSelf = LST.upgradeRejector(rej) // @[/development]
-		var done = function $UUID(value) {
-			if (halfDone) {
-				if (p1._state & $IS_FULFILLED) {
-					handler ? Promise.resolve(handler(p1._value, value)).then(res, rej) : res(p1._value)
-				} else {
-					handler ? Promise.resolve(handler(value, p2._value)).then(res, rej) : res(value)
-				}
-			} else {
-				halfDone = true
-			}
-			return value
-		}
-		var halfDone = false
-		var p1 = Promise.resolve(a)._then(done) // @[/production]
-		var p2 = Promise.resolve(b)._then(done) // @[/production]
-		var p1 = Promise.resolve(a)._then(done, rejSelf) // @[/development]
-		var p2 = Promise.resolve(b)._then(done, rejSelf) // @[/development]
-		p1._then(null, rej)
-		p2._then(null, rej)
 	})
 }
 Promise.isPromise = function (value) {
