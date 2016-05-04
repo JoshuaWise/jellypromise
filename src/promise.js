@@ -5,7 +5,7 @@ var INTERNAL = require('./util').INTERNAL
 var LST = require('./long-stack-traces') // @[/development]
 
 function Promise(fn) {
-	if (typeof this !== 'object') {
+	if (!(this instanceof Promise) || this._state !== undefined) {
 		throw new TypeError('Promises must be constructed via the "new" keyword.')
 	}
 	if (typeof fn !== 'function') {
