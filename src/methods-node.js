@@ -13,7 +13,7 @@ Promise.promisify = function (fn) {
 	for (var i=likelyArgCount-1; i>=minArgCount; i--) {argGuesses.push(i)}
 	for (var i=likelyArgCount+1; i<=maxArgCount; i++) {argGuesses.push(i)}
 	var body = [
-		'return function (' + generateArgumentList(maxArgCount).join(', ') + ') {',
+		'return function promisified(' + generateArgumentList(maxArgCount).join(', ') + ') {',
 			'var self = this',
 			'var len = arguments.length',
 			'if (len > ' + maxArgCount + ' || len < ' + minArgCount + ') {',
@@ -22,7 +22,7 @@ Promise.promisify = function (fn) {
 			'}',
 			'var promise = new Promise(INTERNAL)',
 			'promise._addStackTrace(1)', // @[/development]
-			'var cb = function (err, val) {err == null ? promise._resolve(val) : promise._reject(val)}',
+			'var cb = function (err, val) {err == null ? promise._resolve(val) : promise._reject(err)}',
 			'switch (len) {',
 				argGuesses.map(generateSwitchCase).join('\n'),
 				'default:',
@@ -76,7 +76,7 @@ Promise.nodeify = function (fn) {
 	if (typeof fn !== 'function') {
 		throw new TypeError('Expected argument to be a function.')
 	}
-	return function () {
+	return function nodeified() {
 		var len = arguments.length
 		if (typeof arguments[len - 1] === 'function') {
 			var callback = args[--len]
