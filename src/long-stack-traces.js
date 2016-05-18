@@ -11,7 +11,7 @@ exports.init = function () {
 	// Optionally trims a certain number of lines from the stack info.
 	Promise.prototype._addStackTrace = _addStackTrace
 	
-	// Pushes an Error's stack info onto the stak trace.
+	// Pushes an Error's stack info onto the stack trace.
 	// This shouldn't be used as a promise's first stack.
 	Promise.prototype._addStackTraceFromError = _addStackTraceFromError
 	
