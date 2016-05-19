@@ -3,8 +3,7 @@ add real tests
 optimizations for index.js to import on the server only:
 - make use of private handle/resolve/reject functions, instead of using new Promise() with closures, to speed up methods and static functions.
 - add optimized case for .catch() with single predicate.
-- split Promise.partition() processing paths based on whether handler was provided.
-- use fake promise class (e.g., PromiseArray) for optimized aggregate methods.
+- use fake promise class (e.g., PromiseArray) for optimized aggregate methods, including Promise.all.
 - make sure to maintain the same long stack traces as with deoptimized versions.
 
 how much space would be saved in the browser if we used Promise.all for aggregate functions?
