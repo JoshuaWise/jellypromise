@@ -20,7 +20,7 @@ Promise.prototype.finally = function (fn) {
 		})
 	}, function $UUID(reason) {
 		return Promise.resolve(fn())._then(function () {
-			LST.setRejectionStack(self._getStack()) // @[/development]
+			LST.setRejectionStack(self._getFollowee()._trace) // @[/development]
 			throw reason
 		})
 	})
@@ -65,7 +65,7 @@ Promise.prototype.timeout = function (ms, reason) {
 			  : reason instanceof Error ? rej(reason) : new TimeoutError(String(reason))
 			)
 		}, ~~ms)
-		var cancel = function () {clearTimeout(timer);}
+		var cancel = function () {clearTimeout(timer)}
 		self._then(cancel, cancel)
 		self._then(res, rej)
 	})
@@ -182,9 +182,7 @@ function makeIterator(array) {
 }
 
 var PromiseDescriptor = function Promise(promise) {
-	while (promise._state & $IS_FOLLOWING) {
-		promise = promise._value
-	}
+	promise = promise._getFollowee()
 	if (promise._state & $IS_FULFILLED) {
 		this.state = 'fulfilled'
 		this.value = promise._value

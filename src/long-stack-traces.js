@@ -14,9 +14,6 @@ exports.init = function () {
 	// Pushes an Error's stack info onto the stack trace.
 	// This shouldn't be used as a promise's first stack.
 	Promise.prototype._addStackTraceFromError = _addStackTraceFromError
-	
-	// Returns the _Stack object of the promise's final followee.
-	Promise.prototype._getStack = _getStack
 }
 
 // Used before an asynchronous callback.
@@ -90,14 +87,6 @@ function _addStackTraceFromError(err) {
 		this._trace = new _Stack(stackPoint, this._trace, 0, err)
 		cleanStackTrace(this._trace)
 	}
-}
-
-function _getStack() {
-	var self = this
-	while (self._state & $IS_FOLLOWING) {
-		self = self._value
-	}
-	return self._trace
 }
 
 function _Stack(stackPoint, parent, trim, err) {

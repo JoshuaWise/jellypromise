@@ -52,7 +52,11 @@ Promise.prototype._resolve = function (newValue) {
 		if (typeof then === 'function') {
 			this._state |= $IS_FOLLOWING
 			this._value = newValue instanceof Promise ? newValue : foreignPromise(newValue, then)
-			finale(this)
+			if (this._state & $HAS_SOME_HANDLER) {
+				finale(this)
+			} else if (this._state & $SUPPRESS_UNHANDLED_REJECTIONS) {
+				this._getFollowee()._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+			}
 			return
 		}
 	}
@@ -101,10 +105,7 @@ Promise.prototype._handleNew = function (onFulfilled, onRejected, promise) {
 	})
 }
 Promise.prototype._handle = function (deferred) {
-	var self = this
-	while (self._state & $IS_FOLLOWING) {
-		self = self._value
-	}
+	var self = this._getFollowee()
 	var state = self._state
 	if (!(state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
 		self._state |= $SUPPRESS_UNHANDLED_REJECTIONS
@@ -122,6 +123,13 @@ Promise.prototype._handle = function (deferred) {
 	} else {
 		handleSettled(self, deferred)
 	}
+}
+Promise.prototype._getFollowee = function () {
+	var self = this
+	while (self._state & $IS_FOLLOWING) {
+		self = self._value
+	}
+	return self
 }
 
 function handleSettled(self, deferred) {
