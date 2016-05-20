@@ -44,7 +44,7 @@ Promise.prototype._resolve = function (newValue) {
 	if (newValue === this) {
 		return this._reject(new TypeError('A promise cannot be resolved with itself.'))
 	}
-	if (newValue != null && (typeof newValue === 'object' || typeof newValue === 'function')) {
+	if (newValue && (typeof newValue === 'object' || typeof newValue === 'function')) {
 		var then = getThen$UUID(newValue)
 		if (then === IS_ERROR) {
 			return this._reject(LAST_ERROR)
