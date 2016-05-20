@@ -1,3 +1,4 @@
+propagate catchLater() to the promise that this promise follows
 add real tests
 
 optimizations for index.js to import on the server only:
