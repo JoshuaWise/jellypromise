@@ -21,12 +21,12 @@ var LST = require('./long-stack-traces') // @[/development]
 // All indexes are processed, even deleted or non-existent values of an array.
 
 Promise.prototype.filter = function (fn, ctx) {
-	return this._22(function __c9d565ea_0267_11e6_8d22_5e5517507c66(iterable) {
+	return this._80(function __c9d565ea_0267_11e6_8d22_5e5517507c66(iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
 		var array = asArrayCopy__c9d565ea_0267_11e6_8d22_5e5517507c66(iterable)
-		return mapArray(array, fn, ctx)._22(function (bools) {
+		return mapArray(array, fn, ctx)._80(function (bools) {
 			var result = []
 			for (var i=0, len=bools.length; i<len; i++) {
 				bools[i] && result.push(array[i])
@@ -36,7 +36,7 @@ Promise.prototype.filter = function (fn, ctx) {
 	})
 }
 Promise.prototype.map = function (fn, ctx) {
-	return this._22(function __c9d565ea_0267_11e6_8d22_5e5517507c66(iterable) {
+	return this._80(function __c9d565ea_0267_11e6_8d22_5e5517507c66(iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
@@ -44,19 +44,19 @@ Promise.prototype.map = function (fn, ctx) {
 	})
 }
 Promise.prototype.forEach = function (fn, ctx) {
-	return this._22(function __c9d565ea_0267_11e6_8d22_5e5517507c66(iterable) {
+	return this._80(function __c9d565ea_0267_11e6_8d22_5e5517507c66(iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
 		var array = asArrayCopy__c9d565ea_0267_11e6_8d22_5e5517507c66(iterable)
-		return mapArray(array, fn, ctx)._22(function () {
+		return mapArray(array, fn, ctx)._80(function () {
 			return array
 		})
 	})
 }
 Promise.prototype.reduce = function (fn, seed) {
 	var useSeed = arguments.length > 1
-	return this._22(function __c9d565ea_0267_11e6_8d22_5e5517507c66(iterable) {
+	return this._80(function __c9d565ea_0267_11e6_8d22_5e5517507c66(iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
@@ -66,7 +66,7 @@ Promise.prototype.reduce = function (fn, seed) {
 		} else if (arr.length === 0) {
 			throw new TypeError('Cannot reduce an empty iterable with no initial value.')
 		}
-		return new Promise(INTERNAL)._69(function (res, rej) {
+		return new Promise(INTERNAL)._27(function (res, rej) {
 			var result
 			var array = arr
 			var firstItem = true
@@ -92,12 +92,12 @@ Promise.prototype.reduce = function (fn, seed) {
 					return setResult(item)
 				}
 				
-				return Promise.resolve(fn(result, item, i++, len))._22(setResult)
+				return Promise.resolve(fn(result, item, i++, len))._80(setResult)
 			}
 			var next = function __c9d565ea_0267_11e6_8d22_5e5517507c66() {
 				i === len
 					? res(result)
-					: Promise.resolve(array[i])._22(handler)._22(null, rej)
+					: Promise.resolve(array[i])._80(handler)._80(null, rej)
 			}
 			next()
 		})
@@ -105,7 +105,7 @@ Promise.prototype.reduce = function (fn, seed) {
 }
 
 function mapArray(input, fn, ctx) {
-	return new Promise(INTERNAL)._69(function __c9d565ea_0267_11e6_8d22_5e5517507c66(res, rej) {
+	return new Promise(INTERNAL)._27(function __c9d565ea_0267_11e6_8d22_5e5517507c66(res, rej) {
 		var pendings = input.length
 		var result = new Array(pendings)
 		if (pendings === 0) {
@@ -114,14 +114,14 @@ function mapArray(input, fn, ctx) {
 		rej = LST.upgradeRejector(rej) // @[/development]
 		var each = function (i) {
 			return function __c9d565ea_0267_11e6_8d22_5e5517507c66(value) {
-				return Promise.resolve(fn.call(ctx, value, i, len))._22(function (value) {
+				return Promise.resolve(fn.call(ctx, value, i, len))._80(function (value) {
 					result[i] = value
 					if (--pendings === 0) {res(result)}
 				})
 			}
 		}
 		for (var i=0, len=pendings; i<len; i++) {
-			Promise.resolve(input[i])._22(each(i))._22(null, rej)
+			Promise.resolve(input[i])._80(each(i))._80(null, rej)
 		}
 	})
 }

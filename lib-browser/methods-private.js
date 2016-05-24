@@ -9,173 +9,173 @@ var PASSTHROUGH_REJECTION = false // @[/development]
 
 // This is the .then() method used by all internal functions.
 // It automatically captures stack traces at the correct depth.
-Promise.prototype._22 = function (onFulfilled, onRejected) {
+Promise.prototype._80 = function (onFulfilled, onRejected) {
 	var promise = new Promise(INTERNAL)
 	promise._70(2) // @[/development]
-	this._93(onFulfilled, onRejected, promise)
+	this._58(onFulfilled, onRejected, promise)
 	return promise
 }
 
 // This is used instead of new Promise(handler), for all internal functions.
 // It automatically captures stack traces at the correct depth.
-Promise.prototype._69 = function (handler) {
+Promise.prototype._27 = function (handler) {
 	this._70(2) // @[/development]
-	var ret = tryCallTwo__c9d565ea_0267_11e6_8d22_5e5517507c66(handler, this._97(), this._37())
+	var ret = tryCallTwo__c9d565ea_0267_11e6_8d22_5e5517507c66(handler, this._69(), this._5())
 	if (ret === IS_ERROR) {
-		this._10(LAST_ERROR)
+		this._64(LAST_ERROR)
 	}
 	return this
 }
 
-Promise.prototype._97 = function () {
+Promise.prototype._69 = function () {
 	var self = this
-	return function (value) {self._20(value)}
+	return function (value) {self._36(value)}
 }
-Promise.prototype._37 = function () {
+Promise.prototype._5 = function () {
 	var self = this
-	return function (reason) {self._10(reason)}
+	return function (reason) {self._64(reason)}
 }
 
-Promise.prototype._20 = function (newValue) {
-	if (this._92 & 7) {
+Promise.prototype._36 = function (newValue) {
+	if (this._95 & 7) {
 		return
 	}
 	if (newValue === this) {
-		return this._10(new TypeError('A promise cannot be resolved with itself.'))
+		return this._64(new TypeError('A promise cannot be resolved with itself.'))
 	}
 	if (newValue && (typeof newValue === 'object' || typeof newValue === 'function')) {
 		var then = getThen__c9d565ea_0267_11e6_8d22_5e5517507c66(newValue)
 		if (then === IS_ERROR) {
-			return this._10(LAST_ERROR)
+			return this._64(LAST_ERROR)
 		}
 		if (typeof then === 'function') {
-			this._92 |= 4
-			this._80 = newValue instanceof Promise ? newValue : foreignPromise(newValue, then)
-			if (this._92 & 24) {
+			this._95 |= 4
+			this._88 = newValue instanceof Promise ? newValue : foreignPromise(newValue, then)
+			if (this._95 & 24) {
 				finale(this)
-			} else if (this._92 & 32) {
-				this._25()._92 |= 32
+			} else if (this._95 & 32) {
+				this._68()._95 |= 32
 			}
 			return
 		}
 	}
-	this._92 |= 1
-	this._80 = newValue
+	this._95 |= 1
+	this._88 = newValue
 	finale(this)
 }
-Promise.prototype._10 = function (newValue) {
-	if (this._92 & 7) {
+Promise.prototype._64 = function (newValue) {
+	if (this._95 & 7) {
 		LST.useRejectionStack() // @[/development]
 		return
 	}
-	this._92 |= 2
-	this._80 = newValue
+	this._95 |= 2
+	this._88 = newValue
 	
-	this._74 = LST.useRejectionStack() || this._74
+	this._67 = LST.useRejectionStack() || this._67
 	if (!PASSTHROUGH_REJECTION && !(newValue instanceof Error)) {
 		var type = newValue === null ? null :
 			typeof newValue === 'object' ? Object.prototype.toString.call(newValue) :
 			typeof newValue
 		warn('A promise was rejected with a non-error: ' + type)
 	}
-	this._65(newValue)
+	this._84(newValue)
 	
-	if (!(this._92 & 32)) {
+	if (!(this._95 & 32)) {
 		asap(onUnhandledRejection(this, newValue))
 	}
 	finale(this)
 }
 
-Promise.prototype._93 = function (onFulfilled, onRejected, promise) {
+Promise.prototype._58 = function (onFulfilled, onRejected, promise) {
 	if (typeof onFulfilled !== 'function' && onFulfilled != null) {
 		warn('Promise handlers must be functions (' + typeof onFulfilled + 's will be ignored).')
 	}
 	if (typeof onRejected !== 'function' && onRejected != null) {
 		warn('Promise handlers must be functions (' + typeof onRejected + 's will be ignored).')
 	}
-	return this._40({
+	return this._60({
 		onFulfilled: typeof onFulfilled === 'function' ? onFulfilled : null,
 		onRejected: typeof onRejected === 'function' ? onRejected : null,
 		promise: promise
 	})
 }
-Promise.prototype._40 = function (deferred) {
-	var self = this._25()
-	var state = self._92
+Promise.prototype._60 = function (deferred) {
+	var self = this._68()
+	var state = self._95
 	if (!(state & 32)) {
-		self._92 |= 32
+		self._95 |= 32
 	}
 	if (!(state & 3)) {
 		if (!(state & 24)) {
-			self._92 |= 8
-			self._36 = deferred
+			self._95 |= 8
+			self._77 = deferred
 		} else if (state & 8) {
-			self._92 = state & ~8 | 16
-			self._36 = [self._36, deferred]
+			self._95 = state & ~8 | 16
+			self._77 = [self._77, deferred]
 		} else {
-			self._36.push(deferred)
+			self._77.push(deferred)
 		}
 	} else {
 		handleSettled(self, deferred)
 	}
 }
-Promise.prototype._25 = function () {
+Promise.prototype._68 = function () {
 	var self = this
-	while (self._92 & 4) {
-		self = self._80
+	while (self._95 & 4) {
+		self = self._88
 	}
 	return self
 }
 
 function handleSettled(self, deferred) {
 	asap(function () {
-		var isFulfilled = self._92 & 1
+		var isFulfilled = self._95 & 1
 		var cb = isFulfilled ? deferred.onFulfilled : deferred.onRejected
 		if (cb === null) {
-			deferred.promise._74 = self._74 // @[/development]
+			deferred.promise._67 = self._67 // @[/development]
 			if (isFulfilled) {
-				deferred.promise._20(self._80)
+				deferred.promise._36(self._88)
 			} else {
 				PASSTHROUGH_REJECTION = true // @[/development]
-				deferred.promise._10(self._80)
+				deferred.promise._64(self._88)
 				PASSTHROUGH_REJECTION = false // @[/development]
 			}
 		} else {
 			LST.setContext(self, deferred) // @[/development]
-			var ret = tryCallOne__c9d565ea_0267_11e6_8d22_5e5517507c66(cb, self._80)
+			var ret = tryCallOne__c9d565ea_0267_11e6_8d22_5e5517507c66(cb, self._88)
 			LST.releaseContext() // @[/development]
 			if (ret === IS_ERROR) {
-				deferred.promise._10(LAST_ERROR)
+				deferred.promise._64(LAST_ERROR)
 			} else {
-				deferred.promise._20(ret)
+				deferred.promise._36(ret)
 			}
 		}
 	})
 }
 
 function finale(self) {
-	if (self._92 & 8) {
-		self._40(self._36)
-		self._36 = null
-	} else if (self._92 & 16) {
-		var deferreds = self._36
+	if (self._95 & 8) {
+		self._60(self._77)
+		self._77 = null
+	} else if (self._95 & 16) {
+		var deferreds = self._77
 		for (var i=0, len=deferreds.length; i<len; i++) {
-			self._40(deferreds[i])
+			self._60(deferreds[i])
 		}
-		self._36 = null
+		self._77 = null
 	}
 }
 
 function onUnhandledRejection(self, reason) {
 	return function () {
-		if (!(self._92 & 32)) {
+		if (!(self._95 & 32)) {
 			if (Promise.suppressUnhandledRejections) {
 				var originalError = console.error
 				console.error = function () {console.error = originalError}
 			}
 			console.error(
 					'Unhandled rejection'
-					+ ' ' + String(reason) + '\n' + self._74.getTrace() // @[/development]
+					+ ' ' + String(reason) + '\n' + self._67.getTrace() // @[/development]
 			)
 		}
 	}

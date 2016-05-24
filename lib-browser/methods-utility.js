@@ -11,16 +11,16 @@ var LST = require('./long-stack-traces') // @[/development]
 Promise.prototype.finally = function (fn) {
 	if (typeof fn !== 'function') {
 		// Will be bypassed, but produces a warning in development mode.
-		return this._22(fn)
+		return this._80(fn)
 	}
 	var self = this // @[/development]
-	return this._22(function __c9d565ea_0267_11e6_8d22_5e5517507c66(value) {
-		return Promise.resolve(fn())._22(function () {
+	return this._80(function __c9d565ea_0267_11e6_8d22_5e5517507c66(value) {
+		return Promise.resolve(fn())._80(function () {
 			return value
 		})
 	}, function __c9d565ea_0267_11e6_8d22_5e5517507c66(reason) {
-		return Promise.resolve(fn())._22(function () {
-			LST.setRejectionStack(self._25()._74) // @[/development]
+		return Promise.resolve(fn())._80(function () {
+			LST.setRejectionStack(self._68()._67) // @[/development]
 			throw reason
 		})
 	})
@@ -28,10 +28,10 @@ Promise.prototype.finally = function (fn) {
 Promise.prototype.tap = function (fn) {
 	if (typeof fn !== 'function') {
 		// Will be bypassed, but produces a warning in development mode.
-		return this._22(fn)
+		return this._80(fn)
 	}
-	return this._22(function __c9d565ea_0267_11e6_8d22_5e5517507c66(value) {
-		return Promise.resolve(fn())._22(function () {
+	return this._80(function __c9d565ea_0267_11e6_8d22_5e5517507c66(value) {
+		return Promise.resolve(fn())._80(function () {
 			return value
 		})
 	})
@@ -47,10 +47,10 @@ Promise.prototype.else = function (value) {
 		args[i] = function () {return value}
 		return this.catch.apply(this, args)
 	}
-	return this._22(null, function () {return value})
+	return this._80(null, function () {return value})
 }
 Promise.prototype.delay = function (ms) {
-	return this._22(function (value) {
+	return this._80(function (value) {
 		return new Promise(function (res, rej) {
 			setTimeout(function () {res(value)}, ~~ms)
 		})
@@ -58,7 +58,7 @@ Promise.prototype.delay = function (ms) {
 }
 Promise.prototype.timeout = function (ms, reason) {
 	var self = this
-	return new Promise(INTERNAL)._69(function (res, rej) {
+	return new Promise(INTERNAL)._27(function (res, rej) {
 		var timer = setTimeout(function () {
 			rej(
 				reason == null ? new TimeoutError('The operation timed out after ' + ~~ms + 'ms.')
@@ -66,13 +66,13 @@ Promise.prototype.timeout = function (ms, reason) {
 			)
 		}, ~~ms)
 		var cancel = function () {clearTimeout(timer)}
-		self._22(cancel, cancel)
-		self._22(res, rej)
+		self._80(cancel, cancel)
+		self._80(res, rej)
 	})
 }
 Promise.prototype.log = function (prefix) {
 	var usePrefix = arguments.length > 0
-	return this._22(function (value) {
+	return this._80(function (value) {
 		usePrefix ? console.log(prefix, value) : console.log(value)
 		return value
 	})
@@ -81,7 +81,7 @@ Promise.prototype.inspect = function () {
 	return new PromiseDescriptor(this)
 }
 Promise.any = function (iterable) {
-	return new Promise(INTERNAL)._69(function __c9d565ea_0267_11e6_8d22_5e5517507c66(res, rej) {
+	return new Promise(INTERNAL)._27(function __c9d565ea_0267_11e6_8d22_5e5517507c66(res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		if (pendings === 0) {
@@ -92,12 +92,12 @@ Promise.any = function (iterable) {
 			if (--pendings === 0) {rej(reason)}
 		}
 		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i])._22(res, fail)
+			Promise.resolve(input[i])._80(res, fail)
 		}
 	})
 }
 Promise.props = function (obj) {
-	return new Promise(INTERNAL)._69(function __c9d565ea_0267_11e6_8d22_5e5517507c66(res, rej) {
+	return new Promise(INTERNAL)._27(function __c9d565ea_0267_11e6_8d22_5e5517507c66(res, rej) {
 		var keys = Object.keys(obj)
 		var pendings = keys.length
 		var result = {}
@@ -113,12 +113,12 @@ Promise.props = function (obj) {
 		}
 		for (var i=0; i<pendings; i++) {
 			var key = keys[i]
-			Promise.resolve(obj[key])._22(resolveItem(key), rej)
+			Promise.resolve(obj[key])._80(resolveItem(key), rej)
 		}
 	})
 }
 Promise.settle = function (iterable) {
-	return new Promise(INTERNAL)._69(function (res, rej) {
+	return new Promise(INTERNAL)._27(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		var result = new Array(pendings)
@@ -134,12 +134,12 @@ Promise.settle = function (iterable) {
 		for (var i=0; i<pendings; i++) {
 			var promise = Promise.resolve(input[i])
 			var handler = resolveItem(promise, i)
-			promise._22(handler, handler)
+			promise._80(handler, handler)
 		}
 	})
 }
 Promise.iterate = function (iterable, fn) {
-	return new Promise(INTERNAL)._69(function __c9d565ea_0267_11e6_8d22_5e5517507c66(res, rej) {
+	return new Promise(INTERNAL)._27(function __c9d565ea_0267_11e6_8d22_5e5517507c66(res, rej) {
 		if (typeof fn !== 'function' && fn != null) {
 			warn('Handlers must be functions (' + typeof fn + 's will be ignored).')
 		}
@@ -155,10 +155,10 @@ Promise.iterate = function (iterable, fn) {
 			var item = it.next()
 			item.done
 				? res()
-				: Promise.resolve(item.value)._22(handler)._22(null, rej)
+				: Promise.resolve(item.value)._80(handler)._80(null, rej)
 		}
 		var handler = typeof fn === 'function'
-			? function __c9d565ea_0267_11e6_8d22_5e5517507c66(value) {return Promise.resolve(fn(value))._22(next)}
+			? function __c9d565ea_0267_11e6_8d22_5e5517507c66(value) {return Promise.resolve(fn(value))._80(next)}
 			: next
 		next()
 	})
@@ -180,13 +180,13 @@ function makeIterator(array) {
 }
 
 var PromiseDescriptor = function Promise(promise) {
-	promise = promise._25()
-	if (promise._92 & 1) {
+	promise = promise._68()
+	if (promise._95 & 1) {
 		this.state = 'fulfilled'
-		this.value = promise._80
-	} else if (promise._92 & 2) {
+		this.value = promise._88
+	} else if (promise._95 & 2) {
 		this.state = 'rejected'
-		this.reason = promise._80
+		this.reason = promise._88
 	} else {
 		this.state = 'pending'
 	}

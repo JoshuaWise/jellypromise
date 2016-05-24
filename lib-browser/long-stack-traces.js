@@ -13,13 +13,13 @@ exports.init = function () {
 	
 	// Pushes an Error's stack info onto the stack trace.
 	// This shouldn't be used as a promise's first stack.
-	Promise.prototype._65 = _65
+	Promise.prototype._84 = _84
 }
 
 // Used before an asynchronous callback.
 exports.setContext = function (promise, deferred) {
-	context.stack = deferred.promise._74
-	context.previousStack = promise._74
+	context.stack = deferred.promise._67
+	context.previousStack = promise._67
 }
 // Used after an asynchronous callback.
 exports.releaseContext = function () {
@@ -50,7 +50,7 @@ exports.upgradeRejector = function (rej) {
 
 // By setting this, the next promise that is rejected will have this stack.
 exports.setRejectionStack = function (stack) {
-	if (!(stack instanceof _60)) {
+	if (!(stack instanceof _15)) {
 		throw new TypeError('Expected argument to be a Stack object.')
 	}
 	if (rejectionStack) {
@@ -68,28 +68,28 @@ exports.useRejectionStack = function () {
 
 function _70(trim) {
 	var stackPoint = captureStackPoint(_70)
-	this._74 = new _60(stackPoint, this._74, trim, null)
+	this._67 = new _15(stackPoint, this._67, trim, null)
 	if (context.stack) {
-		var end = this._74
+		var end = this._67
 		while (end.parent) {end = end.parent}
 		end.parent = context.stack
 	}
-	if (this._74.parent) {
-		cleanStackTrace(this._74)
+	if (this._67.parent) {
+		cleanStackTrace(this._67)
 	}
 }
-function _65(err) {
+function _84(err) {
 	if (err instanceof Error
 			&& err.stack
 			&& typeof err.stack === 'string'
-			&& this._74.error !== err) {
+			&& this._67.error !== err) {
 		var stackPoint = stackPointFromError(err)
-		this._74 = new _60(stackPoint, this._74, 0, err)
-		cleanStackTrace(this._74)
+		this._67 = new _15(stackPoint, this._67, 0, err)
+		cleanStackTrace(this._67)
 	}
 }
 
-function _60(stackPoint, parent, trim, err) {
+function _15(stackPoint, parent, trim, err) {
 	setNonEnumerable(this, 'stackPoint', stackPoint)
 	setNonEnumerable(this, 'parent', parent)
 	setNonEnumerable(this, 'trimStart', trim >>> 0)
@@ -109,7 +109,7 @@ function _60(stackPoint, parent, trim, err) {
 	
 	setNonEnumerable(this, 'void', isVoid)
 }
-_60.prototype.getTrace = function () {
+_15.prototype.getTrace = function () {
 	var point = this
 	var stacks = []
 	do {

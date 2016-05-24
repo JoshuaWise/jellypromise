@@ -20,12 +20,12 @@ var INTERNAL = require('./util').INTERNAL
 // All indexes are processed, even deleted or non-existent values of an array.
 
 Promise.prototype.filter = function (fn, ctx) {
-	return this._39(function (iterable) {
+	return this._17(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
 		var array = asArrayCopy(iterable)
-		return mapArray(array, fn, ctx)._39(function (bools) {
+		return mapArray(array, fn, ctx)._17(function (bools) {
 			var result = []
 			for (var i=0, len=bools.length; i<len; i++) {
 				bools[i] && result.push(array[i])
@@ -35,7 +35,7 @@ Promise.prototype.filter = function (fn, ctx) {
 	})
 }
 Promise.prototype.map = function (fn, ctx) {
-	return this._39(function (iterable) {
+	return this._17(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
@@ -43,19 +43,19 @@ Promise.prototype.map = function (fn, ctx) {
 	})
 }
 Promise.prototype.forEach = function (fn, ctx) {
-	return this._39(function (iterable) {
+	return this._17(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
 		var array = asArrayCopy(iterable)
-		return mapArray(array, fn, ctx)._39(function () {
+		return mapArray(array, fn, ctx)._17(function () {
 			return array
 		})
 	})
 }
 Promise.prototype.reduce = function (fn, seed) {
 	var useSeed = arguments.length > 1
-	return this._39(function (iterable) {
+	return this._17(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
@@ -65,7 +65,7 @@ Promise.prototype.reduce = function (fn, seed) {
 		} else if (arr.length === 0) {
 			throw new TypeError('Cannot reduce an empty iterable with no initial value.')
 		}
-		return new Promise(INTERNAL)._1(function (res, rej) {
+		return new Promise(INTERNAL)._64(function (res, rej) {
 			var result
 			var array = arr
 			var firstItem = true
@@ -90,12 +90,12 @@ Promise.prototype.reduce = function (fn, seed) {
 					return setResult(item)
 				}
 				
-				return Promise.resolve(fn(result, item, i++, len))._39(setResult)
+				return Promise.resolve(fn(result, item, i++, len))._17(setResult)
 			}
 			var next = function () {
 				i === len
 					? res(result)
-					: Promise.resolve(array[i])._39(handler)._39(null, rej)
+					: Promise.resolve(array[i])._17(handler)._17(null, rej)
 			}
 			next()
 		})
@@ -103,7 +103,7 @@ Promise.prototype.reduce = function (fn, seed) {
 }
 
 function mapArray(input, fn, ctx) {
-	return new Promise(INTERNAL)._1(function (res, rej) {
+	return new Promise(INTERNAL)._64(function (res, rej) {
 		var pendings = input.length
 		var result = new Array(pendings)
 		if (pendings === 0) {
@@ -111,14 +111,14 @@ function mapArray(input, fn, ctx) {
 		}
 		var each = function (i) {
 			return function (value) {
-				return Promise.resolve(fn.call(ctx, value, i, len))._39(function (value) {
+				return Promise.resolve(fn.call(ctx, value, i, len))._17(function (value) {
 					result[i] = value
 					if (--pendings === 0) {res(result)}
 				})
 			}
 		}
 		for (var i=0, len=pendings; i<len; i++) {
-			Promise.resolve(input[i])._39(each(i))._39(null, rej)
+			Promise.resolve(input[i])._17(each(i))._17(null, rej)
 		}
 	})
 }
