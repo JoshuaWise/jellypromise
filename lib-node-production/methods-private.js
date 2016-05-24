@@ -6,144 +6,144 @@ var INTERNAL = require('./util').INTERNAL
 
 // This is the .then() method used by all internal functions.
 // It automatically captures stack traces at the correct depth.
-Promise.prototype._44 = function (onFulfilled, onRejected) {
+Promise.prototype._20 = function (onFulfilled, onRejected) {
 	var promise = new Promise(INTERNAL)
-	this._15(onFulfilled, onRejected, promise)
+	this._46(onFulfilled, onRejected, promise)
 	return promise
 }
 
 // This is used instead of new Promise(handler), for all internal functions.
 // It automatically captures stack traces at the correct depth.
-Promise.prototype._14 = function (handler) {
-	var ret = tryCallTwo(handler, this._52(), this._32())
+Promise.prototype._74 = function (handler) {
+	var ret = tryCallTwo(handler, this._78(), this._61())
 	if (ret === IS_ERROR) {
-		this._40(LAST_ERROR)
+		this._17(LAST_ERROR)
 	}
 	return this
 }
 
-Promise.prototype._52 = function () {
+Promise.prototype._78 = function () {
 	var self = this
-	return function (value) {self._91(value)}
+	return function (value) {self._32(value)}
 }
-Promise.prototype._32 = function () {
+Promise.prototype._61 = function () {
 	var self = this
-	return function (reason) {self._40(reason)}
+	return function (reason) {self._17(reason)}
 }
 
-Promise.prototype._91 = function (newValue) {
-	if (this._31 & 7) {
+Promise.prototype._32 = function (newValue) {
+	if (this._23 & 7) {
 		return
 	}
 	if (newValue === this) {
-		return this._40(new TypeError('A promise cannot be resolved with itself.'))
+		return this._17(new TypeError('A promise cannot be resolved with itself.'))
 	}
 	if (newValue && (typeof newValue === 'object' || typeof newValue === 'function')) {
 		var then = getThen(newValue)
 		if (then === IS_ERROR) {
-			return this._40(LAST_ERROR)
+			return this._17(LAST_ERROR)
 		}
 		if (typeof then === 'function') {
-			this._31 |= 4
-			this._48 = newValue instanceof Promise ? newValue : foreignPromise(newValue, then)
-			if (this._31 & 24) {
+			this._23 |= 4
+			this._58 = newValue instanceof Promise ? newValue : foreignPromise(newValue, then)
+			if (this._23 & 24) {
 				finale(this)
-			} else if (this._31 & 32) {
-				this._53()._31 |= 32
+			} else if (this._23 & 32) {
+				this._19()._23 |= 32
 			}
 			return
 		}
 	}
-	this._31 |= 1
-	this._48 = newValue
+	this._23 |= 1
+	this._58 = newValue
 	finale(this)
 }
-Promise.prototype._40 = function (newValue) {
-	if (this._31 & 7) {
+Promise.prototype._17 = function (newValue) {
+	if (this._23 & 7) {
 		return
 	}
-	this._31 |= 2
-	this._48 = newValue
+	this._23 |= 2
+	this._58 = newValue
 	
 	
-	if (!(this._31 & 32)) {
+	if (!(this._23 & 32)) {
 		asap(onUnhandledRejection(this, newValue))
 	}
 	finale(this)
 }
 
-Promise.prototype._15 = function (onFulfilled, onRejected, promise) {
-	return this._35({
+Promise.prototype._46 = function (onFulfilled, onRejected, promise) {
+	return this._9({
 		onFulfilled: typeof onFulfilled === 'function' ? onFulfilled : null,
 		onRejected: typeof onRejected === 'function' ? onRejected : null,
 		promise: promise
 	})
 }
-Promise.prototype._35 = function (deferred) {
-	var self = this._53()
-	var state = self._31
+Promise.prototype._9 = function (deferred) {
+	var self = this._19()
+	var state = self._23
 	if (!(state & 32)) {
-		self._31 |= 32
+		self._23 |= 32
 	}
 	if (!(state & 3)) {
 		if (!(state & 24)) {
-			self._31 |= 8
-			self._74 = deferred
+			self._23 |= 8
+			self._70 = deferred
 		} else if (state & 8) {
-			self._31 = state & ~8 | 16
-			self._74 = [self._74, deferred]
+			self._23 = state & ~8 | 16
+			self._70 = [self._70, deferred]
 		} else {
-			self._74.push(deferred)
+			self._70.push(deferred)
 		}
 	} else {
 		handleSettled(self, deferred)
 	}
 }
-Promise.prototype._53 = function () {
+Promise.prototype._19 = function () {
 	var self = this
-	while (self._31 & 4) {
-		self = self._48
+	while (self._23 & 4) {
+		self = self._58
 	}
 	return self
 }
 
 function handleSettled(self, deferred) {
 	asap(function () {
-		var isFulfilled = self._31 & 1
+		var isFulfilled = self._23 & 1
 		var cb = isFulfilled ? deferred.onFulfilled : deferred.onRejected
 		if (cb === null) {
 			if (isFulfilled) {
-				deferred.promise._91(self._48)
+				deferred.promise._32(self._58)
 			} else {
-				deferred.promise._40(self._48)
+				deferred.promise._17(self._58)
 			}
 		} else {
-			var ret = tryCallOne(cb, self._48)
+			var ret = tryCallOne(cb, self._58)
 			if (ret === IS_ERROR) {
-				deferred.promise._40(LAST_ERROR)
+				deferred.promise._17(LAST_ERROR)
 			} else {
-				deferred.promise._91(ret)
+				deferred.promise._32(ret)
 			}
 		}
 	})
 }
 
 function finale(self) {
-	if (self._31 & 8) {
-		self._35(self._74)
-		self._74 = null
-	} else if (self._31 & 16) {
-		var deferreds = self._74
+	if (self._23 & 8) {
+		self._9(self._70)
+		self._70 = null
+	} else if (self._23 & 16) {
+		var deferreds = self._70
 		for (var i=0, len=deferreds.length; i<len; i++) {
-			self._35(deferreds[i])
+			self._9(deferreds[i])
 		}
-		self._74 = null
+		self._70 = null
 	}
 }
 
 function onUnhandledRejection(self, reason) {
 	return function () {
-		if (!(self._31 & 32)) {
+		if (!(self._23 & 32)) {
 			console.error(
 				clc.red( // @[/node]
 					'Unhandled rejection'

@@ -5,21 +5,21 @@ var INTERNAL = require('./util').INTERNAL
 var LST = require('./long-stack-traces') // @[/development]
 
 function Promise(fn) {
-	if (!(this instanceof Promise) || this._95 !== undefined) {
+	if (!(this instanceof Promise) || this._67 !== undefined) {
 		throw new TypeError('Promises must be constructed via the "new" keyword.')
 	}
 	if (typeof fn !== 'function') {
 		throw new TypeError('Promises must be constructed with a function argument.')
 	}
-	this._95 = 0
-	this._88 = null
-	this._77 = null
+	this._67 = 0
+	this._42 = null
+	this._82 = null
 	if (fn !== INTERNAL) {
-		this._27(fn)
+		this._2(fn)
 	}
 }
 Promise.prototype.then = function (onFulfilled, onRejected) {
-	return this._80(onFulfilled, onRejected)
+	return this._73(onFulfilled, onRejected)
 }
 Promise.prototype.catch = function (onRejected) {
 	if (arguments.length > 1) {
@@ -30,20 +30,20 @@ Promise.prototype.catch = function (onRejected) {
 		}
 		onRejected = arguments[i]
 		var self = this // @[/development]
-		return this._80(null, function (reason) {
+		return this._73(null, function (reason) {
 			for (var i=0; i<len; i++) {
 				if (catchesError(args[i], reason)) {
 					return onRejected(reason)
 				}
 			}
-			LST.setRejectionStack(self._68()._67) // @[/development]
+			LST.setRejectionStack(self._40()._39) // @[/development]
 			throw reason
 		})
 	}
-	return this._80(null, onRejected)
+	return this._73(null, onRejected)
 }
 Promise.prototype.catchLater = function () {
-	this._95 |= 32
+	this._67 |= 32
 	return this
 }
 module.exports = Promise
@@ -52,27 +52,27 @@ Promise.resolve = function (value) {
 		return value
 	}
 	var promise = new Promise(INTERNAL)
-	promise._70(1) // @[/development]
+	promise._26(1) // @[/development]
 	promise._36(value)
 	return promise
 }
 Promise.reject = function (reason) {
 	var promise = new Promise(INTERNAL)
-	promise._70(1) // @[/development]
-	promise._64(reason)
+	promise._26(1) // @[/development]
+	promise._75(reason)
 	return promise
 }
 Promise.race = function (iterable) {
-	return new Promise(INTERNAL)._27(function (res, rej) {
+	return new Promise(INTERNAL)._2(function (res, rej) {
 		var input = asArray(iterable)
 		rej = LST.upgradeRejector(rej) // @[/development]
 		for (var i=0, len=input.length; i<len; i++) {
-			Promise.resolve(input[i])._80(res, rej)
+			Promise.resolve(input[i])._73(res, rej)
 		}
 	})
 }
 Promise.all = function (iterable) {
-	return new Promise(INTERNAL)._27(function (res, rej) {
+	return new Promise(INTERNAL)._2(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		var result = new Array(pendings)
@@ -87,7 +87,7 @@ Promise.all = function (iterable) {
 			}
 		}
 		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i])._80(resolveItem(i), rej)
+			Promise.resolve(input[i])._73(resolveItem(i), rej)
 		}
 	})
 }

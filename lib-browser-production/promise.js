@@ -4,21 +4,21 @@ var catchesError = require('./util').catchesError
 var INTERNAL = require('./util').INTERNAL
 
 function Promise(fn) {
-	if (!(this instanceof Promise) || this._71 !== undefined) {
+	if (!(this instanceof Promise) || this._94 !== undefined) {
 		throw new TypeError('Promises must be constructed via the "new" keyword.')
 	}
 	if (typeof fn !== 'function') {
 		throw new TypeError('Promises must be constructed with a function argument.')
 	}
-	this._71 = 0
-	this._37 = null
-	this._53 = null
+	this._94 = 0
+	this._55 = null
+	this._96 = null
 	if (fn !== INTERNAL) {
-		this._64(fn)
+		this._88(fn)
 	}
 }
 Promise.prototype.then = function (onFulfilled, onRejected) {
-	return this._17(onFulfilled, onRejected)
+	return this._65(onFulfilled, onRejected)
 }
 Promise.prototype.catch = function (onRejected) {
 	if (arguments.length > 1) {
@@ -28,7 +28,7 @@ Promise.prototype.catch = function (onRejected) {
 			args[i] = arguments[i]
 		}
 		onRejected = arguments[i]
-		return this._17(null, function (reason) {
+		return this._65(null, function (reason) {
 			for (var i=0; i<len; i++) {
 				if (catchesError(args[i], reason)) {
 					return onRejected(reason)
@@ -37,10 +37,10 @@ Promise.prototype.catch = function (onRejected) {
 			throw reason
 		})
 	}
-	return this._17(null, onRejected)
+	return this._65(null, onRejected)
 }
 Promise.prototype.catchLater = function () {
-	this._71 |= 32
+	this._94 |= 32
 	return this
 }
 module.exports = Promise
@@ -49,24 +49,24 @@ Promise.resolve = function (value) {
 		return value
 	}
 	var promise = new Promise(INTERNAL)
-	promise._51(value)
+	promise._3(value)
 	return promise
 }
 Promise.reject = function (reason) {
 	var promise = new Promise(INTERNAL)
-	promise._29(reason)
+	promise._48(reason)
 	return promise
 }
 Promise.race = function (iterable) {
-	return new Promise(INTERNAL)._64(function (res, rej) {
+	return new Promise(INTERNAL)._88(function (res, rej) {
 		var input = asArray(iterable)
 		for (var i=0, len=input.length; i<len; i++) {
-			Promise.resolve(input[i])._17(res, rej)
+			Promise.resolve(input[i])._65(res, rej)
 		}
 	})
 }
 Promise.all = function (iterable) {
-	return new Promise(INTERNAL)._64(function (res, rej) {
+	return new Promise(INTERNAL)._88(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		var result = new Array(pendings)
@@ -80,7 +80,7 @@ Promise.all = function (iterable) {
 			}
 		}
 		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i])._17(resolveItem(i), rej)
+			Promise.resolve(input[i])._65(resolveItem(i), rej)
 		}
 	})
 }

@@ -9,14 +9,14 @@ var INTERNAL = require('./util').INTERNAL
 Promise.prototype.finally = function (fn) {
 	if (typeof fn !== 'function') {
 		// Will be bypassed, but produces a warning in development mode.
-		return this._17(fn)
+		return this._65(fn)
 	}
-	return this._17(function (value) {
-		return Promise.resolve(fn())._17(function () {
+	return this._65(function (value) {
+		return Promise.resolve(fn())._65(function () {
 			return value
 		})
 	}, function (reason) {
-		return Promise.resolve(fn())._17(function () {
+		return Promise.resolve(fn())._65(function () {
 			throw reason
 		})
 	})
@@ -24,10 +24,10 @@ Promise.prototype.finally = function (fn) {
 Promise.prototype.tap = function (fn) {
 	if (typeof fn !== 'function') {
 		// Will be bypassed, but produces a warning in development mode.
-		return this._17(fn)
+		return this._65(fn)
 	}
-	return this._17(function (value) {
-		return Promise.resolve(fn())._17(function () {
+	return this._65(function (value) {
+		return Promise.resolve(fn())._65(function () {
 			return value
 		})
 	})
@@ -43,10 +43,10 @@ Promise.prototype.else = function (value) {
 		args[i] = function () {return value}
 		return this.catch.apply(this, args)
 	}
-	return this._17(null, function () {return value})
+	return this._65(null, function () {return value})
 }
 Promise.prototype.delay = function (ms) {
-	return this._17(function (value) {
+	return this._65(function (value) {
 		return new Promise(function (res, rej) {
 			setTimeout(function () {res(value)}, ~~ms)
 		})
@@ -54,7 +54,7 @@ Promise.prototype.delay = function (ms) {
 }
 Promise.prototype.timeout = function (ms, reason) {
 	var self = this
-	return new Promise(INTERNAL)._64(function (res, rej) {
+	return new Promise(INTERNAL)._88(function (res, rej) {
 		var timer = setTimeout(function () {
 			rej(
 				reason == null ? new TimeoutError('The operation timed out after ' + ~~ms + 'ms.')
@@ -62,13 +62,13 @@ Promise.prototype.timeout = function (ms, reason) {
 			)
 		}, ~~ms)
 		var cancel = function () {clearTimeout(timer)}
-		self._17(cancel, cancel)
-		self._17(res, rej)
+		self._65(cancel, cancel)
+		self._65(res, rej)
 	})
 }
 Promise.prototype.log = function (prefix) {
 	var usePrefix = arguments.length > 0
-	return this._17(function (value) {
+	return this._65(function (value) {
 		usePrefix ? console.log(prefix, value) : console.log(value)
 		return value
 	})
@@ -77,7 +77,7 @@ Promise.prototype.inspect = function () {
 	return new PromiseDescriptor(this)
 }
 Promise.any = function (iterable) {
-	return new Promise(INTERNAL)._64(function (res, rej) {
+	return new Promise(INTERNAL)._88(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		if (pendings === 0) {
@@ -87,12 +87,12 @@ Promise.any = function (iterable) {
 			if (--pendings === 0) {rej(reason)}
 		}
 		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i])._17(res, fail)
+			Promise.resolve(input[i])._65(res, fail)
 		}
 	})
 }
 Promise.props = function (obj) {
-	return new Promise(INTERNAL)._64(function (res, rej) {
+	return new Promise(INTERNAL)._88(function (res, rej) {
 		var keys = Object.keys(obj)
 		var pendings = keys.length
 		var result = {}
@@ -107,12 +107,12 @@ Promise.props = function (obj) {
 		}
 		for (var i=0; i<pendings; i++) {
 			var key = keys[i]
-			Promise.resolve(obj[key])._17(resolveItem(key), rej)
+			Promise.resolve(obj[key])._65(resolveItem(key), rej)
 		}
 	})
 }
 Promise.settle = function (iterable) {
-	return new Promise(INTERNAL)._64(function (res, rej) {
+	return new Promise(INTERNAL)._88(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		var result = new Array(pendings)
@@ -128,12 +128,12 @@ Promise.settle = function (iterable) {
 		for (var i=0; i<pendings; i++) {
 			var promise = Promise.resolve(input[i])
 			var handler = resolveItem(promise, i)
-			promise._17(handler, handler)
+			promise._65(handler, handler)
 		}
 	})
 }
 Promise.iterate = function (iterable, fn) {
-	return new Promise(INTERNAL)._64(function (res, rej) {
+	return new Promise(INTERNAL)._88(function (res, rej) {
 		if (iterator && iterable != null && typeof iterable[iterator] === 'function') {
 			var it = iterable[iterator]()
 		} else if (Array.isArray(iterable)) {
@@ -145,10 +145,10 @@ Promise.iterate = function (iterable, fn) {
 			var item = it.next()
 			item.done
 				? res()
-				: Promise.resolve(item.value)._17(handler)._17(null, rej)
+				: Promise.resolve(item.value)._65(handler)._65(null, rej)
 		}
 		var handler = typeof fn === 'function'
-			? function (value) {return Promise.resolve(fn(value))._17(next)}
+			? function (value) {return Promise.resolve(fn(value))._65(next)}
 			: next
 		next()
 	})
@@ -170,13 +170,13 @@ function makeIterator(array) {
 }
 
 var PromiseDescriptor = function Promise(promise) {
-	promise = promise._94()
-	if (promise._71 & 1) {
+	promise = promise._98()
+	if (promise._94 & 1) {
 		this.state = 'fulfilled'
-		this.value = promise._37
-	} else if (promise._71 & 2) {
+		this.value = promise._55
+	} else if (promise._94 & 2) {
 		this.state = 'rejected'
-		this.reason = promise._37
+		this.reason = promise._55
 	} else {
 		this.state = 'pending'
 	}
