@@ -1,5 +1,15 @@
 'use strict'
 require('../tools/describe')('.catch', function (Promise, expect) {
+	it('should ignore non-function arguments', function () {
+		var error = new Error('bar')
+		return new Promise(function (res, rej) {rej(error)}).catch('foo').then(function () {
+			throw new Error('This promise should have been rejected.')
+		}, function (err) {
+			expect(err).to.be.an.instanceof(Error)
+			expect(err.message).to.equal('bar')
+			expect(err).to.equal(error)
+		})
+	})
 	it('should catch rejected promises', function () {
 		return expect(new Promise(function (res, rej) {
 			rej(44)
@@ -44,7 +54,7 @@ require('../tools/describe')('.catch', function (Promise, expect) {
 			return 'yay'
 		})).to.become('yay')
 	})
-	it('should ignore unatching pedicates', function () {
+	it('should ignore unmatching pedicates', function () {
 		function isBar(err) {return err.message === 'bar'}
 		return expect(new Promise(function (res, rej) {
 			rej(new Error('foo'))

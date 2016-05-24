@@ -1,5 +1,11 @@
 'use strict'
 require('../tools/describe')('.finally', function (Promise, expect) {
+	it('should ignore non-function arguments', function (done) {
+		Promise.resolve(555).finally('foo').then(function (value) {
+			expect(value).to.equal(555)
+			done()
+		})
+	})
 	it('should hook into resolved promises', function (done) {
 		Promise.resolve(555).finally(function () {
 			expect(arguments.length).to.equal(0)
