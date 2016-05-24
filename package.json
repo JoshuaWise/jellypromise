@@ -8,8 +8,8 @@
     "production.js": "lib-browser-production/index.js"
   },
   "scripts": {
-    "prepublish": "$(npm bin)/in-publish && ./prepublish || true",
-    "postpublish": "./postpublish",
+    "prepublish": "$(npm bin)/in-publish && ./tools/npm/prepublish || true",
+    "postpublish": "./tools/npm/postpublish",
     "build": "$(npm bin)/gulp",
     "pretest": "$(npm bin)/gulp",
     "test": "$(npm bin)/mocha --bail --timeout 1000 --slow 99999 -R dot && node --expose-gc test-memory-leak"
