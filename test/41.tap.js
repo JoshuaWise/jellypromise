@@ -1,5 +1,11 @@
 'use strict'
 require('../tools/describe')('.tap', function (Promise, expect) {
+	it('should return a new promise', function () {
+		var original = Promise.resolve()
+		var tapped = original.tap()
+		expect(tapped).to.be.an.instanceof(Promise)
+		expect(original).to.not.equal(tapped)
+	})
 	it('should ignore non-function arguments', function (done) {
 		Promise.resolve(555).tap('foo').then(function (value) {
 			expect(value).to.equal(555)

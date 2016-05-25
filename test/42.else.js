@@ -1,5 +1,11 @@
 'use strict'
 require('../tools/describe')('.else', function (Promise, expect) {
+	it('should return a new promise', function () {
+		var original = Promise.resolve()
+		var elsed = original.else()
+		expect(elsed).to.be.an.instanceof(Promise)
+		expect(original).to.not.equal(elsed)
+	})
 	it('should provide a default value for rejected promises', function () {
 		return expect(Promise.reject(new Error('foo')).else(22)).to.become(22)
 	})

@@ -1,5 +1,11 @@
 'use strict'
 require('../tools/describe')('.finally', function (Promise, expect) {
+	it('should return a new promise', function () {
+		var original = Promise.resolve()
+		var finallyed = original.finally()
+		expect(finallyed).to.be.an.instanceof(Promise)
+		expect(original).to.not.equal(finallyed)
+	})
 	it('should ignore non-function arguments', function (done) {
 		Promise.resolve(555).finally('foo').then(function (value) {
 			expect(value).to.equal(555)
