@@ -1,5 +1,5 @@
 'use strict'
-require('../tools/describe')('.catch', function (Promise, expect) {
+require('../tools/describe')('.catchLater', function (Promise, expect) {
 	if (Promise.suppressUnhandledRejections) {
 		var originalSuppressionValue = Promise.suppressUnhandledRejections
 		before(function () {
@@ -10,48 +10,66 @@ require('../tools/describe')('.catch', function (Promise, expect) {
 		})
 	}
 	
-	it('should log an error for unhandled rejections', function (done) {
-		new Promise(function (res, rej) {rej(new Error('foo bar'))})
-		var timer = setTimeout(function () {
-			cancel()
-			done(new Error('console.error was not invoked.'))
-		}, 100)
-		var cancel = hookConsole(function () {
-			clearTimeout(timer)
-			done()
+	function hookConsole(cb) {
+		var consoleError = console.error
+		var isPending = true
+		console.error = function () {
+			if (isPending) {
+				isPending = false
+				console.error = consoleError
+				cb()
+			}
+		}
+		return function cancel() {
+			if (isPending) {
+				isPending = false
+				console.error = consoleError
+			}
+		}
+	}
+	function testPromises(test) {
+		specify('on a terminal promise', function (done) {
+			return test(done, Promise.reject(new Error('foo bar')))
 		})
-	})
-	it('should prevent an error from being logged', function (done) {
-		var p = new Promise(function (res, rej) {rej(new Error('foo bar'))}).catchLater()
-		var timer = setTimeout(function () {
-			cancel()
-			p.then(function () {
-				done(new Error('The promise was not rejected.'))
-			}, function () {
+		specify('on a following promise', function (done) {
+			return test(done, new Promise(function (res) {
+				res(Promise.reject(new Error('foo bar')))
+			}))
+		})
+		specify('on an eventually following promise', function (done) {
+			return test(done, Promise.resolve().then(function () {
+				return Promise.reject(new Error('foo bar'))
+			}))
+		})
+	}
+	
+	describe('when omitted, should log an error for unhandled rejections', function () {
+		testPromises(function (done, promise) {
+			var timer = setTimeout(function () {
+				cancel()
+				done(new Error('console.error was not invoked.'))
+			}, 10)
+			var cancel = hookConsole(function () {
+				clearTimeout(timer)
 				done()
 			})
-		}, 120)
-		var cancel = hookConsole(function () {
-			clearTimeout(timer)
-			done(new Error('console.error was invoked.'))
+		})
+	})
+	describe('should prevent an error from being logged for unhandled rejections', function () {
+		testPromises(function (done, promise) {
+			promise.catchLater()
+			var timer = setTimeout(function () {
+				cancel()
+				promise.then(function () {
+					done(new Error('The promise was not rejected.'))
+				}, function () {
+					done()
+				})
+			}, 30)
+			var cancel = hookConsole(function () {
+				clearTimeout(timer)
+				done(new Error('console.error was invoked.'))
+			})
 		})
 	})
 })
-
-function hookConsole(cb) {
-	var consoleError = console.error
-	var isPending = true
-	console.error = function () {
-		if (isPending) {
-			isPending = false
-			console.error = consoleError
-			cb()
-		}
-	}
-	return function () {
-		if (isPending) {
-			isPending = false
-			console.error = consoleError
-		}
-	}
-}
