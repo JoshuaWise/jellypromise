@@ -33,11 +33,11 @@ require('../tools/describe')('Promise.all', function (Promise, expect) {
 		return expect(Promise.all(new Array(3))).to.eventually.satisfy(shallowEquals(new Array(3)))
 	})
 	it('should treat strings as iterables, if ES6 iterables are supported', function () {
-		var expectation = expect(Promise.all('hello')).to.eventually
+		var expectation = expect(Promise.all('hello'))
 		if (typeof Symbol !== 'function' || !Symbol.iterator) {
-			expectation = expectation.not
+			return expectation.to.be.rejectedWith(TypeError)
 		}
-		return expectation.satisfy(shallowEquals(['h', 'e', 'l', 'l', 'o']))
+		return expectation.to.eventually.satisfy(shallowEquals(['h', 'e', 'l', 'l', 'o']))
 	})
 	it('should not be affected by changing the input array after invocation (1)', function () {
 		var input = ['a', 'b', 'c']
