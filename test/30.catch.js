@@ -4,6 +4,25 @@ require('../tools/describe')('.catch', function (Promise, expect) {
 		throw new Error('This promise should not have been fulfilled.')
 	}
 	
+	describe('should return a new promise', function () {
+		function alwaysTrue() {return true}
+		specify('when 0 arguments are supplied', function () {
+			var p = Promise.resolve(5)
+			return expect(p.catch()).to.be.an.instanceof(Promise).and.not.equal(p)
+		})
+		specify('when 1 argument is supplied', function () {
+			var p = Promise.resolve(5)
+			return expect(p.catch(function () {})).to.be.an.instanceof(Promise).and.not.equal(p)
+		})
+		specify('when 2 arguments are supplied', function () {
+			var p = Promise.resolve(5)
+			return expect(p.catch(alwaysTrue, function () {})).to.be.an.instanceof(Promise).and.not.equal(p)
+		})
+		specify('when 3 arguments are supplied', function () {
+			var p = Promise.resolve(5)
+			return expect(p.catch(Error, alwaysTrue, function () {})).to.be.an.instanceof(Promise).and.not.equal(p)
+		})
+	})
 	describe('should ignore non-function arguments', function () {
 		specify('when 1 argument is supplied', function () {
 			return Promise.reject(3).catch('foo').then(shouldNotFulfill, function (reason) {
