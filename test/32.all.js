@@ -1,31 +1,75 @@
 'use strict'
 var asap = require('asap/raw')
 require('../tools/describe')('Promise.all', function (Promise, expect) {
-	it('should be rejected on invalid input', function () {
-		return expect(Promise.all(123)).to.be.rejectedWith(TypeError)
+	function isBaseArray(arr) {
+		return arr instanceof Array && arr.__proto__ === Array.prototype
+	}
+	function shallowEquals(a) {
+		return function (b) {
+			if (a === b || !isBaseArray(b) || b.length !== a.length) {
+				// Promise.all() never fulfills with the same array as the input.
+				// Promise.all() always fulfills with base arrays.
+				return false
+			}
+			for (var i=0, len=a.length; i<len; i++) {
+				if (!(i in b)) {
+					// Promise.all() fills deleted keys with undefined.
+					return false
+				}
+				if (a[i] !== b[i] && (a === a || b === b)) {
+					// NaN is considered equal to NaN in this case.
+					return false
+				}
+			}
+			return (i in b) === false
+		}
+	}
+	function now(value, quality) {
+		return Promise[quality === false ? 'reject' : 'resolve'](value)
+	}
+	function soon(value, quality) {
+		return new Promise(function (res, rej) {
+			setTimeout(function () {
+				;[quality === false ? rej : res](value)
+			}, 1)
+		})
+	}
+	function testInvalidInput(value) {
+		specify('given: ' + String(value), function () {
+			return expect(Promise.all(value)).to.be.rejectedWith(TypeError)
+		})
+	}
+	
+	describe('should be rejected on invalid input', function () {
+		testInvalidInput(undefined)
+		testInvalidInput(null)
+		testInvalidInput(0)
+		testInvalidInput(123)
+		testInvalidInput(true)
+		testInvalidInput(false)
+		testInvalidInput({})
+		if (typeof Symbol === 'function') {
+			testInvalidInput(Symbol())
+		}
 	})
 	it('should be fulfilled given an empty array', function () {
-		return expect(Promise.all([])).to.eventually.be.an.instanceof(Array).and.be.empty
+		return expect(Promise.all([])).to.eventually.satisfy(shallowEquals(new Array(0)))
 	})
+	it('should treat deleted keys as undefined', function () {
+		return expect(Promise.all(new Array(3))).to.eventually.satisfy(shallowEquals(new Array(3)))
+	})
+	
+	// unsure of below
+	
 	it('should be fulfilled with an array of values', function () {
 		var obj = {}
-		return expect(Promise.all(['a', 123, 'z', obj])).to.eventually.be.an.instanceof(Array).and.satisfy(function (arr) {
-			return arr[0] === 'a'
-				&& arr[1] === 123
-				&& arr[2] === 'z'
-				&& arr[3] === obj
-		})
+		return expect(Promise.all(['a', 123, 'z', obj])).to.eventually.satisfy(shallowEquals(['a', 123, 'z', obj]))
 	})
 	it('should be fulfilled with an array of promises', function () {
 		var obj = {}
 		return expect(Promise.all([
 			Promise.resolve('b'), Promise.resolve(321), Promise.resolve('y'), Promise.resolve(obj)
-		])).to.eventually.be.an.instanceof(Array).and.satisfy(function (arr) {
-			return arr[0] === 'b'
-				&& arr[1] === 321
-				&& arr[2] === 'y'
-				&& arr[3] === obj
-		})
+		])).to.eventually.satisfy(shallowEquals(['b', 321, 'y', obj]))
 	})
 	it('should be fulfilled with an array of values and promises', function () {
 		var obj = {}

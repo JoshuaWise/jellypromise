@@ -22,6 +22,4 @@ maybe throw unhandled rejections in production mode?
 
 make sure all prototype methods that generate a new, linked promise, use _handleNew, _handle, or then, so that `this` promise sets SUPPRESS_UNHANDLED_REJECTIONS to 1
 
-wait for pull request to be accepted for deep-eql, and for dependency to be updated for chai (and update dependency for this package)
-
 generator (seperate module?)
