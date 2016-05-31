@@ -87,9 +87,8 @@ require('../tools/describe')('Promise.constructor', function (Promise, expect) {
 		})
 		describe('immediately fulfilled promise for value', function () {
 			var p = createPendingPromise()
-			var ret = fulfills(p, test)
+			fulfills(p, test)
 			p.resolve(value)
-			ret
 		})
 		describe('eventually fulfilled promise for value', function () {
 			var p = createPendingPromise()
