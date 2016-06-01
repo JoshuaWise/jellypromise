@@ -1,8 +1,14 @@
 'use strict'
-var asap = require('asap/raw')
+// var ArrayTester = require('../tools/array-tester')
+// var shallowEquals = require('../tools/shallow-equals')
+var testNonIterables = require('../tools/test-non-iterables')
 require('../tools/describe')('Promise.race', function (Promise, expect) {
-	it('should be rejected on invalid input', function () {
-		return expect(Promise.race(123)).to.be.rejectedWith(TypeError)
+	// var arrayTester = new ArrayTester(Promise)
+	
+	describe('should be rejected on invalid input', function () {
+		testNonIterables(function (value) {
+			return expect(Promise.race(value)).to.be.rejectedWith(TypeError)
+		})
 	})
 	it('should never be resolved when given an empty array', function (done) {
 		var called = false
@@ -38,7 +44,7 @@ require('../tools/describe')('Promise.race', function (Promise, expect) {
 	it('from an array of values and promises, should be fulfilled with the first value or already fulfilled/rejected promise', function () {
 		function delayed() {
 			return new Promise(function (res, rej) {
-				asap(function () {res(555)})
+				setTimeout(function () {res(555)}, 1)
 			})
 		}
 		var err = new Error('foo')
@@ -78,7 +84,7 @@ require('../tools/describe')('Promise.race', function (Promise, expect) {
 	it('from a sparse array of values and promises, should be fulfilled with the first value or already fulfilled/rejected promise', function () {
 		function delayed() {
 			return new Promise(function (res, rej) {
-				asap(function () {res(555)})
+				setTimeout(function () {res(555)}, 1)
 			})
 		}
 		var err = new Error('foo')
@@ -101,7 +107,7 @@ require('../tools/describe')('Promise.race', function (Promise, expect) {
 	it('should not be affected by changing the input array after invocation', function () {
 		var err = new Error('foo')
 		var delayed = new Promise(function (res, rej) {
-			asap(function () {res(555)})
+			setTimeout(function () {res(555)}, 1)
 		})
 		var input1 = ['a', 'b', 'c']
 		var input2 = [Promise.resolve('a'), Promise.resolve('b'), Promise.resolve('c')]

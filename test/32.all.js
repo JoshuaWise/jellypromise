@@ -1,30 +1,18 @@
 'use strict'
-var asap = require('asap/raw')
 var ArrayTester = require('../tools/array-tester')
 var shallowEquals = require('../tools/shallow-equals')
 var makeIterable = require('../tools/make-iterable')
+var testNonIterables = require('../tools/test-non-iterables')
 require('../tools/describe')('Promise.all', function (Promise, expect) {
 	var arrayTester = new ArrayTester(Promise)
-	function testInvalidInput(value) {
-		specify('given: ' + String(value), function () {
-			return expect(Promise.all(value)).to.be.rejectedWith(TypeError)
-		})
-	}
 	function expectToMatch(input, source) {
 		return expect(Promise.all(input)).to.eventually.satisfy(shallowEquals(source))
 	}
 	
 	describe('should be rejected on invalid input', function () {
-		testInvalidInput(undefined)
-		testInvalidInput(null)
-		testInvalidInput(0)
-		testInvalidInput(123)
-		testInvalidInput(true)
-		testInvalidInput(false)
-		testInvalidInput({})
-		if (typeof Symbol === 'function') {
-			testInvalidInput(Symbol())
-		}
+		testNonIterables(function (value) {
+			return expect(Promise.all(value)).to.be.rejectedWith(TypeError)
+		})
 	})
 	it('should be fulfilled given an empty array', function () {
 		return expect(Promise.all([])).to.eventually.satisfy(shallowEquals([]))
@@ -72,7 +60,7 @@ require('../tools/describe')('Promise.all', function (Promise, expect) {
 	})
 	it('should not be affected by changing the input array after invocation (5)', function () {
 		var delayed = new Promise(function (res, rej) {
-			asap(function () {res(555)})
+			setTimeout(function () {res(555)}, 1)
 		})
 		var input = [delayed, 'b', 'c']
 		var ret = Promise.all(input)
