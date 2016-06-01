@@ -77,13 +77,7 @@ require('../tools/describe')('Promise.race', function (Promise, expect) {
 		input2[50] = 'foobar'
 		return Promise.all([
 			expect(Promise.race(input1)).to.become(undefined),
-			Promise.race(input2).then(function () {
-					throw new Error('The promise should have been rejected.')
-				}, function (reason) {
-					if (reason !== err) {
-						throw new Error('An incorrect rejection reason was used.')
-					}
-				})
+			expect(Promise.race(input2)).to.be.rejectedWith(err)
 		])
 	})
 	it('should not be affected by changing the input array after invocation', function () {
@@ -106,13 +100,7 @@ require('../tools/describe')('Promise.race', function (Promise, expect) {
 		return Promise.all([
 			expect(ret1).to.become('a'),
 			expect(ret2).to.become('a'),
-			ret3.then(function () {
-					throw new Error('The promise should have been rejected.')
-				}, function (reason) {
-					if (reason !== err) {
-						throw new Error('An incorrect rejection reason was used.')
-					}
-				}),
+			expect(ret3).to.be.rejectedWith(err),
 			expect(ret4).to.become(555)
 		])
 	})
