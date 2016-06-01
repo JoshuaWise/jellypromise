@@ -1,6 +1,6 @@
 'use strict'
 // var ArrayTester = require('../tools/array-tester')
-// var shallowEquals = require('../tools/shallow-equals')
+// var makeIterable = require('../tools/make-iterable')
 var testNonIterables = require('../tools/test-non-iterables')
 require('../tools/describe')('Promise.race', function (Promise, expect) {
 	// var arrayTester = new ArrayTester(Promise)
@@ -21,25 +21,19 @@ require('../tools/describe')('Promise.race', function (Promise, expect) {
 		Promise.race([]).then(function () {
 			doneOnce(new Error('This promise should not have been resolved.'))
 		}, doneOnce)
-		setTimeout(doneOnce, 200)
+		setTimeout(doneOnce, 100)
 	})
 	it('from an array of values, should be fulfilled with the first value', function () {
 		return expect(Promise.race(['abc', 123, 'xyz'])).to.become('abc')
 	})
-	it('from an array of promises, should be fulfilled from the first promise that fulfills', function () {
+	it('from an array of settled promises, should resolve with the first (fulfill)', function () {
 		var input = [Promise.resolve(123), Promise.reject(new Error('foo')), Promise.resolve('xyz')]
 		return expect(Promise.race(input)).to.become(123)
 	})
-	it('from an array of promises, should be rejected from the first promise that rejects', function () {
+	it('from an array of settled promises, should resolve with the first (reject)', function () {
 		var err = new Error('foo')
 		var input = [Promise.reject(err), Promise.resolve(123), Promise.resolve(new Error('not this one'))]
-		return Promise.race(input).then(function () {
-			throw new Error('The promise should have been rejected.')
-		}, function (reason) {
-			if (reason !== err) {
-				throw new Error('An incorrect rejection reason was used.')
-			}
-		})
+		return expect(Promise.race(input)).to.be.rejectedWith(err)
 	})
 	it('from an array of values and promises, should be fulfilled with the first value or already fulfilled/rejected promise', function () {
 		function delayed() {
@@ -55,30 +49,18 @@ require('../tools/describe')('Promise.race', function (Promise, expect) {
 			expect(Promise.race([
 				delayed(), Promise.resolve('abc'), 123, Promise.reject(new Error('not this one'))
 			])).to.become('abc'),
-			Promise.race([
+			expect(Promise.race([
 				delayed(), Promise.reject(err), 123, Promise.resolve('abc')
-			]).then(function () {
-					throw new Error('The promise should have been rejected.')
-				}, function (reason) {
-					if (reason !== err) {
-						throw new Error('An incorrect rejection reason was used.')
-					}
-				}),
+			])).to.be.rejectedWith(err),
 			expect(Promise.race([
 				123, Promise.resolve('abc'), Promise.reject(new Error('not this one'))
 			])).to.become(123),
 			expect(Promise.race([
 				Promise.resolve('abc'), 123, 'xyz'
 			])).to.become('abc'),
-			Promise.race([
+			expect(Promise.race([
 				Promise.reject(err), 123, 'xyz'
-			]).then(function () {
-					throw new Error('The promise should have been rejected.')
-				}, function (reason) {
-					if (reason !== err) {
-						throw new Error('An incorrect rejection reason was used.')
-					}
-				}),
+			])).to.be.rejectedWith(err)
 		])
 	})
 	it('from a sparse array of values and promises, should be fulfilled with the first value or already fulfilled/rejected promise', function () {
