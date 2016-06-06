@@ -1,4 +1,5 @@
 'use strict'
+var asap = require('asap/raw')
 var makeIterable = require('./make-iterable')
 var memo = {}
 
@@ -38,8 +39,9 @@ ArrayTester.prototype.test = function (source, test) {
 	})
 	
 	function doTest(description, input, afters) {
+		var indexOfFirst = getIndexOfFirst(description)
 		specify(description, function () {
-			var ret = test(input, source)
+			var ret = test(input, source, indexOfFirst)
 			afters.forEach(call)
 			return ret
 		})
@@ -94,44 +96,41 @@ var options = [
 	// a foreign thenable object that synchronously delivers the value
 	function syncThenable(description, source, input, afters, i) {
 		var value = getValue(source, i, this)
-		if (WAS_REJECTED) {
-			var then = function (x, fn) {
-				if (typeof fn === 'function') {
-					fn(value)
-				}
-			}
-		} else {
-			var then = function (fn) {
-				if (typeof fn === 'function') {
-					fn(value)
-				}
-			}
-		}
-		input[i] = {then: then}
+		var wasRejected = WAS_REJECTED
+		input[i] = {then: function (onFulfilled, onRejected) {
+			var handler = wasRejected ? onRejected : onFulfilled
+			typeof handler === 'function' && handler(value)
+		}}
 		description[i] = 'e'
 	},
 	// a foreign thenable object that asynchronously delivers the value
 	function asyncThenable(description, source, input, afters, i) {
 		var value = getValue(source, i, this)
-		if (WAS_REJECTED) {
-			var then = function (x, fn) {
-				if (typeof fn === 'function') {
-					setTimeout(function () {
-						fn(value)
-					}, 1)
-				}
-			}
-		} else {
-			var then = function (fn) {
-				if (typeof fn === 'function') {
-					setTimeout(function () {
-						fn(value)
-					}, 1)
-				}
-			}
+		var wasRejected = WAS_REJECTED
+		var thenable = {
+			then: function (onFulfilled, onRejected) {
+				typeof onFulfilled === 'function' && this.onFulfilled.push(onFulfilled)
+				typeof onRejected === 'function' && this.onRejected.push(onRejected)
+				this.done && this.flush()
+			},
+			flush: function () {
+				var handlers = wasRejected ? this.onRejected : this.onFulfilled
+				handlers.forEach(function (fn) {
+					asap(function () {fn(value)})
+				})
+			},
+			done: false,
+			onFulfilled: [],
+			onRejected: []
 		}
-		input[i] = {then: then}
-		description[i] = 'e'
+		afters.push(function () {
+			setTimeout(function () {
+				thenable.done = true
+				thenable.flush()
+			}, 1)
+		})
+		input[i] = thenable
+		description[i] = 'f'
 	}
 ]
 
@@ -174,4 +173,26 @@ function getValue(source, i, Promise) {
 		}
 	}
 	return value
+}
+
+function getIndexOfFirst(description) {
+	var len = description.length
+	for (var i=0; i<len; i++) {
+		var letter = description[i]
+		if (letter === 'a' || letter === 'b' || letter === 'e') {
+			return i
+		}
+	}
+	for (var i=0; i<len; i++) {
+		if (description[i] === 'c') {
+			return i
+		}
+	}
+	for (var i=0; i<len; i++) {
+		var letter = description[i]
+		if (letter === 'd' || letter === 'f') {
+			return i
+		}
+	}
+	throw new Error('No recognized value descriptions found.')
 }
