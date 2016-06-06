@@ -192,8 +192,20 @@ function onUnhandledRejection(self, reason) {
 	}
 }
 
-function foreignPromise(promise, then) {
-	return new Promise(function (res, rej) {return then.call(promise, res, rej)})
+// This function is our implementation of PromiseResolveThenableJob, from the
+// ES2015 spec. In the spec, this function is used with an asynchronous job
+// queue, so we must do the same.
+function foreignPromise(foreign, then) {
+	var trusted = new Promise(INTERNAL)
+	trusted._addStackTrace(2) // @[/development]
+	asap(function () {
+		try {
+			foreign.then(trusted._resolver(), trusted._rejector())
+		} catch (ex) {
+			trusted._reject(ex)
+		}
+	})
+	return trusted
 }
 
 // To avoid using try/catch inside critical functions, we extract them to here.
