@@ -100,7 +100,7 @@ require('../tools/describe')('Promise.all', function (Promise, expect) {
 	})
 	describe('should be rejected with the rejection reason of a rejected promise', function () {
 		var err = new Error('baz')
-		arrayTester.test([false, Promise.reject(err).catchLater()], function (input, source) {
+		arrayTester.test([false, Promise.reject(err)], function (input, source) {
 			return expect(Promise.all(input)).to.be.rejectedWith(err)
 		})
 	})

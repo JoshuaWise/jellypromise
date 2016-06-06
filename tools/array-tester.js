@@ -63,26 +63,29 @@ var options = [
 	},
 	// an already-fulfilled promise of the value
 	function (description, source, input, afters, i) {
-		input[i] = this.resolve(source[i])
+		var value = getValue(source, i, this)
+		input[i] = WAS_REJECTED ? this.reject(value).catchLater() : this.resolve(value)
 		description[i] = 'b'
 	},
 	// an immediately-fulfilling promise of the value
 	function immediatePromise(description, source, input, afters, i) {
-		var value = source[i]
-		input[i] = new this(function (res) {
+		var value = getValue(source, i, this)
+		var wasRejected = WAS_REJECTED
+		input[i] = new this(function (res, rej) {
 			afters.push(function () {
-				res(value)
+				;(wasRejected ? rej : res)(value)
 			})
 		})
 		description[i] = 'c'
 	},
 	// an eventually-fulfilling promise of the value
 	function eventualPromise(description, source, input, afters, i) {
-		var value = source[i]
-		input[i] = new this(function (res) {
+		var value = getValue(source, i, this)
+		var wasRejected = WAS_REJECTED
+		input[i] = new this(function (res, rej) {
 			afters.push(function () {
 				setTimeout(function () {
-					res(value)
+					;(wasRejected ? rej : res)(value)
 				}, 1)
 			})
 		})
@@ -90,21 +93,36 @@ var options = [
 	},
 	// a foreign thenable object that synchronously delivers the value
 	function syncThenable(description, source, input, afters, i) {
-		var value = source[i]
-		input[i] = {
-			then: function (fn) {
+		var value = getValue(source, i, this)
+		if (WAS_REJECTED) {
+			var then = function (x, fn) {
+				if (typeof fn === 'function') {
+					fn(value)
+				}
+			}
+		} else {
+			var then = function (fn) {
 				if (typeof fn === 'function') {
 					fn(value)
 				}
 			}
 		}
+		input[i] = {then: then}
 		description[i] = 'e'
 	},
 	// a foreign thenable object that asynchronously delivers the value
 	function asyncThenable(description, source, input, afters, i) {
-		var value = source[i]
-		input[i] = {
-			then: function (fn) {
+		var value = getValue(source, i, this)
+		if (WAS_REJECTED) {
+			var then = function (x, fn) {
+				if (typeof fn === 'function') {
+					setTimeout(function () {
+						fn(value)
+					}, 1)
+				}
+			}
+		} else {
+			var then = function (fn) {
 				if (typeof fn === 'function') {
 					setTimeout(function () {
 						fn(value)
@@ -112,7 +130,8 @@ var options = [
 				}
 			}
 		}
-		description[i] = 'f'
+		input[i] = {then: then}
+		description[i] = 'e'
 	}
 ]
 
@@ -138,4 +157,21 @@ function permutate(inputArr, resultLength) {
 	}
 	
 	return permute(inputArr)
+}
+
+var WAS_REJECTED = false
+function getValue(source, i, Promise) {
+	var value = source[i]
+	WAS_REJECTED = false
+	if (value instanceof Promise) {
+		var inspection = value.inspect()
+		if ('reason' in inspection) {
+			value.catchLater()
+			WAS_REJECTED = true
+			return inspection.reason
+		} else {
+			throw new Error('ArrayTester only accepts arrays of values and rejected promises.')
+		}
+	}
+	return value
 }
