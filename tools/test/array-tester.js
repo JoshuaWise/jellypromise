@@ -68,17 +68,6 @@ var options = [
 		input[i] = WAS_REJECTED ? this.reject(value).catchLater() : this.resolve(value)
 		description[i] = 'b'
 	},
-	// an immediately-fulfilling promise of the value
-	function immediatePromise(description, source, input, afters, i) {
-		var value = getValue(source, i, this)
-		var wasRejected = WAS_REJECTED
-		input[i] = new this(function (res, rej) {
-			afters.push(function () {
-				;(wasRejected ? rej : res)(value)
-			})
-		})
-		description[i] = 'c'
-	},
 	// an eventually-fulfilling promise of the value
 	function eventualPromise(description, source, input, afters, i) {
 		var value = getValue(source, i, this)
