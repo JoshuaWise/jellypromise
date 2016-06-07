@@ -1,13 +1,14 @@
 'use strict'
 
+// This function runs the given test several times, once for each possible
+// non-iterable value. Each non-iterable value is passed as the first argument
+// to the given test function.
 module.exports = function (test) {
 	function testInput(value) {
-		var hasValue = !!arguments.length
-		specify('given: ' + String(hasValue ? value : '[no arguments]'), function () {
-			return hasValue ? test(value) : test()
+		specify('given: ' + String(value), function () {
+			return test(value)
 		})
 	}
-	testInput()
 	testInput(undefined)
 	testInput(null)
 	testInput(0)
@@ -20,5 +21,8 @@ module.exports = function (test) {
 	testInput(function () {})
 	if (typeof Symbol === 'function') {
 		testInput(Symbol())
+	}
+	if (typeof Symbol !== 'function' || !Symbol.iterator) {
+		testInput('foo')
 	}
 }

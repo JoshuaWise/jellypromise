@@ -1,7 +1,14 @@
 'use strict'
+// This function factory produces functions that test whether their argument is
+// an array which is shallowly equal to the array provided to the factory.
+// However, it's not a "true" shallow-equality test. The algorithm is used to
+// compare arrays before and after being processed by Promise.all(), and
+// therefore it must abide by the querks that Promise.all() introduces. These
+// querks are notated in comments below.
+
 module.exports = function (a) {
 	return function (b) {
-		if (a === b || !isBaseArray(a) || !isBaseArray(b) || b.length !== a.length) {
+		if (a === b || !(a instanceof Array) || !isBaseArray(b) || b.length !== a.length) {
 			// Promise.all() never fulfills with the same array as the input.
 			// Promise.all() always fulfills with base arrays.
 			return false

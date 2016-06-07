@@ -177,7 +177,7 @@ function makeIterator(array) {
 	return {next: function () {
 		return i < array.length
 			? {done: false, value: array[i++]}
-			: {done: true}
+			: (i = NaN, {done: true, value: undefined})
 	}}
 }
 
