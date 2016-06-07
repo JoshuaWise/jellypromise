@@ -1,15 +1,10 @@
 'use strict'
 var ArrayTester = require('../tools/test/array-tester')
-// var makeIterable = require('../tools/test/make-iterable')
+var makeIterable = require('../tools/test/make-iterable')
 var testNonIterables = require('../tools/test/test-non-iterables')
 require('../tools/test/describe')('Promise.race', function (Promise, expect) {
 	var arrayTester = new ArrayTester(Promise)
 	
-	describe('should be rejected on invalid input', function () {
-		testNonIterables(function (value) {
-			return expect(Promise.race(value)).to.be.rejectedWith(TypeError)
-		})
-	})
 	it('should never be resolved when given an empty array', function (done) {
 		var called = false
 		function doneOnce(err) {
@@ -23,64 +18,55 @@ require('../tools/test/describe')('Promise.race', function (Promise, expect) {
 		}, doneOnce)
 		setTimeout(doneOnce, 100)
 	})
-	describe('from an array, should be resolved with the first settled item (1)', function () {
-		arrayTester.test(['foo', 4], function (input, source, indexOfFirst) {
-			return expect(Promise.race(input)).to.become(source[indexOfFirst])
+	it('should treat deleted keys as undefined', function () {
+		var array = ['a', 'b', 'c']
+		delete array[0]
+		return expect(Promise.race(array)).to.become(undefined)
+	})
+	it('should treat strings as iterables, if ES6 iterables are supported', function () {
+		var expectation = expect(Promise.race('hello'))
+		if (typeof Symbol !== 'function' || !Symbol.iterator) {
+			return expectation.to.be.rejectedWith(TypeError)
+		}
+		return expectation.to.become('h')
+	})
+	describe('should be rejected on invalid input', function () {
+		testNonIterables(function (value) {
+			return expect(Promise.race(value)).to.be.rejectedWith(TypeError)
 		})
 	})
-	describe('from an array, should be resolved with the first settled item (2)', function () {
-		var err = new Error
-		var p = Promise.reject(err)
-		arrayTester.test(['foo', p], function (input, source, indexOfFirst) {
-			return Promise.race(input).then(function (value) {
-				expect(value).to.equal('foo')
-				expect(value).to.equal(source[indexOfFirst])
-			}, function (reason) {
-				expect(reason).to.equal(err)
-				expect(p).to.equal(source[indexOfFirst])
-			})
+	describe('should be fulfilled with the first fullfilled item', function () {
+		var irrelevantPromise = Promise.reject(new Error('baz')).catchLater()
+		arrayTester.test([[irrelevantPromise], 123], function (input, source, raceWinner) {
+			return expect(Promise.race(input)).to.eventually.equal(source[raceWinner])
 		})
 	})
-	describe('from an array, should be resolved with the first settled item (3)', function () {
-		var err = new Error
-		var p = Promise.reject(err)
-		arrayTester.test([p, 4], function (input, source, indexOfFirst) {
-			return Promise.race(input).then(function (value) {
-				expect(value).to.equal(4)
-				expect(value).to.equal(source[indexOfFirst])
-			}, function (reason) {
-				expect(reason).to.equal(err)
-				expect(p).to.equal(source[indexOfFirst])
-			})
+	describe('should not be affected by changing the input array after invocation', function () {
+		arrayTester.test(['foo', ''], function (input, source, raceWinner) {
+			var ret = Promise.race(input)
+			input[0] = 'bar'
+			delete input[1]
+			input.length = 1
+			return expect(ret).to.become(source[raceWinner])
 		})
 	})
-	describe('from a sparse array, should be resolved with the first settled item', function (input, source, indexOfFirst) {
-		var arr = ['a', 'c']
-		delete arr[0]
-		return expect(Promise.race(arr)).to.become(undefined)
-	})
-	it('should not be affected by changing the input array after invocation', function () {
-		var err = new Error('foo')
-		var delayed = new Promise(function (res, rej) {
-			setTimeout(function () {res(555)}, 1)
+	describe('should not be affected by changing the input iterable after invocation', function () {
+		arrayTester.test(['foo', ''], function (input, source, raceWinner) {
+			var ret = Promise.race(makeIterable(input))
+			input[0] = 'bar'
+			delete input[1]
+			input.length = 1
+			return expect(ret).to.become(source[raceWinner])
 		})
-		var input1 = ['a', 'b', 'c']
-		var input2 = [Promise.resolve('a'), Promise.resolve('b'), Promise.resolve('c')]
-		var input3 = [Promise.reject(err), 'b', 'c']
-		var input4 = [delayed]
-		var ret1 = Promise.race(input1)
-		var ret2 = Promise.race(input2)
-		var ret3 = Promise.race(input3)
-		var ret4 = Promise.race(input4)
-		input1[0] = 'z'
-		input2[1] = 'z'
-		input3[0] = 'z'
-		input4[0] = 'z'
-		return Promise.all([
-			expect(ret1).to.become('a'),
-			expect(ret2).to.become('a'),
-			expect(ret3).to.be.rejectedWith(err),
-			expect(ret4).to.become(555)
-		])
+	})
+	describe('should be resolved by the first settled value or promise', function () {
+		var err = new Error('baz')
+		arrayTester.test([123, Promise.reject(err)], function (input, source, raceWinner) {
+			if (raceWinner === 0) {
+				return expect(Promise.race(input)).to.become(123)
+			} else {
+				return expect(Promise.race(input)).to.be.rejectedWith(err)
+			}
+		})
 	})
 })

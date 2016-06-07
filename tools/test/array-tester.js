@@ -1,113 +1,153 @@
 'use strict'
-var asap = require('asap/raw')
-var makeIterable = require('./make-iterable')
-var memo = {}
 
+// This class is used to test promise APIs that accepts arrays or iterable
+// objects of values or promises/thenables.
 function ArrayTester(Promise) {
-	this._Promise = Promise
-}
-ArrayTester.prototype.test = function (source, test) {
-	var Promise = this._Promise
-	var permutations = memo[source.length]
+	var memo = {}
 	
-	if (!permutations) {
-		memo[source.length] = permutations = permutate(options, source.length)
-		for (var i=0; i<options.length; i++) {
-			var extraPossibility = new Array(source.length)
-			for (var j=0; j<source.length; j++) {
-				extraPossibility[j] = options[i]
+	// These are the functions used to map source values to input values.
+	// Each permutation of these options will be tested for a given source array.
+	// These functions are invoked with a `this` value of a Context object.
+	var options = [
+	
+		// the value itself
+		function (i) {
+			if (i in this.source) {
+				this.input[i] = this.source[i]
 			}
-			permutations.push(extraPossibility)
+			this.description[i] = 'value'
+		},
+		
+		// a settled promise of the value
+		function (i) {
+			var item = this.getItem(i)
+			this.input[i] = item.rejected ? Promise.reject(item.value).catchLater() : Promise.resolve(item.value)
+			this.description[i] = 'settled promise'
+		},
+		
+		// an eventually-settled promise of the value
+		function (i) {
+			var item = this.getItem(i)
+			var afters = this.afters
+			this.input[i] = new Promise(function (res, rej) {
+				afters.push(function () {
+					setTimeout(function () {
+						;(item.rejected ? rej : res)(item.value)
+					}, 1)
+				})
+			})
+			this.description[i] = 'eventual promise'
+		},
+		
+		// a foreign thenable object that synchronously delivers the value
+		function (i) {
+			var item = this.getItem(i)
+			this.input[i] = {then: function (onFulfilled, onRejected) {
+				var handler = item.rejected ? onRejected : onFulfilled
+				typeof handler === 'function' && handler(item.value)
+			}}
+			this.description[i] = 'sync thenable'
+		},
+		
+		// a foreign thenable object that asynchronously delivers the value
+		function (i) {
+			var item = this.getItem(i)
+			this.input[i] = {then: function (onFulfilled, onRejected) {
+				var handler = item.rejected ? onRejected : onFulfilled
+				typeof handler === 'function' && setTimeout(function () {
+					handler(item.value)
+				}, 1)
+			}}
+			this.description[i] = 'async thenable'
 		}
+		
+	]
+	
+	// This function runs the given test for each possible permutation of the
+	// given source array. Permutations are created by transforming the source
+	// array items through different "options" (listed above).
+	this.test = function (source, test) {
+		var permutations = memo[source.length]
+		
+		if (!permutations) {
+			memo[source.length] = permutations = permutate(options, source.length)
+			// In addition to the standard permutations, we also want to have
+			// test cases where every value in the input array is transformed
+			// through the same option.
+			for (var i=0; i<options.length; i++) {
+				var extraTextCase = new Array(source.length)
+				for (var j=0; j<source.length; j++) {
+					extraTextCase[j] = options[i]
+				}
+				permutations.push(extraTextCase)
+			}
+		}
+		
+		permutations.forEach(function (options) {
+			var context = new Context(source)
+			for (var i=0, len=source.length; i<len; i++) {
+				options[i].call(context, i)
+			}
+			context.doTest(test)
+		})
 	}
 	
-	permutations.forEach(function (options) {
-		var sourceLength = source.length
-		var description1 = new Array(sourceLength)
-		var description2 = new Array(sourceLength)
-		var input1 = new Array(sourceLength)
-		var input2 = new Array(sourceLength)
-		var afters1 = []
-		var afters2 = []
-		for (var i=0; i<sourceLength; i++) {
-			var option = options[i]
-			option.call(Promise, description1, source, input1, afters1, i)
-			option.call(Promise, description2, source, input2, afters2, i)
+	// Objects of this class are used to store information required to build a
+	// single test case.
+	function Context(source) {
+		this.source = source
+		this.input = new Array(source.length)
+		this.description = new Array(source.length)
+		this.afters = []
+	}
+	Context.prototype.getItem = function (i) {
+		var value = this.source[i]
+		if (value instanceof Promise) {
+			var inspection = value.inspect()
+			if ('reason' in inspection) {
+				value.catchLater()
+				return {value: inspection.reason, rejected: true}
+			} else {
+				throw new Error('ArrayTester only accepts arrays of values and rejected promises.')
+			}
 		}
-		doTest(description1.join(', ') + ' (array)', input1, afters1, getIndexOfFirst(description1))
-		doTest(description2.join(', ') + ' (iterable)', makeIterable(input2), afters2, getIndexOfFirst(description2))
-	})
-	
-	function doTest(description, input, afters, indexOfFirst) {
-		specify(description, function () {
-			var ret = test(input, source, indexOfFirst)
-			afters.forEach(call)
+		return {value: value, rejected: false}
+	}
+	Context.prototype.doTest = function (test) {
+		var ctx = this
+		var indexOfRaceWinner = getRaceWinner(ctx.description)
+		specify('[' + ctx.description.join(', ') + ']', function () {
+			var ret = test(ctx.input, ctx.source, indexOfRaceWinner)
+			ctx.afters.forEach(function (fn) {fn()})
 			return ret
 		})
 	}
 }
 module.exports = ArrayTester
 
-// a = the value itself
-// b = an already-fulfilled promise of the value
-// c = an immediately-fulfilling promise of the value
-// d = an eventually-fulfilling promise of the value
-// e = a foreign thenable object that synchronously delivers the value
-// f = a foreign thenable object that asynchronously delivers the value
-var options = [
-	// the value itself
-	function (description, source, input, afters, i) {
-		if (i in source) {
-			input[i] = source[i]
+// This function accepts a description array, and returns the index of the item
+// that SHOULD resolve a Promise.race() test.
+function getRaceWinner(description) {
+	var len = description.length
+	for (var i=0; i<len; i++) {
+		var letter = description[i]
+		if (letter === 'value' || letter === 'settled promise' || letter === 'sync thenable') {
+			return i
 		}
-		description[i] = 'a'
-	},
-	// an already-fulfilled promise of the value
-	function (description, source, input, afters, i) {
-		var value = getValue(source, i, this)
-		input[i] = WAS_REJECTED ? this.reject(value).catchLater() : this.resolve(value)
-		description[i] = 'b'
-	},
-	// an eventually-fulfilling promise of the value
-	function eventualPromise(description, source, input, afters, i) {
-		var value = getValue(source, i, this)
-		var wasRejected = WAS_REJECTED
-		input[i] = new this(function (res, rej) {
-			afters.push(function () {
-				setTimeout(function () {
-					;(wasRejected ? rej : res)(value)
-				}, 1)
-			})
-		})
-		description[i] = 'd'
-	},
-	// a foreign thenable object that synchronously delivers the value
-	function syncThenable(description, source, input, afters, i) {
-		var value = getValue(source, i, this)
-		var wasRejected = WAS_REJECTED
-		input[i] = {then: function (onFulfilled, onRejected) {
-			var handler = wasRejected ? onRejected : onFulfilled
-			typeof handler === 'function' && handler(value)
-		}}
-		description[i] = 'e'
-	},
-	// a foreign thenable object that asynchronously delivers the value
-	function asyncThenable(description, source, input, afters, i) {
-		var value = getValue(source, i, this)
-		var wasRejected = WAS_REJECTED
-		input[i] = {then: function (onFulfilled, onRejected) {
-			var handler = wasRejected ? onRejected : onFulfilled
-			typeof handler === 'function' && setTimeout(function () {
-				handler(value)
-			}, 1)
-		}}
-		description[i] = 'f'
 	}
-]
-
-function call(fn) {
-	fn()
+	for (var i=0; i<len; i++) {
+		if (description[i] === 'async thenable') {
+			return i
+		}
+	}
+	for (var i=0; i<len; i++) {
+		if (description[i] === 'eventual promise') {
+			return i
+		}
+	}
+	throw new Error('No recognized value descriptions found.')
 }
+
 function permutate(inputArr, resultLength) {
 	var results = []
 	
@@ -127,47 +167,4 @@ function permutate(inputArr, resultLength) {
 	}
 	
 	return permute(inputArr)
-}
-
-var WAS_REJECTED = false
-function getValue(source, i, Promise) {
-	var value = source[i]
-	WAS_REJECTED = false
-	if (value instanceof Promise) {
-		var inspection = value.inspect()
-		if ('reason' in inspection) {
-			value.catchLater()
-			WAS_REJECTED = true
-			return inspection.reason
-		} else {
-			throw new Error('ArrayTester only accepts arrays of values and rejected promises.')
-		}
-	}
-	return value
-}
-
-function getIndexOfFirst(description) {
-	var len = description.length
-	for (var i=0; i<len; i++) {
-		var letter = description[i]
-		if (letter === 'a' || letter === 'b' || letter === 'e') {
-			return i
-		}
-	}
-	for (var i=0; i<len; i++) {
-		if (description[i] === 'c') {
-			return i
-		}
-	}
-	for (var i=0; i<len; i++) {
-		if (description[i] === 'f') {
-			return i
-		}
-	}
-	for (var i=0; i<len; i++) {
-		if (description[i] === 'd') {
-			return i
-		}
-	}
-	throw new Error('No recognized value descriptions found.')
 }

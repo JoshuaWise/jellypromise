@@ -1,5 +1,4 @@
 add real tests
-rethink array tests (Promise.all and Promise.race)
 compare to bluebird tests (next: Promise.finally)
 
 optimizations for index.js to import on the server only:
