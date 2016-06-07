@@ -1,9 +1,9 @@
 'use strict'
-// var ArrayTester = require('../tools/array-tester')
+var ArrayTester = require('../tools/array-tester')
 // var makeIterable = require('../tools/make-iterable')
 var testNonIterables = require('../tools/test-non-iterables')
 require('../tools/describe')('Promise.race', function (Promise, expect) {
-	// var arrayTester = new ArrayTester(Promise)
+	var arrayTester = new ArrayTester(Promise)
 	
 	describe('should be rejected on invalid input', function () {
 		testNonIterables(function (value) {
@@ -23,62 +23,41 @@ require('../tools/describe')('Promise.race', function (Promise, expect) {
 		}, doneOnce)
 		setTimeout(doneOnce, 100)
 	})
-	it('from an array of values, should be fulfilled with the first value', function () {
-		return expect(Promise.race(['abc', 123, 'xyz'])).to.become('abc')
+	describe('from an array, should be resolved with the first settled item (1)', function () {
+		arrayTester.test(['foo', 4], function (input, source, indexOfFirst) {
+			return expect(Promise.race(input)).to.become(source[indexOfFirst])
+		})
 	})
-	it('from an array of settled promises, should resolve with the first (fulfill)', function () {
-		var input = [Promise.resolve(123), Promise.reject(new Error('foo')), Promise.resolve('xyz')]
-		return expect(Promise.race(input)).to.become(123)
-	})
-	it('from an array of settled promises, should resolve with the first (reject)', function () {
-		var err = new Error('foo')
-		var input = [Promise.reject(err), Promise.resolve(123), Promise.resolve(new Error('not this one'))]
-		return expect(Promise.race(input)).to.be.rejectedWith(err)
-	})
-	it('from an array of values and promises, should be fulfilled with the first value or already fulfilled/rejected promise', function () {
-		function delayed() {
-			return new Promise(function (res, rej) {
-				setTimeout(function () {res(555)}, 1)
+	describe('from an array, should be resolved with the first settled item (2)', function () {
+		var err = new Error
+		var p = Promise.reject(err)
+		arrayTester.test(['foo', p], function (input, source, indexOfFirst) {
+			return Promise.race(input).then(function (value) {
+				expect(value).to.equal('foo')
+				expect(value).to.equal(source[indexOfFirst])
+			}, function (reason) {
+				expect(reason).to.equal(err)
+				expect(p).to.equal(source[indexOfFirst])
 			})
-		}
-		var err = new Error('foo')
-		return Promise.all([
-			expect(Promise.race([
-				delayed(), 123, Promise.resolve('abc'), Promise.reject(new Error('not this one'))
-			])).to.become(123),
-			expect(Promise.race([
-				delayed(), Promise.resolve('abc'), 123, Promise.reject(new Error('not this one'))
-			])).to.become('abc'),
-			expect(Promise.race([
-				delayed(), Promise.reject(err), 123, Promise.resolve('abc')
-			])).to.be.rejectedWith(err),
-			expect(Promise.race([
-				123, Promise.resolve('abc'), Promise.reject(new Error('not this one'))
-			])).to.become(123),
-			expect(Promise.race([
-				Promise.resolve('abc'), 123, 'xyz'
-			])).to.become('abc'),
-			expect(Promise.race([
-				Promise.reject(err), 123, 'xyz'
-			])).to.be.rejectedWith(err)
-		])
+		})
 	})
-	it('from a sparse array of values and promises, should be fulfilled with the first value or already fulfilled/rejected promise', function () {
-		function delayed() {
-			return new Promise(function (res, rej) {
-				setTimeout(function () {res(555)}, 1)
+	describe('from an array, should be resolved with the first settled item (3)', function () {
+		var err = new Error
+		var p = Promise.reject(err)
+		arrayTester.test([p, 4], function (input, source, indexOfFirst) {
+			return Promise.race(input).then(function (value) {
+				expect(value).to.equal(4)
+				expect(value).to.equal(source[indexOfFirst])
+			}, function (reason) {
+				expect(reason).to.equal(err)
+				expect(p).to.equal(source[indexOfFirst])
 			})
-		}
-		var err = new Error('foo')
-		var input1 = [delayed(), Promise.resolve('abc'), 123, Promise.reject(new Error('not this one'))]
-		var input2 = [delayed(), Promise.reject(err), 123, Promise.resolve('abc')]
-		delete input1[1]
-		delete input2[2]
-		input2[50] = 'foobar'
-		return Promise.all([
-			expect(Promise.race(input1)).to.become(undefined),
-			expect(Promise.race(input2)).to.be.rejectedWith(err)
-		])
+		})
+	})
+	describe('from a sparse array, should be resolved with the first settled item', function (input, source, indexOfFirst) {
+		var arr = ['a', 'c']
+		delete arr[0]
+		return expect(Promise.race(arr)).to.become(undefined)
 	})
 	it('should not be affected by changing the input array after invocation', function () {
 		var err = new Error('foo')
@@ -104,5 +83,4 @@ require('../tools/describe')('Promise.race', function (Promise, expect) {
 			expect(ret4).to.become(555)
 		])
 	})
-	it('should test being given foreign thenables')
 })

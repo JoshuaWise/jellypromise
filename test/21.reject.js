@@ -93,7 +93,7 @@ require('../tools/describe')('Promise.reject', function (Promise, expect) {
 			expect(reason).to.equal(thenable)
 		})
 	})
-	it('should be fulfilled immediately (safe, inaccurate)', function (done) {
+	it('should be rejected immediately (safe, inaccurate)', function (done) {
 		this.timeout(5)
 		Promise.reject({}).then(shouldNotFulfill, function () {done()})
 	})

@@ -34,12 +34,11 @@ ArrayTester.prototype.test = function (source, test) {
 			option.call(Promise, description1, source, input1, afters1, i)
 			option.call(Promise, description2, source, input2, afters2, i)
 		}
-		doTest(description1.join(', ') + ' (array)', input1, afters1)
-		doTest(description2.join(', ') + ' (iterable)', makeIterable(input2), afters2)
+		doTest(description1.join(', ') + ' (array)', input1, afters1, getIndexOfFirst(description1))
+		doTest(description2.join(', ') + ' (iterable)', makeIterable(input2), afters2, getIndexOfFirst(description2))
 	})
 	
-	function doTest(description, input, afters) {
-		var indexOfFirst = getIndexOfFirst(description)
+	function doTest(description, input, afters, indexOfFirst) {
 		specify(description, function () {
 			var ret = test(input, source, indexOfFirst)
 			afters.forEach(call)
@@ -107,29 +106,12 @@ var options = [
 	function asyncThenable(description, source, input, afters, i) {
 		var value = getValue(source, i, this)
 		var wasRejected = WAS_REJECTED
-		var thenable = {
-			then: function (onFulfilled, onRejected) {
-				typeof onFulfilled === 'function' && this.onFulfilled.push(onFulfilled)
-				typeof onRejected === 'function' && this.onRejected.push(onRejected)
-				this.done && this.flush()
-			},
-			flush: function () {
-				var handlers = wasRejected ? this.onRejected : this.onFulfilled
-				handlers.forEach(function (fn) {
-					asap(function () {fn(value)})
-				})
-			},
-			done: false,
-			onFulfilled: [],
-			onRejected: []
-		}
-		afters.push(function () {
-			setTimeout(function () {
-				thenable.done = true
-				thenable.flush()
+		input[i] = {then: function (onFulfilled, onRejected) {
+			var handler = wasRejected ? onRejected : onFulfilled
+			typeof handler === 'function' && setTimeout(function () {
+				handler(value)
 			}, 1)
-		})
-		input[i] = thenable
+		}}
 		description[i] = 'f'
 	}
 ]
@@ -189,8 +171,12 @@ function getIndexOfFirst(description) {
 		}
 	}
 	for (var i=0; i<len; i++) {
-		var letter = description[i]
-		if (letter === 'd' || letter === 'f') {
+		if (description[i] === 'f') {
+			return i
+		}
+	}
+	for (var i=0; i<len; i++) {
+		if (description[i] === 'd') {
 			return i
 		}
 	}
