@@ -1,9 +1,9 @@
 'use strict'
-var ArrayTester = require('../tools/array-tester')
-var shallowEquals = require('../tools/shallow-equals')
-var makeIterable = require('../tools/make-iterable')
-var testNonIterables = require('../tools/test-non-iterables')
-require('../tools/describe')('Promise.all', function (Promise, expect) {
+var ArrayTester = require('../tools/test/array-tester')
+var shallowEquals = require('../tools/test/shallow-equals')
+var makeIterable = require('../tools/test/make-iterable')
+var testNonIterables = require('../tools/test/test-non-iterables')
+require('../tools/test/describe')('Promise.all', function (Promise, expect) {
 	var arrayTester = new ArrayTester(Promise)
 	function expectToMatch(input, source) {
 		return expect(Promise.all(input)).to.eventually.satisfy(shallowEquals(source))

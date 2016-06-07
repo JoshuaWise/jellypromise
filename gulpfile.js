@@ -2,10 +2,10 @@
 var gulp = require('gulp')
 var Promise = require('bluebird')
 var fs = require('fs-extra-promise')
-var glob = require('./tools/glob')
-var obfuscatePrivateMembers = require('./tools/obfuscate-private-members')
-var replaceConstants = require('./tools/replace-constants')
-var processDirectives = require('./tools/process-directives')
+var glob = require('./tools/build/glob')
+var obfuscatePrivateMembers = require('./tools/build/obfuscate-private-members')
+var replaceConstants = require('./tools/build/replace-constants')
+var processDirectives = require('./tools/build/process-directives')
 
 gulp.task('default', ['node', 'browser', 'node-production', 'browser-production']);
 

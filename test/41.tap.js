@@ -1,5 +1,5 @@
 'use strict'
-require('../tools/describe')('.tap', function (Promise, expect) {
+require('../tools/test/describe')('.tap', function (Promise, expect) {
 	it('should return a new promise', function () {
 		var original = Promise.resolve()
 		var tapped = original.tap()

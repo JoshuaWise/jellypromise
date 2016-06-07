@@ -1,5 +1,5 @@
 'use strict'
-require('../tools/describe')('Promise.resolve', function (Promise, expect) {
+require('../tools/test/describe')('Promise.resolve', function (Promise, expect) {
 	it('should be fulfilled with undefined (implicit)', function () {
 		return expect(Promise.resolve()).to.eventually.equal(undefined)
 	})

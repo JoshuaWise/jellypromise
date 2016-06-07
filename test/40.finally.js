@@ -1,5 +1,5 @@
 'use strict'
-require('../tools/describe')('.finally', function (Promise, expect) {
+require('../tools/test/describe')('.finally', function (Promise, expect) {
 	it('should return a new promise', function () {
 		var original = Promise.resolve()
 		var finallyed = original.finally()

@@ -1,5 +1,5 @@
 'use strict'
-require('../tools/describe')('Promise.constructor', function (Promise, expect) {
+require('../tools/test/describe')('Promise.constructor', function (Promise, expect) {
 	var defaultThis = (function () {return this}())
 	
 	it('should throw on invalid input', function () {

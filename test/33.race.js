@@ -1,8 +1,8 @@
 'use strict'
-var ArrayTester = require('../tools/array-tester')
-// var makeIterable = require('../tools/make-iterable')
-var testNonIterables = require('../tools/test-non-iterables')
-require('../tools/describe')('Promise.race', function (Promise, expect) {
+var ArrayTester = require('../tools/test/array-tester')
+// var makeIterable = require('../tools/test/make-iterable')
+var testNonIterables = require('../tools/test/test-non-iterables')
+require('../tools/test/describe')('Promise.race', function (Promise, expect) {
 	var arrayTester = new ArrayTester(Promise)
 	
 	describe('should be rejected on invalid input', function () {

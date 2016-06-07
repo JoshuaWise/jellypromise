@@ -1,5 +1,5 @@
 'use strict'
-require('../tools/describe')('.catchLater', function (Promise, expect) {
+require('../tools/test/describe')('.catchLater', function (Promise, expect) {
 	if (Promise.suppressUnhandledRejections) {
 		var originalSuppressionValue = Promise.suppressUnhandledRejections
 		before(function () {

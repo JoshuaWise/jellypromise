@@ -1,5 +1,5 @@
 'use strict'
-require('../tools/describe')('.else', function (Promise, expect) {
+require('../tools/test/describe')('.else', function (Promise, expect) {
 	// These tests are not as good as the tests for .catch
 	it('should return a new promise', function () {
 		var original = Promise.resolve()

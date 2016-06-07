@@ -1,7 +1,7 @@
 'use strict'
 module.exports = function (a) {
 	return function (b) {
-		if (a === b || !isBaseArray(b) || b.length !== a.length) {
+		if (a === b || !isBaseArray(a) || !isBaseArray(b) || b.length !== a.length) {
 			// Promise.all() never fulfills with the same array as the input.
 			// Promise.all() always fulfills with base arrays.
 			return false

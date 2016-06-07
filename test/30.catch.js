@@ -1,5 +1,5 @@
 'use strict'
-require('../tools/describe')('.catch', function (Promise, expect) {
+require('../tools/test/describe')('.catch', function (Promise, expect) {
 	function shouldNotFulfill() {
 		throw new Error('This promise should not have been fulfilled.')
 	}
