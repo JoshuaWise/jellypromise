@@ -96,7 +96,7 @@ This method is primarily used for cleanup operations.
 
 ### .tap(*handler*) -> *promise*
 
-Like `.finally`, but the `handler` will not be called if this promise is rejected. The `handler` cannot change the promise chain's fulfillment value, but it can delay chained promises by returning an unsettled promise (just like `.finally`).
+Like `.finally`, but the `handler` will not be called if this promise is rejected. The `handler` cannot change the promise chain's fulfillment value, but it can delay chained promises by returning an unsettled promise (just like `.finally`). The handler is invoked with a single argument: the fulfillment value of the previous promise.
 
 This method is primarily used for side-effects.
 

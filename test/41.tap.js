@@ -17,9 +17,9 @@ require('../tools/test/describe')('.tap', function (Promise, expect) {
 			})
 	})
 	describe('when used on a fulfilled promise', function () {
-		it('should invoke the callback', function (done) {
-			Promise.resolve(555).tap(function () {
-				expect(arguments.length).to.equal(0)
+		it('should invoke the callback with the fulfillment value', function (done) {
+			Promise.resolve(555).tap(function (value) {
+				expect(value).to.equal(555)
 				done()
 			})
 		})

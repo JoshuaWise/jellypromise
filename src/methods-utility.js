@@ -31,7 +31,7 @@ Promise.prototype.tap = function (fn) {
 		return this._then(fn)
 	}
 	return this._then(function $UUID(value) {
-		return Promise.resolve(fn())._then(function () {
+		return Promise.resolve(fn(value))._then(function () {
 			return value
 		})
 	})

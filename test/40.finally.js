@@ -17,7 +17,7 @@ require('../tools/test/describe')('.finally', function (Promise, expect) {
 			})
 	})
 	describe('when used on a fulfilled promise', function () {
-		it('should invoke the callback', function (done) {
+		it('should invoke the callback with no arguments', function (done) {
 			Promise.resolve(555).finally(function () {
 				expect(arguments.length).to.equal(0)
 				done()
@@ -93,7 +93,7 @@ require('../tools/test/describe')('.finally', function (Promise, expect) {
 		})
 	})
 	describe('when used on a rejected promise', function () {
-		it('should invoke the callback', function (done) {
+		it('should invoke the callback with no arguments', function (done) {
 			Promise.reject(new Error('foo')).finally(function () {
 				expect(arguments.length).to.equal(0)
 				done()
