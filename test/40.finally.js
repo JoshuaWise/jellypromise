@@ -1,4 +1,5 @@
 'use strict'
+var Thenable = require('../tools/test/thenable')
 require('../tools/test/describe')('.finally', function (Promise, expect) {
 	it('should return a new promise', function () {
 		var original = Promise.resolve()
@@ -48,7 +49,7 @@ require('../tools/test/describe')('.finally', function (Promise, expect) {
 		it('should be delayed if the callback returns a thenable', function (done) {
 			var thenable
 			Promise.resolve(555).finally(function () {
-				return thenable = new Thenable('foo')
+				return thenable = new Thenable({async: 50}).resolve('foo')
 			}).then(function (value) {
 				expect(value).to.equal(555)
 				expect(thenable.isDone()).to.be.true
@@ -70,7 +71,7 @@ require('../tools/test/describe')('.finally', function (Promise, expect) {
 			var thenable
 			var error = new Error('foo')
 			Promise.resolve(555).finally(function () {
-				return thenable = new Thenable(error, {reject: true})
+				return thenable = new Thenable({async: 50}).reject(error)
 			}).then(function () {
 				done(new Error('This promise should have be rejected.'))
 			}, function (reason) {
@@ -131,7 +132,7 @@ require('../tools/test/describe')('.finally', function (Promise, expect) {
 			var thenable
 			var error = new Error('foo')
 			Promise.reject(error).finally(function () {
-				return thenable = new Thenable('foo')
+				return thenable = new Thenable({async: 50}).resolve('foo')
 			}).then(function () {
 				done(new Error('This promise should have be rejected.'))
 			}, function (reason) {
@@ -155,7 +156,7 @@ require('../tools/test/describe')('.finally', function (Promise, expect) {
 			var thenable
 			var error = new SyntaxError('foo')
 			Promise.reject(new TypeError('bar')).finally(function () {
-				return thenable = new Thenable(error, {reject: true})
+				return thenable = new Thenable({async: 50}).reject(error)
 			}).then(function () {
 				done(new Error('This promise should have be rejected.'))
 			}, function (reason) {
@@ -177,33 +178,3 @@ require('../tools/test/describe')('.finally', function (Promise, expect) {
 		})
 	})
 })
-
-function Thenable(value, options) {
-	this._value = value
-	this._state = 0
-	this._onFulfilled = []
-	this._onRejected = []
-	var options = options || {}
-	var self = this
-	setTimeout(function () {
-		self._state = !!options.reject ? -1 : 1
-		self._flush()
-	}, 100)
-}
-Thenable.prototype.then = function (onFulfilled, onRejected) {
-	typeof onFulfilled === 'function' && this._onFulfilled.push(onFulfilled)
-	typeof onRejected === 'function' && this._onRejected.push(onRejected)
-	this._state && this._flush()
-}
-Thenable.prototype.isDone = function () {
-	return !!this._state
-}
-Thenable.prototype._flush = function () {
-	var handlers = this._state === 1 ? this._onFulfilled : this._onRejected
-	var value = this._value
-	handlers.forEach(function (fn) {
-		fn(value)
-	})
-	this._onFulfilled = []
-	this._onRejected = []
-}
