@@ -32,28 +32,28 @@ require('../tools/test/describe')('.delay', function (Promise, expect) {
 		return delayTest(obj, 90, 110)
 	})
 	describe('should treat non-numeric or negative arguments as zero', function () {
-		specify('null', function () {
+		specify('argument is null', function () {
 			return delayTest(null, 0, 15)
 		})
-		specify('undefined', function () {
+		specify('argument is undefined', function () {
 			return delayTest(undefined, 0, 15)
 		})
-		specify('-100', function () {
+		specify('argument is -100', function () {
 			return delayTest(-100, 0, 15)
 		})
-		specify('NaN', function () {
+		specify('argument is NaN', function () {
 			return delayTest(NaN, 0, 15)
 		})
-		specify('Infinity', function () {
+		specify('argument is Infinity', function () {
 			return delayTest(Infinity, 0, 15)
 		})
-		specify('"foo"', function () {
+		specify('argument is "foo"', function () {
 			return delayTest('foo', 0, 15)
 		})
-		specify('{}', function () {
+		specify('argument is {}', function () {
 			return delayTest({}, 0, 15)
 		})
-		specify('function () {return 100}', function () {
+		specify('argument is function () {return 100}', function () {
 			return delayTest(function () {return 100}, 0, 15)
 		})
 	})
