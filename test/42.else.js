@@ -1,33 +1,71 @@
 'use strict'
 require('../tools/test/describe')('.else', function (Promise, expect) {
-	// These tests are not as good as the tests for .catch
-	it('should return a new promise', function () {
-		var original = Promise.resolve()
-		var elsed = original.else()
-		expect(elsed).to.be.an.instanceof(Promise)
-		expect(original).to.not.equal(elsed)
+	describe('should return a new promise', function () {
+		function alwaysTrue() {return true}
+		specify('when 0 arguments are supplied', function () {
+			var p = Promise.resolve(5)
+			return expect(p.else()).to.be.an.instanceof(Promise).and.not.equal(p)
+		})
+		specify('when 1 argument is supplied', function () {
+			var p = Promise.resolve(5)
+			return expect(p.else('foo')).to.be.an.instanceof(Promise).and.not.equal(p)
+		})
+		specify('when 2 arguments are supplied', function () {
+			var p = Promise.resolve(5)
+			return expect(p.else(alwaysTrue, 'foo')).to.be.an.instanceof(Promise).and.not.equal(p)
+		})
+		specify('when 3 arguments are supplied', function () {
+			var p = Promise.resolve(5)
+			return expect(p.else(Error, alwaysTrue, 'foo')).to.be.an.instanceof(Promise).and.not.equal(p)
+		})
 	})
-	it('should provide a default value for rejected promises', function () {
-		return expect(Promise.reject(new Error('foo')).else(22)).to.become(22)
+	describe('should not catch fulfilled promises', function () {
+		specify('when 0 arguments are supplied', function () {
+			var err = new Error('foo')
+			return expect(
+				Promise.resolve(err).else()
+			).to.eventually.equal(err)
+		})
+		specify('when 1 argument is supplied', function () {
+			var err = new Error('foo')
+			return expect(
+				Promise.resolve(err).else('bar')
+			).to.eventually.equal(err)
+		})
+		specify('when 2 arguments are supplied', function () {
+			var err = new Error('foo')
+			return expect(
+				Promise.resolve(err).else(Error, 'bar')
+			).to.eventually.equal(err)
+		})
+		specify('when 3 arguments are supplied', function () {
+			function alwaysTrue() {return true}
+			var err = new Error('foo')
+			return expect(
+				Promise.resolve(err).else(alwaysTrue, {message: 'baz'}, 'bar')
+			).to.eventually.equal(err)
+		})
 	})
-	it('should not catch fulfilled promises', function () {
-		return expect(Promise.resolve('foo').else(22)).to.become('foo')
+	it('should provide default values for rejected promises', function () {
+		return expect(
+			Promise.reject(44).else(9)
+		).to.become(9)
 	})
 	it('should accept class pedicates for conditional catching', function () {
 		return expect(
 			Promise.reject(new SyntaxError('foo'))
-			.else(TypeError, RangeError, 'bar')
-			.else(URIError, SyntaxError, 'baz')
-		).to.become('baz')
+				.else(TypeError, RangeError, 'bar')
+				.else(URIError, SyntaxError, 'quux')
+		).to.become('quux')
 	})
 	it('should accept object pedicates for conditional catching', function () {
-		var error = new SyntaxError('blah blah')
-		error.foo = 9
+		var err = new SyntaxError()
+		err.foo = 9
 		return expect(
-			Promise.reject(error)
-			.else({bar: 9}, {foo: 5}, 5)
-			.else({baz: 4}, {foo: 9}, 11)
-		).to.become(11)
+			Promise.reject(err)
+				.else({bar: 9}, {foo: 5}, 44)
+				.else({baz: 4}, {foo: 9}, 88)
+		).to.become(88)
 	})
 	it('should accept function pedicates for conditional catching', function () {
 		function isBar(err) {return err.message === 'bar'}
@@ -36,45 +74,50 @@ require('../tools/test/describe')('.else', function (Promise, expect) {
 		function is3(err) {return err.message.length === 3}
 		return expect(
 			Promise.reject(new Error('foo'))
-			.else(isBar, is5, 'wrong')
-			.else(isBaz, is3, 'yay')
-		).to.become('yay')
+				.else(isBar, is5, 'wrong')
+				.else(is3, isBaz, 'right')
+		).to.become('right')
 	})
-	it('should ignore unmatching pedicates', function () {
+	it('should ignore non-matching pedicates', function () {
 		function isBar(err) {return err.message === 'bar'}
-		return expect(
-			Promise.reject(new Error('foo'))
-			.else(SyntaxError, 1)
-			.else({message: 'bar'}, 1)
-			.else(isBar, 1)
-			.else(123, 1)
-			.else(null, 1)
-			.else(undefined, 1)
-			.else({}, 1)
-			.else(function () {}, 1)
-			.else('foo', 1)
-		).to.be.rejected
+		var err = new Error('foo')
+		return expect(Promise.reject(err)
+			.else(SyntaxError, 'quux')
+			.else({message: 'bar'}, 'quux')
+			.else(isBar, 'quux')
+			.else(123, 'quux')
+			.else(null, 'quux')
+			.else(undefined, 'quux')
+			.else({}, 'quux')
+			.else(function () {}, 'quux')
+			.else('foo', 'quux')
+			.else(/foo/, 'quux'))
+		.to.be.rejectedWith(err)
 	})
 	it('should not ignore good predicates when a bad pedicate exists', function () {
 		return expect(
 			Promise.reject(new Error('foo'))
-			.else(null, 'wrong')
-			.else(null, {message: 'foo'}, 'yay')
-		).to.become('yay')
+				.else(null, 'quux')
+				.else(null, {message: 'foo'}, 'bar')
+				.else(null, 'quux')
+		).to.become('bar')
 	})
 	it('should catch instances of class predicates', function () {
 		return expect(
-			Promise.reject(new SyntaxError('foo'))
-			.else(Error, 'yay')
-		).to.become('yay')
+			Promise.reject(new SyntaxError()).else(Error, 3)
+		).to.become(3)
 	})
 	it('should treat non-Error classes as function predicates', function () {
 		function BlahError() {
 			return false
 		}
-		return expect(
-			Promise.reject(Object.create(BlahError.prototype))
-			.else(BlahError, 'wrong')
-		).to.be.rejectedWith(BlahError)
+		var obj = Object.create(BlahError.prototype)
+		return Promise.reject(obj)
+			.else(BlahError, 3)
+			.then(function () {
+				throw new Error('This promise should not have been fulfilled.')
+			}, function (reason) {
+				expect(reason).to.equal(obj)
+			})
 	})
 })

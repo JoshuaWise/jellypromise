@@ -45,20 +45,20 @@ require('../tools/test/describe')('.catch', function (Promise, expect) {
 			var err = new Error('foo')
 			return expect(
 				Promise.resolve(err).catch(function () {return 'bar'})
-			).to.become(err)
+			).to.eventually.equal(err)
 		})
 		specify('when 2 arguments are supplied', function () {
 			var err = new Error('foo')
 			return expect(
 				Promise.resolve(err).catch(Error, function () {return 'bar'})
-			).to.become(err)
+			).to.eventually.equal(err)
 		})
 		specify('when 3 arguments are supplied', function () {
 			function alwaysTrue() {return true}
 			var err = new Error('foo')
 			return expect(
-				Promise.resolve(err).catch(alwaysTrue, {message: 'foo'}, function () {return 'bar'})
-			).to.become(err)
+				Promise.resolve(err).catch(alwaysTrue, {message: 'baz'}, function () {return 'bar'})
+			).to.eventually.equal(err)
 		})
 	})
 	it('should catch rejected promises', function () {
