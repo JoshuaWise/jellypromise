@@ -19,7 +19,7 @@ require('../tools/test/describe')('.delay', function (Promise, expect) {
 		return delayTest(100, 90, 110)
 	})
 	it('should not delay or catch rejected promises', function () {
-		this.timeout(20)
+		this.timeout(15)
 		var err = new Error('foo')
 		return expect(Promise.reject(err).delay(100))
 			.to.be.rejectedWith(err)
@@ -33,28 +33,28 @@ require('../tools/test/describe')('.delay', function (Promise, expect) {
 	})
 	describe('should treat non-numeric or negative arguments as zero', function () {
 		specify('null', function () {
-			return delayTest(null, 0, 20)
+			return delayTest(null, 0, 15)
 		})
 		specify('undefined', function () {
-			return delayTest(undefined, 0, 20)
+			return delayTest(undefined, 0, 15)
 		})
 		specify('-100', function () {
-			return delayTest(-100, 0, 20)
+			return delayTest(-100, 0, 15)
 		})
 		specify('NaN', function () {
-			return delayTest(NaN, 0, 20)
+			return delayTest(NaN, 0, 15)
 		})
 		specify('Infinity', function () {
-			return delayTest(Infinity, 0, 20)
+			return delayTest(Infinity, 0, 15)
 		})
 		specify('"foo"', function () {
-			return delayTest('foo', 0, 20)
+			return delayTest('foo', 0, 15)
 		})
 		specify('{}', function () {
-			return delayTest({}, 0, 20)
+			return delayTest({}, 0, 15)
 		})
 		specify('function () {return 100}', function () {
-			return delayTest(function () {return 100}, 0, 20)
+			return delayTest(function () {return 100}, 0, 15)
 		})
 	})
 })
