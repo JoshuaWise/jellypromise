@@ -206,7 +206,7 @@ Promise.all([Promise.resolve('a'), 'b', Promise.resolve('c')])
 
 ### *static* Promise.any(*iterable*) -> *promise*
 
-Returns a promise for an `iterable` of promises. It will be fulfilled with the value of the first fulfilled promise in `iterable`. If all of the given promises reject, it will be rejected with the last rejection reason.
+Returns a promise for an `iterable` of promises. It will be fulfilled with the value of the first fulfilled promise in `iterable`. If all of the given promises reject, it will be rejected with the rejection reason of the promise that rejected first.
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 

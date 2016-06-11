@@ -84,12 +84,14 @@ Promise.any = function (iterable) {
 	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
+		var firstException = INTERNAL
 		if (pendings === 0) {
 			return rej(new Error('The iterable argument contained no items.'))
 		}
 		rej = LST.upgradeRejector(rej) // @[/development]
 		var fail = function (reason) {
-			if (--pendings === 0) {rej(reason)}
+			if (firstException === INTERNAL) {firstException = reason}
+			if (--pendings === 0) {rej(firstException)}
 		}
 		for (var i=0; i<pendings; i++) {
 			Promise.resolve(input[i])._then(res, fail)

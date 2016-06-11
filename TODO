@@ -1,5 +1,5 @@
 add real tests
-compare to bluebird tests (next: .log)
+compare to bluebird tests (next: Promise.any)
 
 optimizations for index.js to import on the server only:
 - make use of private handle/resolve/reject functions, instead of using new Promise() with closures, to speed up methods and static functions.
