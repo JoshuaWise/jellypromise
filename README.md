@@ -37,15 +37,13 @@ However, in some situations, you may wish to refrain from adding a rejection han
 
 ## Production Mode
 
-By default, long stack traces and warnings are turned on for superior debugging capabilities. However, if `process.env.NODE_ENV === 'production'`, they will be turned off for performance reasons.
+By default, long stack traces and warnings are turned on for superior debugging capabilities. However, if you use production mode, they will be turned off for performance reasons.
 
-You can also exclude these debugging features by using:
+To use production mode, just load the module this way:
 
 ```js
 var Promise = require('jellypromise/production');
 ```
-
-Setting `process.env.NODE_ENV` only works in Node.js. Even if you are using [browserify](https://github.com/substack/node-browserify), to use production mode in the browser, you must require `jellypromise/production`, as shown above.
 
 # API
 
