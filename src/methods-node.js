@@ -21,7 +21,7 @@ Promise.promisify = function (fn) {
 				'for (var i=0; i<len; i++) {args[i] = arguments[i]}',
 			'}',
 			'var promise = new Promise(INTERNAL)',
-			'promise._addStackTrace(1)', // @[/development]
+			'addStackTrace.call(promise, 1)', // @[/development]
 			'var cb = function (err, val) {err == null ? promise._resolve(val) : promise._reject(err)}',
 			'switch (len) {',
 				argGuesses.map(generateSwitchCase).join('\n'),
@@ -32,7 +32,8 @@ Promise.promisify = function (fn) {
 			'return promise',
 		'}'
 	].join('\n')
-	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch'], body)(Promise, fn, INTERNAL, tryApply, tryCatch)
+	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch'], body)(Promise, fn, INTERNAL, tryApply, tryCatch) // @[/production]
+	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch', 'addStackTrace'], body)(Promise, fn, INTERNAL, tryApply, tryCatch, Promise.prototype._addStackTrace) // @[/development]
 }
 function generateArgumentList(count) {
 	var args = new Array(count)
