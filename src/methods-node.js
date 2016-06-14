@@ -1,6 +1,6 @@
 'use strict'
-var Promise = require('./promise.js')
-var INTERNAL = require('./util.js').INTERNAL
+var Promise = require('./promise')
+var INTERNAL = require('./util').INTERNAL
 
 Promise.promisify = function (fn) {
 	if (typeof fn !== 'function') {
