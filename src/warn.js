@@ -9,8 +9,17 @@ module.exports = function (str) {
 		console.warn = function () {console.warn = originalWarn}
 	}
 	// @[/]
-	var err = new Error(str)
-	err.name = 'Warning'
-	console.warn(clc.yellow(String(err.stack || err))) // @[/node]
-	console.warn(err) // @[/browser]
+	var warning = new Warning(str)
+	console.warn(clc.yellow(String(warning.stack || warning))) // @[/node]
+	console.warn(warning) // @[/browser]
 }
+
+function Warning(message) {
+	Error.call(this)
+	this.message = message
+	if (typeof Error.captureStackTrace === 'function') {
+		Error.captureStackTrace(this, Warning)
+	}
+}
+Warning.prototype.__proto__ = Error.prototype
+Warning.prototype.name = 'Warning'

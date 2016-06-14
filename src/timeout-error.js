@@ -6,7 +6,6 @@ function TimeoutError(message) {
 		Error.captureStackTrace(this, TimeoutError)
 	}
 }
-TimeoutError.prototype = Object.create(Error.prototype)
-TimeoutError.prototype.constructor = TimeoutError
+TimeoutError.prototype.__proto__ = Error.prototype
 TimeoutError.prototype.name = 'TimeoutError'
 module.exports = TimeoutError
