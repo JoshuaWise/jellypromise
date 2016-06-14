@@ -1,6 +1,4 @@
 'use strict'
-var warn = require('./warn') // @[/development]
-
 var iterator = exports.iterator = typeof Symbol === 'function' && Symbol.iterator || undefined
 
 exports.INTERNAL = function () {}
@@ -70,4 +68,10 @@ exports.console = {
 		}
 	}
 }
+// @[/]
+
+// @[development]
+// This must be at the bottom of the page so that warn.js doesn't load an
+// uninitialized util.js.
+var warn = require('./warn')
 // @[/]
