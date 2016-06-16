@@ -26,6 +26,26 @@ require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 		obj.foo = 'bar'
 		return expectToMatch(obj, {foo: 'bar'})
 	})
+	it('should only access each enumerable key\'s value once', function () {
+		var obj = {}
+		var fooValue = 3;
+		Object.defineProperty(obj, {
+			foo: {
+				get: function () {return fooValue++},
+				enumerable: true,
+				configerable: false
+			},
+			bar: {
+				get: function () {throw new Error('Should not access non-enumerable properties.')},
+				enumerable: false,
+				configerable: false
+			}
+		})
+		return Promise.props(obj).then(function (result) {
+			expect(result).to.satisfy(shallowEquals({foo: 3}))
+			expect(fooValue).to.equal(4)
+		})
+	})
 	describe('should be rejected on invalid input', function () {
 		function testInvalidInput(value) {
 			specify('given: ' + String(value), function () {
@@ -45,7 +65,6 @@ require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 			testInvalidInput(Symbol())
 		}
 	})
-	it('should only access each key\'s value once')
 	// describe('should be fulfilled with an array of values', function () {
 	// 	var irrelevantPromise = Promise.reject(new Error('baz')).catchLater()
 	// 	arrayTester.test([[irrelevantPromise], 123], expectToMatch)
