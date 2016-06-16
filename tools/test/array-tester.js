@@ -1,6 +1,6 @@
 'use strict'
 
-// This class is used to test promise APIs that accepts arrays or iterable
+// This class is used to test promise APIs that accept arrays or iterable
 // objects of values or promises/thenables.
 function ArrayTester(Promise) {
 	var memo = {}
@@ -72,7 +72,7 @@ function ArrayTester(Promise) {
 		if (!permutations) {
 			memo[source.length] = permutations = permutate(options, source.length)
 			// In addition to the standard permutations, we also want to have
-			// test cases where every value in the input array is transformed
+			// test cases where every value in the source array is transformed
 			// through the same option.
 			for (var i=0; i<options.length; i++) {
 				var extraTextCase = new Array(source.length)

@@ -100,6 +100,9 @@ Promise.any = function (iterable) {
 }
 Promise.props = function (obj) {
 	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
+		if (obj === null || (typeof obj !== 'object' && typeof obj !== 'function')) {
+			throw new TypeError('Expected argument to be an object.')
+		}
 		var keys = Object.keys(obj)
 		var pendings = keys.length
 		var result = {}
