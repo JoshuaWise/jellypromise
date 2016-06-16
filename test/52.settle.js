@@ -49,7 +49,7 @@ require('../tools/test/describe')('Promise.`', function (Promise, expect) {
 	describe('should not be affected by changing the input array after invocation', function () {
 		var source = ['foo', '']
 		var descriptors = source.map(descriptor)
-		arrayTester.test(['foo', ''], function (input) {
+		arrayTester.test(source, function (input) {
 			var ret = Promise.settle(input)
 			input[0] = 'bar'
 			delete input[1]
@@ -58,9 +58,9 @@ require('../tools/test/describe')('Promise.`', function (Promise, expect) {
 		})
 	})
 	describe('should not be affected by changing the input iterable after invocation', function () {
-		var source = ['foo', '']
+		var source = ['foo', Promise.reject('quux')]
 		var descriptors = source.map(descriptor)
-		arrayTester.test(['foo', ''], function (input) {
+		arrayTester.test(source, function (input) {
 			var ret = Promise.settle(makeIterable(input))
 			input[0] = 'bar'
 			delete input[1]
