@@ -29,7 +29,7 @@ require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 	it('should only access each enumerable key\'s value once', function () {
 		var obj = {}
 		var fooValue = 3;
-		Object.defineProperty(obj, {
+		Object.defineProperties(obj, {
 			foo: {
 				get: function () {return fooValue++},
 				enumerable: true,
@@ -45,6 +45,10 @@ require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 			expect(result).to.satisfy(shallowEquals({foo: 3}))
 			expect(fooValue).to.equal(4)
 		})
+	})
+	it('should accept arbitrary subclasses of Object', function () {
+		function Foo() {this.bar = 'baz'}
+		return expectToMatch(new Foo, {bar: 'baz'})
 	})
 	describe('should be rejected on invalid input', function () {
 		function testInvalidInput(value) {
@@ -65,38 +69,37 @@ require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 			testInvalidInput(Symbol())
 		}
 	})
-	// describe('should be fulfilled with an array of values', function () {
-	// 	var irrelevantPromise = Promise.reject(new Error('baz')).catchLater()
-	// 	arrayTester.test([[irrelevantPromise], 123], expectToMatch)
-	// })
-	// describe('should not be affected by changing the input array after invocation', function () {
-	// 	arrayTester.test(['foo', ''], function (input, source) {
-	// 		var ret = Promise.all(input)
-	// 		input[0] = 'bar'
-	// 		delete input[1]
-	// 		input.length = 1
-	// 		return expect(ret).to.eventually.satisfy(shallowEquals(['foo', '']))
-	// 	})
-	// })
-	// describe('should not be affected by changing the input iterable after invocation', function () {
-	// 	arrayTester.test(['foo', ''], function (input, source) {
-	// 		var ret = Promise.all(makeIterable(input))
-	// 		input[0] = 'bar'
-	// 		delete input[1]
-	// 		input.length = 1
-	// 		return expect(ret).to.eventually.satisfy(shallowEquals(['foo', '']))
-	// 	})
-	// })
-	// describe('should be rejected with the rejection reason of a rejected promise', function () {
-	// 	var err = new Error('baz')
-	// 	arrayTester.test([123, Promise.reject(err)], function (input, source) {
-	// 		return expect(Promise.all(input)).to.be.rejectedWith(err)
-	// 	})
-	// })
-	// describe('should be rejected by the first rejected promise', function () {
-	// 	var errors = [new Error('baz'), new Error('quux')]
-	// 	arrayTester.test([Promise.reject(errors[0]), Promise.reject(errors[1])], function (input, source, raceWinner) {
-	// 		return expect(Promise.all(input)).to.be.rejectedWith(errors[raceWinner])
-	// 	})
-	// })
+	describe('should be fulfilled with an object of matching enumerable key-value pairs', function () {
+		var irrelevantPromise = Promise.reject(new Error('baz')).catchLater()
+		objectTester.test({foo: [irrelevantPromise], bar: 123}, expectToMatch)
+	})
+	describe('should not be affected by changing the input object after invocation', function () {
+		objectTester.test({foo: 'bar', '': 'baz'}, function (input, source) {
+			var ret = Promise.props(input)
+			input.foo = 'quux'
+			delete input['']
+			return expect(ret).to.eventually.satisfy(shallowEquals({foo: 'bar', '': 'baz'}))
+		})
+	})
+	describe('should be rejected with the rejection reason of a rejected promise', function () {
+		var err = new Error('baz')
+		objectTester.test({a: 123, b: Promise.reject(err)}, function (input, source) {
+			return expect(Promise.props(input)).to.be.rejectedWith(err)
+		})
+	})
+	describe('should be rejected by the first rejected promise', function () {
+		function shouldBeRejected() {throw new Error('This promise should have been rejected.')}
+		var errors = {foo: new Error('baz'), bar: new Error('quux')}
+		objectTester.test({foo: Promise.reject(errors.foo), bar: Promise.reject(errors.bar)}, function (input, source, raceWinners) {
+			return Promise.props(input).then(shouldBeRejected, function (reason) {
+				for (var i=0; i<raceWinners.length; i++) {
+					var key = raceWinners[i]
+					if (reason === errors[key]) {
+						return;
+					}
+				}
+				throw new Error('None of the potential race winners were the rejection reason.')
+			})
+		})
+	})
 })

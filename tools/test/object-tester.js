@@ -87,7 +87,7 @@ function ObjectTester(Promise) {
 			for (var i=0, len=keys.length; i<len; i++) {
 				options[i].call(context, keys[i], i)
 			}
-			context.doTest(test)
+			context.doTest(test, keys)
 		})
 	}
 	
@@ -112,16 +112,50 @@ function ObjectTester(Promise) {
 		}
 		return {value: value, rejected: false}
 	}
-	Context.prototype.doTest = function (test) {
+	Context.prototype.doTest = function (test, keys) {
 		var ctx = this
+		var keysOfRaceWinners = getRaceWinners(ctx.description, keys)
 		specify('{' + ctx.description.join(', ') + '}', function () {
-			var ret = test(ctx.input, ctx.source)
+			var ret = test(ctx.input, ctx.source, keysOfRaceWinners)
 			ctx.afters.forEach(function (fn) {fn()})
 			return ret
 		})
 	}
 }
 module.exports = ObjectTester
+
+// This function accepts a description array, and an array of matching keys, and
+// returns an array of keys that COULD win a race.
+function getRaceWinners(description, keys) {
+	var winners = []
+	var len = description.length
+	for (var i=0; i<len; i++) {
+		var type = description[i]
+		if (type === 'value' || type === 'settled promise' || type === 'sync thenable') {
+			winners.push(keys[i])
+		}
+	}
+	if (winners.length) {
+		return winners
+	}
+	for (var i=0; i<len; i++) {
+		if (description[i] === 'async thenable') {
+			winners.push(keys[i])
+		}
+	}
+	if (winners.length) {
+		return winners
+	}
+	for (var i=0; i<len; i++) {
+		if (description[i] === 'eventual promise') {
+			winners.push(keys[i])
+		}
+	}
+	if (winners.length) {
+		return winners
+	}
+	throw new Error('No recognized value descriptions found.')
+}
 
 function permutate(inputArr, resultLength) {
 	var results = []

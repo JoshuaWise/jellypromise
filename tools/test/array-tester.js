@@ -130,8 +130,8 @@ module.exports = ArrayTester
 function getRaceWinner(description) {
 	var len = description.length
 	for (var i=0; i<len; i++) {
-		var letter = description[i]
-		if (letter === 'value' || letter === 'settled promise' || letter === 'sync thenable') {
+		var type = description[i]
+		if (type === 'value' || type === 'settled promise' || type === 'sync thenable') {
 			return i
 		}
 	}
