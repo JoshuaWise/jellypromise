@@ -44,6 +44,15 @@ require('../tools/test/describe')('Promise.resolve', function (Promise, expect) 
 		var arr = []
 		return expect(Promise.resolve(arr)).to.eventually.equal(arr)
 	})
+	it('should be fulfilled with an array, ignoring nested promises', function () {
+		var arr = [Promise.reject(3), Promise.resolve(3)]
+		arr[0].then(null, function () {})
+		return Promise.resolve(arr).then(function (value) {
+			expect(value).to.equal(arr)
+			expect(value[0]).to.be.an.instanceof(Promise)
+			expect(value[1]).to.be.an.instanceof(Promise)
+		})
+	})
 	it('should be fulfilled with a regular expression object', function () {
 		var re = /foobar/i
 		return expect(Promise.resolve(re)).to.eventually.equal(re)
