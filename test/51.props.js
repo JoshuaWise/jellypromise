@@ -47,7 +47,13 @@ require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 		})
 	})
 	it('should accept arbitrary subclasses of Object', function () {
+		function Ignore() {}
+		Ignore.prototype.quux = 'ignore me'
+		
 		function Foo() {this.bar = 'baz'}
+		Foo.prototype.__proto__ = Ignore.prototype
+		Foo.prototype.thud = 'also ignored'
+		
 		return expectToMatch(new Foo, {bar: 'baz'})
 	})
 	describe('should be rejected on invalid input', function () {
