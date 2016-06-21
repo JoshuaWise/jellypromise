@@ -224,7 +224,7 @@ Promise.props({users: getUsers(), news: getNews()})
 
 ### *static* Promise.settle(*iterable*) -> *promise*
 
-Given an `iterable` of promises, returns a promise that fulfills with array of promise descriptor objects.
+Given an `iterable` of promises, returns a promise that fulfills with an array of promise descriptor objects.
 
 If the corresponding input promise is:
  - fulfilled, the descriptor will be `{ state: 'fulfilled', value: <fulfillmentValue> }`
