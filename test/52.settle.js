@@ -3,7 +3,7 @@ var ArrayTester = require('../tools/test/array-tester')
 var deepEquals = require('../tools/test/deep-equals')
 var makeIterable = require('../tools/test/make-iterable')
 var testNonIterables = require('../tools/test/test-non-iterables')
-require('../tools/test/describe')('Promise.`', function (Promise, expect) {
+require('../tools/test/describe')('Promise.settle', function (Promise, expect) {
 	var arrayTester = new ArrayTester(Promise)
 	function descriptor(value) {
 		var invertResolution = this === true
