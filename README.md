@@ -232,7 +232,7 @@ If the corresponding input promise is:
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
-### *static* Promise.iterate(*iterable*, [*callback*]) -> *promise*
+### *static* Promise.iterate(*iterable*, *callback*) -> *promise*
 
 Asynchronously iterates through each value in `iterable`, in order, and invokes the `callback` function for each value. If `iterable` yields a promise, that promise's fulfillment value will be awaited before being passed to `callback` for that iteration. If `callback` returns a promise, the next iteration will be delayed until that promise is fulfilled.
 
