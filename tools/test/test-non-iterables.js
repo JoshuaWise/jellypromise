@@ -5,7 +5,7 @@
 // to the given test function.
 module.exports = function (test) {
 	function testInput(value) {
-		specify('given: ' + String(value), function () {
+		specify('given: ' + toString(value), function () {
 			return test(value)
 		})
 	}
@@ -25,4 +25,14 @@ module.exports = function (test) {
 	if (typeof Symbol !== 'function' || !Symbol.iterator) {
 		testInput('foo')
 	}
+}
+
+function toString(value) {
+	if (value instanceof Array) {
+		return '[' + String(value) + ']'
+	}
+	if (typeof value === 'string') {
+		return '"' + value + '"'
+	}
+	return String(value)
 }

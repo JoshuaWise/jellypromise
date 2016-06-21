@@ -6,7 +6,7 @@ require('../tools/test/describe')('Promise.any', function (Promise, expect) {
 	var arrayTester = new ArrayTester(Promise)
 	
 	it('should be rejected when given an empty array', function () {
-		return expect(Promise.any([])).to.be.rejected;
+		return expect(Promise.any([])).to.be.rejected
 	})
 	it('should treat deleted keys as undefined', function () {
 		var array = ['a', 'b', 'c']

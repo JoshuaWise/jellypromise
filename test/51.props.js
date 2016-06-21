@@ -28,7 +28,7 @@ require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 	})
 	it('should only access each enumerable key\'s value once', function () {
 		var obj = {}
-		var fooValue = 3;
+		var fooValue = 3
 		Object.defineProperties(obj, {
 			foo: {
 				get: function () {return fooValue++},
@@ -57,8 +57,17 @@ require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 		return expectToMatch(new Foo, {bar: 'baz'})
 	})
 	describe('should be rejected on invalid input', function () {
+		function toString(value) {
+			if (value instanceof Array) {
+				return '[' + String(value) + ']'
+			}
+			if (typeof value === 'string') {
+				return '"' + value + '"'
+			}
+			return String(value)
+		}
 		function testInvalidInput(value) {
-			specify('given: ' + String(value), function () {
+			specify('given: ' + toString(value), function () {
 				return expect(Promise.props(value)).to.be.rejectedWith(TypeError)
 			})
 		}
@@ -101,7 +110,7 @@ require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 				for (var i=0; i<raceWinners.length; i++) {
 					var key = raceWinners[i]
 					if (reason === errors[key]) {
-						return;
+						return
 					}
 				}
 				throw new Error('None of the potential race winners were the rejection reason.')
