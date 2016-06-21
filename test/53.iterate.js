@@ -1,6 +1,7 @@
 'use strict'
 // var ArrayTester = require('../tools/test/array-tester')
 // var makeIterable = require('../tools/test/make-iterable')
+var shallowEquals = require('../tools/test/shallow-equals')
 var testNonIterables = require('../tools/test/test-non-iterables')
 var testNonFunctions = require('../tools/test/test-non-functions')
 require('../tools/test/describe')('Promise.iterate', function (Promise, expect) {
@@ -19,7 +20,7 @@ require('../tools/test/describe')('Promise.iterate', function (Promise, expect) 
 			Promise.iterate(array, function (value) {
 				results.push(value)
 			}).then(function () {return results})
-		).to.become([undefined, 'b', undefined])
+		).to.eventually.satisfy(shallowEquals(array))
 	})
 	it('should treat strings as iterables, if ES6 iterables are supported', function () {
 		var results = []
@@ -58,50 +59,6 @@ require('../tools/test/describe')('Promise.iterate', function (Promise, expect) 
 			return expect(Promise.iterate([])).to.be.rejectedWith(TypeError)
 		})
 	})
-	
-	
-	
-	
-	// describe('should be rejected on invalid input', function () {
-	// 	testNonIterables(function (value) {
-	// 		return expect(Promise.any(value)).to.be.rejectedWith(TypeError)
-	// 	})
-	// })
-	// describe('should be fulfilled with the first fullfilled item', function () {
-	// 	var irrelevantPromise = Promise.reject(new Error('baz')).catchLater()
-	// 	arrayTester.test([[irrelevantPromise], 123], function (input, source, raceWinner) {
-	// 		return expect(Promise.any(input)).to.eventually.equal(source[raceWinner])
-	// 	})
-	// })
-	// describe('should not be affected by changing the input array after invocation', function () {
-	// 	arrayTester.test(['foo', ''], function (input, source, raceWinner) {
-	// 		var ret = Promise.any(input)
-	// 		input[0] = 'bar'
-	// 		delete input[1]
-	// 		input.length = 1
-	// 		return expect(ret).to.become(source[raceWinner])
-	// 	})
-	// })
-	// describe('should not be affected by changing the input iterable after invocation', function () {
-	// 	arrayTester.test(['foo', ''], function (input, source, raceWinner) {
-	// 		var ret = Promise.any(makeIterable(input))
-	// 		input[0] = 'bar'
-	// 		delete input[1]
-	// 		input.length = 1
-	// 		return expect(ret).to.become(source[raceWinner])
-	// 	})
-	// })
-	// describe('should be resolved by the first fulfilled value or promise', function () {
-	// 	var array = [Promise.reject(new Error('baz')), 123]
-	// 	arrayTester.test(array, function (input, source, raceWinner) {
-	// 		return expect(Promise.any(input)).to.become(123)
-	// 	})
-	// })
-	// describe('should be rejected with the first promise, if no promises fulfill', function () {
-	// 	var errors = [new Error('foo'), new Error('baz')]
-	// 	var array = [Promise.reject(errors[0]), Promise.reject(errors[1])]
-	// 	arrayTester.test(array, function (input, source, raceWinner) {
-	// 		return expect(Promise.any(input)).to.be.rejectedWith(errors[raceWinner])
-	// 	})
-	// })
+	it('should only access array indexes one at a time, after each value fulfills')
+	it('should be tested for actual functonality')
 })
