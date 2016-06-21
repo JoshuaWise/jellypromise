@@ -10,7 +10,7 @@ require('../tools/test/describe')('Promise.iterate', function (Promise, expect) 
 	it('should be fulfilled when given an empty array', function () {
 		return expect(Promise.iterate([], noop)).to.become(undefined)
 	})
-	it('should treat deleted keys as undefined', function (done) {
+	it('should treat deleted keys as undefined', function () {
 		var array = ['a', 'b', 'c']
 		delete array[0]
 		delete array[2]
