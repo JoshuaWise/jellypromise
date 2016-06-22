@@ -1,15 +1,35 @@
 'use strict'
-// var ArrayTester = require('../tools/test/array-tester')
-// var makeIterable = require('../tools/test/make-iterable')
+var Thenable = require('../tools/test/thenable')
+var makeIterable = require('../tools/test/make-iterable')
 var shallowEquals = require('../tools/test/shallow-equals')
 var testNonIterables = require('../tools/test/test-non-iterables')
 var testNonFunctions = require('../tools/test/test-non-functions')
 require('../tools/test/describe')('Promise.iterate', function (Promise, expect) {
-	// var arrayTester = new ArrayTester(Promise)
-	var noop = function () {}
+	function returnResults(results) {
+		return function (value) {
+			expect(value).to.be.undefined
+			return results
+		}
+	}
+	function delayedPromise(value, ms) {
+		return new Promise(function (res) {
+			setTimeout(function () {res(value)}, ~~ms)
+		})
+	}
+	function noop() {}
 	
 	it('should be fulfilled when given an empty array', function () {
 		return expect(Promise.iterate([], noop)).to.become(undefined)
+	})
+	it('should invoke the callback for each item in the iterable', function () {
+		var array = ['a', 'b', 'c']
+		var results = []
+		return expect(
+			Promise.iterate(makeIterable(array), function (value) {
+				results.push(value)
+			})
+			.then(returnResults(results))
+		).to.eventually.satisfy(shallowEquals(array))
 	})
 	it('should treat deleted keys as undefined', function () {
 		var array = ['a', 'b', 'c']
@@ -19,7 +39,8 @@ require('../tools/test/describe')('Promise.iterate', function (Promise, expect) 
 		return expect(
 			Promise.iterate(array, function (value) {
 				results.push(value)
-			}).then(function () {return results})
+			})
+			.then(returnResults(results))
 		).to.eventually.satisfy(shallowEquals(array))
 	})
 	it('should treat strings as iterables, if ES6 iterables are supported', function () {
@@ -33,18 +54,65 @@ require('../tools/test/describe')('Promise.iterate', function (Promise, expect) 
 		}
 		return expectation.to.become('olleh')
 	})
+	it('should wait for pending promises to fulfill before continuing', function (done) {
+		var delayed
+		var err = new Error('foo')
+		var array = [delayedPromise('a', 100), 'b', 'c', 'd']
+		var results = []
+		Promise.iterate(array, function (value) {
+			results.push(value)
+			if (value === 'd') {
+				done(new Error('Iteration should have stopped before reaching "d".'))
+				return
+			}
+			if (value === 'b') {
+				setTimeout(function () {
+					array[2] = Promise.reject(err).catchLater()
+				}, 50)
+				return delayed = delayedPromise('x', 100)
+			}
+		}).then(function () {
+			done(new Error('This promise should have been rejected.'))
+		}, function (reason) {
+			expect(reason).to.equal(err)
+			expect(results).to.deep.equal(['a', 'b'])
+			expect(delayed.inspect().state).to.equal('fulfilled')
+			done()
+		})
+	})
 	it('should be affected by changing the input array after invocation', function () {
 		var array = ['a', 'b', 'c']
 		var results = []
 		var expectation = expect(
 			Promise.iterate(array, function (value) {
-				if (value === 'a') {array[2] = 'id'}
+				if (value === 'a') {array[2] = 'i'}
+				if (value === 'd') {array[1] = 'x'}
 				results.push(value)
 			})
-			.then(function () {return results.join('')})
+			.then(returnResults(results))
 		)
 		array[1] = 'c'
-		return expectation.to.become('acid')
+		Promise.resolve().then(function () {
+			array.push('d')
+		})
+		return expectation.to.eventually.satisfy(shallowEquals(['a', 'c', 'i', 'd']))
+	})
+	it('should respect foreign thenables', function () {
+		var err = new Error('foo')
+		var array = [
+			new Thenable({async: 100}).resolve('a'),
+			new Thenable().resolve('b'),
+			new Thenable({async: 30}).reject(err)
+		]
+		var results = []
+		return Promise.iterate(array, function (value) {
+			results.push(value)
+		}).then(function () {
+			throw new Error('This promise should have been rejected.')
+		}, function (reason) {
+			expect(reason).to.equal(err)
+			expect(results).to.deep.equal(['a', 'b'])
+		})
 	})
 	describe('should be rejected on invalid input', function () {
 		testNonIterables(function (value) {
@@ -59,6 +127,4 @@ require('../tools/test/describe')('Promise.iterate', function (Promise, expect) 
 			return expect(Promise.iterate([])).to.be.rejectedWith(TypeError)
 		})
 	})
-	it('should only access array indexes one at a time, after each value fulfills')
-	it('should be tested for actual functonality')
 })
