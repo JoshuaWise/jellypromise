@@ -144,7 +144,8 @@ Promise.settle = function (iterable) {
 	})
 }
 Promise.iterate = function (iterable, fn) {
-	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
+	var promise = new Promise(INTERNAL)
+	return promise._resolveFromHandler(function $UUID(res, rej) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected second argument to be a function.')
 		}
@@ -158,9 +159,13 @@ Promise.iterate = function (iterable, fn) {
 		rej = LST.upgradeRejector(rej) // @[/development]
 		;(function next$UUID() {
 			var item = it.next()
-			item.done
-				? res()
-				: Promise.resolve(item.value)._then(fn)._then(next$UUID)._then(null, rej)
+			if (item.done) {
+				res()
+			} else {
+				var p = Promise.resolve(item.value)._then(fn)._then(next$UUID)
+				p._trace.parent = promise._trace // @[/development]
+				p._then(null, rej)
+			}
 		}())
 	})
 }

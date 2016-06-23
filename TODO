@@ -13,6 +13,9 @@ optimize asap by using a function property or argument passing instead of a clos
 this can be used in ALL places asap is used, not just the obvious one
 
 
+Promise.reject(new Error()) creates redundant stack traces,
+and the stack trace says they're from different events
+
 long stack traces of warnings?
 
 add hash links to README
