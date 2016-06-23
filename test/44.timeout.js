@@ -53,11 +53,11 @@ require('../tools/test/describe')('.timeout', function (Promise, expect) {
 	})
 	describe('should reject with TimeoutError if not settled before the timeout', function () {
 		specify('fulfilled after the timeout', function () {
-			return expect(eventualPromise(110).timeout(100)).to.be.rejectedWith(Promise.TimeoutError)
+			return expect(eventualPromise(115).timeout(100)).to.be.rejectedWith(Promise.TimeoutError)
 		})
 		specify('rejected after the timeout', function () {
 			var promise = new Promise(function (res, rej) {
-				setTimeout(function () {rej(new Error)}, 110)
+				setTimeout(function () {rej(new Error)}, 115)
 			})
 			return expect(promise.timeout(100)).to.be.rejectedWith(Promise.TimeoutError)
 		})
@@ -75,7 +75,7 @@ require('../tools/test/describe')('.timeout', function (Promise, expect) {
 		})
 		specify('fulfills eventually, before timeout', function () {
 			var promise = new Promise(function (res) {
-				setTimeout(function () {res('foo')}, 90)
+				setTimeout(function () {res('foo')}, 85)
 			})
 			return expect(promise.timeout(100)).to.become('foo')
 		})
@@ -96,16 +96,16 @@ require('../tools/test/describe')('.timeout', function (Promise, expect) {
 		specify('rejects eventually, before timeout', function () {
 			var error = new Error
 			var promise = new Promise(function (res, rej) {
-				setTimeout(function () {rej(error)}, 90)
+				setTimeout(function () {rej(error)}, 85)
 			})
 			return expect(promise.timeout(100)).to.be.rejectedWith(error)
 		})
 	})
 	describe('should treat numeric strings as valid time values', function () {
-		testTimeout('1.0e2', 90, 110)
+		testTimeout('1.0e2', 85, 115)
 	})
 	describe('should treat number objects as valid time values', function () {
-		testTimeout({valueOf: function () {return '1.0e2'}}, 90, 110)
+		testTimeout({valueOf: function () {return '1.0e2'}}, 85, 115)
 	})
 	describe('should treat non-numeric or negative arguments as zero', function () {
 		describe('argument is null', function () {
