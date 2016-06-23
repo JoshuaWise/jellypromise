@@ -12,7 +12,8 @@
     "postpublish": "./tools/npm/postpublish",
     "build": "$(npm bin)/gulp",
     "pretest": "$(npm bin)/gulp",
-    "test": "$(npm bin)/mocha --bail --timeout 1000 --slow 99999 -R dot && node --expose-gc test-memory-leak"
+    "test": "$(npm bin)/mocha --bail --timeout 1000 --slow 99999 -R dot && node --expose-gc test-memory-leak",
+    "zuul": "zuul -- test/*.js"
   },
   "repository": {
     "type": "git",
