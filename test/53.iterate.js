@@ -114,6 +114,57 @@ require('../tools/test/describe')('Promise.iterate', function (Promise, expect) 
 			expect(results).to.deep.equal(['a', 'b'])
 		})
 	})
+	it('should be rejected if the callback throws', function (done) {
+		var err = new Error('foo')
+		var array = ['a', 'b', 'c', 'd']
+		var results = []
+		Promise.iterate(array, function (value) {
+			if (value === 'd') {
+				done(new Error('Iteration should have stopped before reaching "d".'))
+				return
+			}
+			if (value === 'c') {
+				throw err
+			}
+			results.push(value)
+		}).then(function () {
+			done(new Error('This promise should have been rejected.'))
+		}, function (reason) {
+			expect(reason).to.equal(err)
+			expect(results).to.deep.equal(['a', 'b'])
+			done()
+		})
+	})
+	if (typeof Symbol === 'function' && Symbol.iterator) {
+		it('should be rejected if the iterator throws', function (done) {
+			var err = new Error('foo')
+			var iterable = {}
+			iterable[Symbol.iterator] = function () {
+				var gaveOnce = false
+				return {next: function () {
+					if (!gaveOnce) {
+						gaveOnce = true
+						return {done: false, value: 'a'}
+					}
+					throw err
+				}}
+			}
+			var results = []
+			Promise.iterate(iterable, function (value) {
+				if (results.length) {
+					done(new Error('Iteration should have stopped before a second callback invocation.'))
+					return
+				}
+				results.push(value)
+			}).then(function () {
+				done(new Error('This promise should have been rejected.'))
+			}, function (reason) {
+				expect(reason).to.equal(err)
+				expect(results).to.deep.equal(['a'])
+				done()
+			})
+		})
+	}
 	describe('should be rejected on invalid input', function () {
 		testNonIterables(function (value) {
 			return expect(Promise.iterate(value, noop)).to.be.rejectedWith(TypeError)

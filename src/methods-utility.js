@@ -156,12 +156,11 @@ Promise.iterate = function (iterable, fn) {
 			throw new TypeError('Expected first argument to be an iterable object.')
 		}
 		rej = LST.upgradeRejector(rej) // @[/development]
-		var handler = function $UUID(value) {return Promise.resolve(fn(value))._then(next)}
 		var next = function $UUID() {
 			var item = it.next()
 			item.done
 				? res()
-				: Promise.resolve(item.value)._then(handler)._then(null, rej)
+				: Promise.resolve(item.value)._then(fn)._then(next)._then(null, rej)
 		}
 		next()
 	})
