@@ -114,6 +114,27 @@ require('../tools/test/describe')('Promise.iterate', function (Promise, expect) 
 			expect(results).to.deep.equal(['a', 'b'])
 		})
 	})
+	it('should be rejected if the callback returns a rejected thenable', function (done) {
+		var err = new Error('foo')
+		var array = ['a', 'b', 'c', 'd']
+		var results = []
+		Promise.iterate(array, function (value) {
+			if (value === 'd') {
+				done(new Error('Iteration should have stopped before reaching "d".'))
+				return
+			}
+			results.push(value)
+			if (value === 'c') {
+				return new Thenable({async: 100}).reject(err)
+			}
+		}).then(function () {
+			done(new Error('This promise should have been rejected.'))
+		}, function (reason) {
+			expect(reason).to.equal(err)
+			expect(results).to.deep.equal(['a', 'b', 'c'])
+			done()
+		})
+	})
 	it('should be rejected if the callback throws', function (done) {
 		var err = new Error('foo')
 		var array = ['a', 'b', 'c', 'd']
