@@ -11,4 +11,5 @@ require('../tools/test/describe')('.filter', function (Promise, expect) {
 	
 	it('should do Promise.all-like tests with a consistent callback function')
 	it('should test an array of values (as done in bluebird), against different types of callback functions')
+	it('should test all of the comments in methods-aggregate.js')
 })
