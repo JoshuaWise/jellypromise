@@ -1,4 +1,5 @@
 'use strict'
+var Thenable = require('./thenable')
 
 // This class is used to test Promise.props, which accepts an object whose iterable
 // keys are values or promises/thenables.
@@ -40,23 +41,22 @@ function ObjectTester(Promise) {
 		// a foreign thenable object that synchronously delivers the value
 		function (key, i) {
 			var item = this.getItem(key)
-			this.input[key] = {then: function (onFulfilled, onRejected) {
-				var handler = item.rejected ? onRejected : onFulfilled
-				typeof handler === 'function' && handler(item.value)
-			}}
-			this.description[i] = 'sync thenable'
+			var thenable = this.input[key] = new Thenable
+			thenable[item.rejected ? 'reject' : 'resolve'](item.value)
+			this.description[i] = 'settled thenable'
 		},
 		
 		// a foreign thenable object that asynchronously delivers the value
 		function (key, i) {
 			var item = this.getItem(key)
-			this.input[key] = {then: function (onFulfilled, onRejected) {
-				var handler = item.rejected ? onRejected : onFulfilled
-				typeof handler === 'function' && setTimeout(function () {
-					handler(item.value)
+			var afters = this.afters
+			var thenable = this.input[key] = new Thenable
+			afters.push(function () {
+				setTimeout(function () {
+					thenable[item.rejected ? 'reject' : 'resolve'](item.value)
 				}, 1)
-			}}
-			this.description[i] = 'async thenable'
+			})
+			this.description[i] = 'eventual thenable'
 		}
 		
 	]
@@ -131,7 +131,7 @@ function getRaceWinners(description, keys) {
 	var len = description.length
 	for (var i=0; i<len; i++) {
 		var type = description[i]
-		if (type === 'value' || type === 'settled promise' || type === 'sync thenable') {
+		if (type === 'value' || type === 'settled promise' || type === 'settled thenable') {
 			winners.push(keys[i])
 		}
 	}
@@ -139,15 +139,8 @@ function getRaceWinners(description, keys) {
 		return winners
 	}
 	for (var i=0; i<len; i++) {
-		if (description[i] === 'async thenable') {
-			winners.push(keys[i])
-		}
-	}
-	if (winners.length) {
-		return winners
-	}
-	for (var i=0; i<len; i++) {
-		if (description[i] === 'eventual promise') {
+		var type = description[i]
+		if (type === 'eventual promise' || type === 'eventual thenable') {
 			winners.push(keys[i])
 		}
 	}

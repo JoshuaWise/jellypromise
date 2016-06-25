@@ -1,4 +1,5 @@
 'use strict'
+var Thenable = require('./thenable')
 
 // This class is used to test promise APIs that accept arrays or iterable
 // objects of values or promises/thenables.
@@ -39,26 +40,25 @@ function ArrayTester(Promise) {
 			this.description[i] = 'eventual promise'
 		},
 		
-		// a foreign thenable object that synchronously delivers the value
+		// an already-settled foreign thenable object
 		function (i) {
 			var item = this.getItem(i)
-			this.input[i] = {then: function (onFulfilled, onRejected) {
-				var handler = item.rejected ? onRejected : onFulfilled
-				typeof handler === 'function' && handler(item.value)
-			}}
-			this.description[i] = 'sync thenable'
+			var thenable = this.input[i] = new Thenable
+			thenable[item.rejected ? 'reject' : 'resolve'](item.value)
+			this.description[i] = 'settled thenable'
 		},
 		
-		// a foreign thenable object that asynchronously delivers the value
+		// an eventually-settled foreign thenable object
 		function (i) {
 			var item = this.getItem(i)
-			this.input[i] = {then: function (onFulfilled, onRejected) {
-				var handler = item.rejected ? onRejected : onFulfilled
-				typeof handler === 'function' && setTimeout(function () {
-					handler(item.value)
+			var afters = this.afters
+			var thenable = this.input[i] = new Thenable
+			afters.push(function () {
+				setTimeout(function () {
+					thenable[item.rejected ? 'reject' : 'resolve'](item.value)
 				}, 1)
-			}}
-			this.description[i] = 'async thenable'
+			})
+			this.description[i] = 'eventual thenable'
 		}
 		
 	]
@@ -131,17 +131,13 @@ function getRaceWinner(description) {
 	var len = description.length
 	for (var i=0; i<len; i++) {
 		var type = description[i]
-		if (type === 'value' || type === 'settled promise' || type === 'sync thenable') {
+		if (type === 'value' || type === 'settled promise' || type === 'settled thenable') {
 			return i
 		}
 	}
 	for (var i=0; i<len; i++) {
-		if (description[i] === 'async thenable') {
-			return i
-		}
-	}
-	for (var i=0; i<len; i++) {
-		if (description[i] === 'eventual promise') {
+		var type = description[i]
+		if (type === 'eventual promise' || 'eventual thenable') {
 			return i
 		}
 	}

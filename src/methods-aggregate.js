@@ -25,13 +25,20 @@ Promise.prototype.filter = function (fn, ctx) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		var array = asArrayCopy$UUID(iterable)
-		return mapArray(array, fn, ctx)._then(function (bools) {
-			var result = []
-			for (var i=0, len=bools.length; i<len; i++) {
-				bools[i] && result.push(array[i])
+		return Promise.all(iterable)._then(function $UUID(array) {
+			var len = array.length
+			var bools = new Array(len)
+			for (var i=0; i<len; i++) {
+				bools[i] = !!fn.call(ctx, array[i], i, len)
 			}
-			return result
+			return Promise.all(bools)._then(function (bools) {
+				var len = bools.length
+				var result = []
+				for (var i=0; i<len; i++) {
+					bools[i] && result.push(array[i])
+				}
+				return result
+			})
 		})
 	})
 }
