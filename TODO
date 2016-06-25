@@ -1,4 +1,4 @@
-add real tests
+add more tests
 compare to bluebird tests (next: .filter)
 
 optimizations for index.js to import on the server only:
@@ -7,10 +7,10 @@ optimizations for index.js to import on the server only:
 - use fake promise class (e.g., PromiseArray) for optimized aggregate methods, including Promise.all.
 - make sure to maintain the same long stack traces as with deoptimized versions.
 
-how much space would be saved in the browser if we used Promise.all for aggregate functions?
+how much space would be saved in the browser if we used Promise.all for aggregate methods?
 
-optimize asap by using a function property or argument passing instead of a closure
-this can be used in ALL places asap is used, not just the obvious one
+test if bluebird's async implementation is faster than asap/raw
+
 
 
 long stack traces of warnings?
