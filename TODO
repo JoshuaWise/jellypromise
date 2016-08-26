@@ -1,5 +1,5 @@
 add more tests
-compare to bluebird tests (next: .filter)
+compare to bluebird tests (next: .forEach)
 
 confirm long stack traces for .reduce (rejected/thrown immediately, or later in enumeration, or in handler)
 
