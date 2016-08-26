@@ -102,7 +102,7 @@ require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 			return expect(Promise.props(input)).to.be.rejectedWith(err)
 		})
 	})
-	describe('should be rejected by the first rejected promise', function () {
+	describe('should be rejected by the earliest rejected promise', function () {
 		function shouldBeRejected() {throw new Error('This promise should have been rejected.')}
 		var errors = {foo: new Error('baz'), bar: new Error('quux')}
 		objectTester.test({foo: Promise.reject(errors.foo), bar: Promise.reject(errors.bar)}, function (input, source, raceWinners) {

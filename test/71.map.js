@@ -120,7 +120,7 @@ require('../tools/test/describe')('.map', function (Promise, expect) {
 			return expect(p).to.be.rejectedWith(err)
 		})
 	})
-	describe('should be rejected by the input array\'s first rejected promise', function () {
+	describe('should be rejected by the input array\'s earliest rejected promise', function () {
 		var errors = [new Error('baz'), new Error('quux')]
 		arrayTester.test([Promise.reject(errors[0]), Promise.reject(errors[1])], function (input, source, raceWinner) {
 			var p = Promise.resolve(input).map(returnsSelf)

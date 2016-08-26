@@ -57,7 +57,7 @@ require('../tools/test/describe')('Promise.all', function (Promise, expect) {
 			return expect(Promise.all(input)).to.be.rejectedWith(err)
 		})
 	})
-	describe('should be rejected by the first rejected promise', function () {
+	describe('should be rejected by the earliest rejected promise', function () {
 		var errors = [new Error('baz'), new Error('quux')]
 		arrayTester.test([Promise.reject(errors[0]), Promise.reject(errors[1])], function (input, source, raceWinner) {
 			return expect(Promise.all(input)).to.be.rejectedWith(errors[raceWinner])
