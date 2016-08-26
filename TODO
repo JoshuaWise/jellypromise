@@ -9,8 +9,6 @@ optimizations for index.js to import on the server only:
 - use fake promise class (e.g., PromiseArray) for optimized aggregate methods, including Promise.all.
 - make sure to maintain the same long stack traces as with deoptimized versions.
 
-how much space would be saved in the browser if we used Promise.all for aggregate methods?
-
 test if bluebird's async implementation is faster than asap/raw
 
 
@@ -21,8 +19,6 @@ and the stack trace says they're from different events
 long stack traces of warnings?
 
 add hash links to README
-
-maybe throw unhandled rejections in production mode?
 
 make sure all prototype methods that generate a new, linked promise, use _handleNew, _handle, or _then, so that `this` promise sets SUPPRESS_UNHANDLED_REJECTIONS to 1
 
