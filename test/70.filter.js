@@ -1,5 +1,6 @@
 'use strict'
 var ArrayTester = require('../tools/test/array-tester')
+var Thenable = require('../tools/test/thenable')
 var shallowEquals = require('../tools/test/shallow-equals')
 var makeIterable = require('../tools/test/make-iterable')
 var testNonIterables = require('../tools/test/test-non-iterables')
@@ -35,6 +36,10 @@ require('../tools/test/describe')('.filter', function (Promise, expect) {
 	}
 	var currentInputPromise = null // Use only synchronously after invoking expectToMatch().
 	var useIterable = false // Use only synchronously before invoking expectToMatch().
+	
+	function expectABC(fn) {
+		return expect(Promise.resolve(['a', 'b', 'c']).filter(fn))
+	}
 	
 	it('should be ignored given a rejected promise', function () {
 		var array = [123]
@@ -122,7 +127,113 @@ require('../tools/test/describe')('.filter', function (Promise, expect) {
 			return expect(p).to.be.rejectedWith(errors[raceWinner])
 		})
 	})
-	
-	it('should test an array of values (as done in bluebird), against different types of callback functions')
-	it('should test all of the comments in methods-aggregate.js')
+	describe('should handle each style of callback correctly', function () {
+		specify('callbacks returning values', function () {
+			return expectABC(function (val) {
+				return val !== 'b'
+			}).to.eventually.satisfy(shallowEquals(['a', 'c']))
+		})
+		specify('callbacks returning already fulfilled promises', function () {
+			return expectABC(function (val) {
+				return Promise.resolve(val !== 'b')
+			}).to.eventually.satisfy(shallowEquals(['a', 'c']))
+		})
+		specify('callbacks returning immediately fulfilled promises', function () {
+			return expectABC(function (val) {
+				return new Promise(function (res) {
+					res(val !== 'b')
+				})
+			}).to.eventually.satisfy(shallowEquals(['a', 'c']))
+		})
+		specify('callbacks returning eventually fulfilled promises', function () {
+			return expectABC(function (val) {
+				return new Promise(function (res) {
+					setTimeout(function () {
+						res(val !== 'b')
+					}, 1)
+				})
+			}).to.eventually.satisfy(shallowEquals(['a', 'c']))
+		})
+		specify('callbacks throwing exceptions', function () {
+			var err = new Error('foobar')
+			return expectABC(function (val) {
+				if (val === 'b') {
+					throw err
+				}
+				return true
+			}).to.be.rejectedWith(err)
+		})
+		specify('callbacks returning already rejected promises', function () {
+			var err = new Error('foobar')
+			return expectABC(function (val) {
+				return val === 'b' ? Promise.reject(err) : true
+			}).to.be.rejectedWith(err)
+		})
+		specify('callbacks returning immediately rejected promises', function () {
+			var err = new Error('foobar')
+			return expectABC(function (val) {
+				return val !== 'b' ? true : new Promise(function (res, rej) {
+					rej(err)
+				})
+			}).to.be.rejectedWith(err)
+		})
+		specify('callbacks returning synchronously fulfilled thenables', function () {
+			return expectABC(function (val) {
+				return new Thenable().resolve(val !== 'b')
+			}).to.eventually.satisfy(shallowEquals(['a', 'c']))
+		})
+		specify('callbacks returning asynchronously fulfilled thenables', function () {
+			return expectABC(function (val) {
+				return new Thenable({async: 50}).resolve(val !== 'b')
+			}).to.eventually.satisfy(shallowEquals(['a', 'c']))
+		})
+		specify('callbacks returning synchronously rejected thenables', function () {
+			var err = new Error('foobar')
+			return expectABC(function (val) {
+				return val !== 'b' ? true : new Thenable().reject(err)
+			}).to.be.rejectedWith(err)
+		})
+		specify('callbacks returning asynchronously rejected thenables', function () {
+			var err = new Error('foobar')
+			return expectABC(function (val) {
+				return val !== 'b' ? true : new Thenable({async: 50}).reject(err)
+			}).to.be.rejectedWith(err)
+		})
+		specify('callbacks returning non-boolean values', function () {
+			return expectABC(function (val) {
+				return val !== 'b' ? {} : ''
+			}).to.eventually.satisfy(shallowEquals(['a', 'c']))
+		})
+		specify('callbacks returning eventual non-boolean promises', function () {
+			return expectABC(function (val) {
+				return new Promise(function (res) {
+					setTimeout(function () {
+						res(val !== 'b' ? {} : '')
+					}, 1)
+				})
+			}).to.eventually.satisfy(shallowEquals(['a', 'c']))
+		})
+	})
+	describe('should not be affected by changing the input array from inside a callback', function () {
+		specify('input array', function () {
+			arrayTester.test(['foo', ''], function (input, source) {
+				return expect(Promise.resolve(input).filter(function () {
+					input[0] = 'x'
+					input[1] = 'y'
+					input[2] = 'z'
+					return true
+				})).to.eventually.satisfy(shallowEquals(['foo', '']))
+			})
+		})
+		specify('input iterable', function () {
+			arrayTester.test(['foo', ''], function (input, source) {
+				return expect(Promise.resolve(makeIterable(input)).filter(function () {
+					input[0] = 'x'
+					input[1] = 'y'
+					input[2] = 'z'
+					return true
+				})).to.eventually.satisfy(shallowEquals(['foo', '']))
+			})
+		})
+	})
 })

@@ -29,7 +29,8 @@ Promise.prototype.filter = function (fn, ctx) {
 			var len = array.length
 			var bools = new Array(len)
 			for (var i=0; i<len; i++) {
-				bools[i] = !!fn.call(ctx, array[i], i, len)
+				var bool = fn.call(ctx, array[i], i, len)
+				bools[i] = Promise.isPromise(bool) ? bool : !!bool
 			}
 			return Promise.all(bools)._then(function (bools) {
 				var len = bools.length
