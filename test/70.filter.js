@@ -246,5 +246,29 @@ require('../tools/test/describe')('.filter', function (Promise, expect) {
 			})
 		})
 	})
-	it('should test context argument')
+	describe('should use the context argument, if provided', function () {
+		function testContext(ctx) {
+			var p = Promise.resolve(['a', 'b', 'c'])
+			var correctContext = 0
+			function handler() {
+				if (this === ctx) {++correctContext}
+				return true
+			}
+			arguments.length > 0 ? (p = p.filter(handler, ctx))
+			                     : (p = p.filter(handler))
+			return p.then(function (result) {
+				expect(correctContext).to.equal(3)
+				expect(result).to.satisfy(shallowEquals(['a', 'b', 'c']))
+			})
+		}
+		specify('undefined', function () {
+			return testContext()
+		})
+		specify('null', function () {
+			return testContext(null)
+		})
+		specify('object', function () {
+			return testContext({})
+		})
+	})
 })
