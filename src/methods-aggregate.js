@@ -90,6 +90,7 @@ Promise.prototype.reduce = function (fn, seed) {
 			var array = arr
 			var firstItem = true
 			var len = array.length
+			var displayLen = useSeed ? len - 1 : len
 			var i = 0
 			
 			for (var j=0; j<len; j++) {
@@ -111,7 +112,7 @@ Promise.prototype.reduce = function (fn, seed) {
 					return setResult(item)
 				}
 				
-				return Promise.resolve(fn(result, item, i++, len))._then(setResult)
+				return Promise.resolve(fn(result, item, i++, displayLen))._then(setResult)
 			}
 			var next = function $UUID() {
 				i === len

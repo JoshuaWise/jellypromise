@@ -301,7 +301,7 @@ require('../tools/test/describe')('.reduce', function (Promise, expect) {
 			}).to.be.rejectedWith(err)
 		})
 	})
-	describe('should not be affected by changing the input array from inside a callback', function () {
+	describe('should not be affected by changing the input from inside a callback', function () {
 		specify('input array', function () {
 			arrayTester.test(['foo', 'bar', 'baz'], function (input, source) {
 				return expect(Promise.resolve(input).reduce(function (a, b) {
@@ -419,5 +419,46 @@ require('../tools/test/describe')('.reduce', function (Promise, expect) {
 			})
 		})
 	})
-	it('should test seed argument')
+	describe('should use seed argument, if provided', function () {
+		function expectToSumSeed(input, source, seed, seedValue) {
+			var callbackValuesB = []
+			var lenAlwaysCorrect = true
+			var indexAlwaysCorrect = true
+			var aAlwaysCorrect = true
+			var lastReturnValue
+			if (useIterable) {
+				useIterable = false
+				input = makeIterable(input)
+			}
+			currentInputPromise = Promise.resolve(input)
+			var index = 0
+			return currentInputPromise.reduce(function (a, b, i, len) {
+				if (len !== source.length) {
+					lenAlwaysCorrect = false
+				}
+				if (i !== index++) {
+					indexAlwaysCorrect = false
+				}
+				if (i === 0 && a !== seedValue) {
+					aAlwaysCorrect = false
+				}
+				if (i !== 0 && a !== lastReturnValue) {
+					aAlwaysCorrect = false
+				}
+				callbackValuesB.push(b)
+				return lastReturnValue = a + b
+			}, seed).then(function (result) {
+				expect(lenAlwaysCorrect).to.be.true
+				expect(indexAlwaysCorrect).to.be.true
+				expect(aAlwaysCorrect).to.be.true
+				expect(result).to.equal(sum([seedValue].concat(source)))
+				expect(callbackValuesB).to.satisfy(shallowEquals(source))
+			})
+		}
+		it('should test seed argument: undefined')
+		it('should test seed argument: values')
+		it('should test seed argument: rejection')
+		it('should test seed argument: rejection order (seed first)')
+		it('should test seed argument: not changing input array')
+	})
 })
