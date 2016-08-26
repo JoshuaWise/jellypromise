@@ -129,29 +129,34 @@ require('../tools/test/describe')('.forEach', function (Promise, expect) {
 	describe('should handle each style of callback correctly', function () {
 		specify('callbacks returning values', function () {
 			return expectABC(function (val) {
-				return val !== 'b' ? val : val + val
-			}).to.eventually.satisfy(shallowEquals(['a', 'bb', 'c']))
+				return Math.random()
+			}).to.eventually.satisfy(shallowEquals(['a', 'b', 'c']))
 		})
 		specify('callbacks returning already fulfilled promises', function () {
 			return expectABC(function (val) {
-				return Promise.resolve(val !== 'b' ? val : val + val)
-			}).to.eventually.satisfy(shallowEquals(['a', 'bb', 'c']))
+				return Promise.resolve(Math.random())
+			}).to.eventually.satisfy(shallowEquals(['a', 'b', 'c']))
 		})
 		specify('callbacks returning immediately fulfilled promises', function () {
 			return expectABC(function (val) {
 				return new Promise(function (res) {
-					res(val !== 'b' ? val : val + val)
+					res(Math.random())
 				})
-			}).to.eventually.satisfy(shallowEquals(['a', 'bb', 'c']))
+			}).to.eventually.satisfy(shallowEquals(['a', 'b', 'c']))
 		})
 		specify('callbacks returning eventually fulfilled promises', function () {
-			return expectABC(function (val) {
+			var source = ['a', 'b', 'c']
+			var t0 = (new Date).getTime()
+			return Promise.resolve(source).forEach(function (val) {
 				return new Promise(function (res) {
 					setTimeout(function () {
-						res(val !== 'b' ? val : val + val)
-					}, 1)
+						res(Math.random())
+					}, 200)
 				})
-			}).to.eventually.satisfy(shallowEquals(['a', 'bb', 'c']))
+			}).then(function (value) {
+				expect(shallowEquals(source)(value)).to.be.true
+				expect((new Date).getTime() - t0).to.be.within(180, 260)
+			})
 		})
 		specify('callbacks throwing exceptions', function () {
 			var err = new Error('foobar')
@@ -159,43 +164,59 @@ require('../tools/test/describe')('.forEach', function (Promise, expect) {
 				if (val === 'b') {
 					throw err
 				}
-				return val
+				return Math.random()
 			}).to.be.rejectedWith(err)
 		})
 		specify('callbacks returning already rejected promises', function () {
 			var err = new Error('foobar')
 			return expectABC(function (val) {
-				return val === 'b' ? Promise.reject(err) : val
+				return val === 'b' ? Promise.reject(err) : Math.random()
 			}).to.be.rejectedWith(err)
 		})
 		specify('callbacks returning immediately rejected promises', function () {
 			var err = new Error('foobar')
 			return expectABC(function (val) {
-				return val !== 'b' ? val : new Promise(function (res, rej) {
+				return val !== 'b' ? Math.random() : new Promise(function (res, rej) {
 					rej(err)
 				})
 			}).to.be.rejectedWith(err)
 		})
+		specify('callbacks returning eventually rejected promises', function () {
+			var err = new Error('foobar')
+			var t0 = (new Date).getTime()
+			return Promise.resolve(['a', 'b', 'c']).forEach(function (val) {
+				return val !== 'b' ? Math.random() : new Promise(function (res, rej) {
+					setTimeout(function () {
+						rej(err)
+					}, 200)
+				})
+			}).then(function (value) {
+				throw new Error('This promise should have been rejected.')
+			}, function (reason) {
+				expect(reason).to.equal(err)
+				expect((new Date).getTime() - t0).to.be.within(180, 260)
+			})
+		})
 		specify('callbacks returning synchronously fulfilled thenables', function () {
 			return expectABC(function (val) {
-				return new Thenable().resolve(val !== 'b' ? val : val + val)
-			}).to.eventually.satisfy(shallowEquals(['a', 'bb', 'c']))
+				return new Thenable().resolve(Math.random())
+			}).to.eventually.satisfy(shallowEquals(['a', 'b', 'c']))
 		})
 		specify('callbacks returning asynchronously fulfilled thenables', function () {
 			return expectABC(function (val) {
-				return new Thenable({async: 50}).resolve(val !== 'b' ? val : val + val)
-			}).to.eventually.satisfy(shallowEquals(['a', 'bb', 'c']))
+				return new Thenable({async: 50}).resolve(Math.random())
+			}).to.eventually.satisfy(shallowEquals(['a', 'b', 'c']))
 		})
 		specify('callbacks returning synchronously rejected thenables', function () {
 			var err = new Error('foobar')
 			return expectABC(function (val) {
-				return val !== 'b' ? val : new Thenable().reject(err)
+				return val !== 'b' ? Math.random() : new Thenable().reject(err)
 			}).to.be.rejectedWith(err)
 		})
 		specify('callbacks returning asynchronously rejected thenables', function () {
 			var err = new Error('foobar')
 			return expectABC(function (val) {
-				return val !== 'b' ? val : new Thenable({async: 50}).reject(err)
+				return val !== 'b' ? Math.random() : new Thenable({async: 50}).reject(err)
 			}).to.be.rejectedWith(err)
 		})
 	})

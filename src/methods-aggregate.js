@@ -48,7 +48,14 @@ Promise.prototype.map = function (fn, ctx) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		return mapArray(asArray(iterable), fn, ctx)
+		return Promise.all(iterable)._then(function $UUID(array) {
+			var len = array.length
+			var mapped = new Array(len)
+			for (var i=0; i<len; i++) {
+				mapped[i] = fn.call(ctx, array[i], i, len)
+			}
+			return Promise.all(mapped)
+		})
 	})
 }
 Promise.prototype.forEach = function (fn, ctx) {
@@ -56,9 +63,13 @@ Promise.prototype.forEach = function (fn, ctx) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		var array = asArrayCopy$UUID(iterable)
-		return mapArray(array, fn, ctx)._then(function () {
-			return array
+		return Promise.all(iterable)._then(function $UUID(array) {
+			var len = array.length
+			var mapped = new Array(len)
+			for (var i=0; i<len; i++) {
+				mapped[i] = fn.call(ctx, array[i], i, len)
+			}
+			return Promise.all(mapped)._then(function () {return array})
 		})
 	})
 }
@@ -109,28 +120,6 @@ Promise.prototype.reduce = function (fn, seed) {
 			}
 			next()
 		})
-	})
-}
-
-function mapArray(input, fn, ctx) {
-	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
-		var pendings = input.length
-		var result = new Array(pendings)
-		if (pendings === 0) {
-			return res(result)
-		}
-		rej = LST.upgradeRejector(rej) // @[/development]
-		var each = function (i) {
-			return function $UUID(value) {
-				return Promise.resolve(fn.call(ctx, value, i, len))._then(function (value) {
-					result[i] = value
-					if (--pendings === 0) {res(result)}
-				})
-			}
-		}
-		for (var i=0, len=pendings; i<len; i++) {
-			Promise.resolve(input[i])._then(each(i))._then(null, rej)
-		}
 	})
 }
 

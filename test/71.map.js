@@ -177,6 +177,16 @@ require('../tools/test/describe')('.map', function (Promise, expect) {
 				})
 			}).to.be.rejectedWith(err)
 		})
+		specify('callbacks returning eventually rejected promises', function () {
+			var err = new Error('foobar')
+			return expectABC(function (val) {
+				return val !== 'b' ? val : new Promise(function (res, rej) {
+					setTimeout(function () {
+						rej(err)
+					}, 1)
+				})
+			}).to.be.rejectedWith(err)
+		})
 		specify('callbacks returning synchronously fulfilled thenables', function () {
 			return expectABC(function (val) {
 				return new Thenable().resolve(val !== 'b' ? val : val + val)
