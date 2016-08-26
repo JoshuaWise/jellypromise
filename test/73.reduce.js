@@ -211,11 +211,11 @@ require('../tools/test/describe')('.reduce', function (Promise, expect) {
 		})
 	})
 	describe('should be rejected by the input array\'s first rejected promise', function () {
-		var errors = [new Error('baz'), new Error('quux'), new Error('tron')]
-		var input = [Promise.reject(errors[0]), Promise.reject(errors[1]), Promise.reject(errors[2])]
+		var err = new Error('baz')
+		var input = [Promise.reject(err), Promise.reject(new Error('quux')), Promise.reject(new Error('tron'))]
 		arrayTester.test(input, function (input, source, raceWinner) {
 			var p = Promise.resolve(input).reduce(returnsSum)
-			return expect(p).to.be.rejectedWith(errors[0])
+			return expect(p).to.be.rejectedWith(err)
 		})
 	})
 	describe('should handle each style of callback correctly', function () {
@@ -455,10 +455,43 @@ require('../tools/test/describe')('.reduce', function (Promise, expect) {
 				expect(callbackValuesB).to.satisfy(shallowEquals(source))
 			})
 		}
-		it('should test seed argument: undefined')
-		it('should test seed argument: values')
-		it('should test seed argument: rejection')
-		it('should test seed argument: rejection order (seed first)')
-		it('should test seed argument: not changing input array')
+		it('should not change the input array when a seed is provided', function () {
+			var input = ['a', Promise.resolve('b'), new Thenable({async: 50}).resolve('c')]
+			return Promise.resolve(input).reduce(function (a, b) {
+				return a + b
+			}, new Thenable({async: 50}).resolve('z')).then(function (result) {
+				expect(result).to.equal('zabc')
+				expect(input.length).to.equal(3)
+				expect(input[0]).to.equal('a')
+			})
+		})
+		it('should accept seed values of undefined', function () {
+			var input = ['a', Promise.resolve('b'), new Thenable({async: 50}).resolve('c')]
+			return Promise.resolve(input).reduce(function (a, b) {
+				return a + b
+			}, undefined).then(function (result) {
+				expect(result).to.equal('undefinedabc')
+			})
+		})
+		describe('should be fulfilled with a sum of the seed and values', function () {
+			arrayTester.test(['zzz', 'foo', 123], function (input, source) {
+				return expectToSumSeed(input.slice(1), source.slice(1), input[0], source[0])
+			})
+		})
+		describe('should be rejected when the seed is a rejected promise', function () {
+			var err = new Error('baz')
+			arrayTester.test([Promise.reject(new Error('foo')), 123], function (input, source) {
+				var neverInvoked = true
+				var p = Promise.resolve(input).reduce(function (a, b) {
+					neverInvoked = false
+				}, new Thenable({async: 50}).reject(err))
+				return p.then(function () {
+					throw new Error('This promise should have been rejected.')
+				}, function (reason) {
+					expect(reason).to.equal(err)
+					expect(neverInvoked).to.be.true
+				})
+			})
+		})
 	})
 })

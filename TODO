@@ -1,5 +1,5 @@
 add more tests
-compare to bluebird tests (next: .reduce)
+compare to bluebird tests (next: .promisify and nodeify)
 
 confirm long stack traces for aggregate methods (rejected/thrown immediately, or later in enumeration, or in handler)
 
