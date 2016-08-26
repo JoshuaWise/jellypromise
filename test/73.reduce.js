@@ -16,10 +16,11 @@ require('../tools/test/describe')('.reduce', function (Promise, expect) {
 	var arrayTester = new ArrayTester(Promise)
 	function returnsSum(a, b, i, len) {return a + b}
 	function expectToSum(input, source) {
-		var callbackValuesA = new Array(source.length - 1)
-		var callbackValuesB = new Array(source.length - 1)
+		var callbackValuesB = []
 		var lenAlwaysCorrect = true
 		var indexAlwaysCorrect = true
+		var aAlwaysCorrect = true
+		var lastReturnValue
 		if (useIterable) {
 			useIterable = false
 			input = makeIterable(input)
@@ -33,22 +34,27 @@ require('../tools/test/describe')('.reduce', function (Promise, expect) {
 			if (i !== index++) {
 				indexAlwaysCorrect = false
 			}
-			callbackValuesA.push(a)
+			if (i === 1 && a !== source[0]) {
+				aAlwaysCorrect = false
+			}
+			if (i !== 1 && a !== lastReturnValue) {
+				aAlwaysCorrect = false
+			}
 			callbackValuesB.push(b)
-			return a + b
+			return lastReturnValue = a + b
 		}).then(function (result) {
 			expect(lenAlwaysCorrect).to.be.true
 			expect(indexAlwaysCorrect).to.be.true
+			expect(aAlwaysCorrect).to.be.true
 			expect(result).to.equal(sum(source))
-			expect(callbackValuesA).to.satisfy(shallowEquals(sources.slice(0, -1)))
-			expect(callbackValuesB).to.satisfy(shallowEquals(sources.slice(1)))
+			expect(callbackValuesB).to.satisfy(shallowEquals(source.slice(1)))
 		})
 	}
 	var currentInputPromise = null // Use only synchronously after invoking expectToSum().
 	var useIterable = false // Use only synchronously before invoking expectToSum().
 	
-	function expectABC(fn) {
-		return expect(Promise.resolve(['a', 'b', 'c']).reduce(fn))
+	function expectABCD(fn) {
+		return expect(Promise.resolve(['a', 'b', 'c', 'd']).reduce(fn))
 	}
 	
 	it('should be ignored given a rejected promise', function () {
@@ -128,19 +134,19 @@ require('../tools/test/describe')('.reduce', function (Promise, expect) {
 	})
 	describe('should be rejected with the rejection reason of single-item arrays', function () {
 		specify('synchronous single rejected promise', function () {
-			var err = new Error('foobarbaz')
-			return expect(Promise.resolve([Promise.reject(err)]).reduce(function (a, b, i, len) {
+			var err = new Error('blahhhh')
+			return expect(Promise.resolve([Promise.reject(err).catchLater()]).reduce(function (a, b, i, len) {
 				throw new Error('This callback should not have been invoked.')
 			})).to.be.rejectedWith(err)
 		})
 		specify('synchronous single rejected promise seed', function () {
-			var err = new Error('foobarbaz')
+			var err = new Error('blahhhh')
 			return expect(Promise.resolve([]).reduce(function (a, b, i, len) {
 				throw new Error('This callback should not have been invoked.')
-			}, Promise.reject(err))).to.be.rejectedWith(err)
+			}, Promise.reject(err).catchLater())).to.be.rejectedWith(err)
 		})
 		specify('asynchronous single rejected promise', function () {
-			var err = new Error('foobarbaz')
+			var err = new Error('blahhhh')
 			var input = [
 				new Promise(function (res, rej) {
 					setTimeout(function () {rej(err)}, 50)
@@ -151,7 +157,7 @@ require('../tools/test/describe')('.reduce', function (Promise, expect) {
 			})).to.be.rejectedWith(err)
 		})
 		specify('asynchronous single rejected promise seed', function () {
-			var err = new Error('foobarbaz')
+			var err = new Error('blahhhh')
 			var seed = new Promise(function (res, rej) {
 				setTimeout(function () {rej(err)}, 50)
 			})
@@ -212,121 +218,206 @@ require('../tools/test/describe')('.reduce', function (Promise, expect) {
 			return expect(p).to.be.rejectedWith(errors[0])
 		})
 	})
-	// Everything below has not been done yet
 	describe('should handle each style of callback correctly', function () {
 		specify('callbacks returning values', function () {
-			return expectABC(function (val) {
-				return Math.random()
-			}).to.eventually.satisfy(shallowEquals(['a', 'b', 'c']))
+			return expectABCD(function (a, b) {
+				return a + b
+			}).to.become('abcd')
 		})
 		specify('callbacks returning already fulfilled promises', function () {
-			return expectABC(function (val) {
-				return Promise.resolve(Math.random())
-			}).to.eventually.satisfy(shallowEquals(['a', 'b', 'c']))
+			return expectABCD(function (a, b) {
+				return Promise.resolve(a + b)
+			}).to.become('abcd')
 		})
 		specify('callbacks returning immediately fulfilled promises', function () {
-			return expectABC(function (val) {
+			return expectABCD(function (a, b) {
 				return new Promise(function (res) {
-					res(Math.random())
+					res(a + b)
 				})
-			}).to.eventually.satisfy(shallowEquals(['a', 'b', 'c']))
+			}).to.become('abcd')
 		})
 		specify('callbacks returning eventually fulfilled promises', function () {
-			var source = ['a', 'b', 'c']
-			var t0 = (new Date).getTime()
-			return Promise.resolve(source).forEach(function (val) {
+			return expectABCD(function (a, b) {
 				return new Promise(function (res) {
 					setTimeout(function () {
-						res(Math.random())
-					}, 200)
+						res(a + b)
+					}, 1)
 				})
-			}).then(function (value) {
-				expect(shallowEquals(source)(value)).to.be.true
-				expect((new Date).getTime() - t0).to.be.within(180, 260)
-			})
+			}).to.become('abcd')
 		})
 		specify('callbacks throwing exceptions', function () {
 			var err = new Error('foobar')
-			return expectABC(function (val) {
-				if (val === 'b') {
+			return expectABCD(function (a, b) {
+				if (b === 'c') {
 					throw err
 				}
-				return Math.random()
+				return a + b
 			}).to.be.rejectedWith(err)
 		})
 		specify('callbacks returning already rejected promises', function () {
 			var err = new Error('foobar')
-			return expectABC(function (val) {
-				return val === 'b' ? Promise.reject(err) : Math.random()
+			return expectABCD(function (a, b) {
+				return b === 'c' ? Promise.reject(err) : a + b
 			}).to.be.rejectedWith(err)
 		})
 		specify('callbacks returning immediately rejected promises', function () {
 			var err = new Error('foobar')
-			return expectABC(function (val) {
-				return val !== 'b' ? Math.random() : new Promise(function (res, rej) {
+			return expectABCD(function (a, b) {
+				return b !== 'c' ? a + b : new Promise(function (res, rej) {
 					rej(err)
 				})
 			}).to.be.rejectedWith(err)
 		})
 		specify('callbacks returning eventually rejected promises', function () {
 			var err = new Error('foobar')
-			var t0 = (new Date).getTime()
-			return Promise.resolve(['a', 'b', 'c']).forEach(function (val) {
-				return val !== 'b' ? Math.random() : new Promise(function (res, rej) {
+			return expectABCD(function (a, b) {
+				return b !== 'c' ? a + b : new Promise(function (res, rej) {
 					setTimeout(function () {
 						rej(err)
-					}, 200)
+					}, 1)
 				})
-			}).then(function (value) {
-				throw new Error('This promise should have been rejected.')
-			}, function (reason) {
-				expect(reason).to.equal(err)
-				expect((new Date).getTime() - t0).to.be.within(180, 260)
-			})
+			}).to.be.rejectedWith(err)
 		})
 		specify('callbacks returning synchronously fulfilled thenables', function () {
-			return expectABC(function (val) {
-				return new Thenable().resolve(Math.random())
-			}).to.eventually.satisfy(shallowEquals(['a', 'b', 'c']))
+			return expectABCD(function (a, b) {
+				return new Thenable().resolve(a + b)
+			}).to.become('abcd')
 		})
 		specify('callbacks returning asynchronously fulfilled thenables', function () {
-			return expectABC(function (val) {
-				return new Thenable({async: 50}).resolve(Math.random())
-			}).to.eventually.satisfy(shallowEquals(['a', 'b', 'c']))
+			return expectABCD(function (a, b) {
+				return new Thenable({async: 50}).resolve(a + b)
+			}).to.become('abcd')
 		})
 		specify('callbacks returning synchronously rejected thenables', function () {
 			var err = new Error('foobar')
-			return expectABC(function (val) {
-				return val !== 'b' ? Math.random() : new Thenable().reject(err)
+			return expectABCD(function (a, b) {
+				return b !== 'c' ? a + b : new Thenable().reject(err)
 			}).to.be.rejectedWith(err)
 		})
 		specify('callbacks returning asynchronously rejected thenables', function () {
 			var err = new Error('foobar')
-			return expectABC(function (val) {
-				return val !== 'b' ? Math.random() : new Thenable({async: 50}).reject(err)
+			return expectABCD(function (a, b) {
+				return b !== 'c' ? a + b : new Thenable({async: 50}).reject(err)
 			}).to.be.rejectedWith(err)
 		})
 	})
 	describe('should not be affected by changing the input array from inside a callback', function () {
 		specify('input array', function () {
-			arrayTester.test(['foo', ''], function (input, source) {
-				return expect(Promise.resolve(input).forEach(function (val) {
-					input[0] = 'x'
-					input[1] = 'y'
-					input[2] = 'z'
-					return val + '1'
-				})).to.eventually.satisfy(shallowEquals(['foo', '']))
+			arrayTester.test(['foo', 'bar', 'baz'], function (input, source) {
+				return expect(Promise.resolve(input).reduce(function (a, b) {
+					input[0] = 'w'
+					input[1] = 'x'
+					input[2] = 'y'
+					input[3] = 'z'
+					return a + b
+				})).to.become('foobarbaz')
 			})
 		})
 		specify('input iterable', function () {
-			arrayTester.test(['foo', ''], function (input, source) {
-				return expect(Promise.resolve(makeIterable(input)).forEach(function (val) {
-					input[0] = 'x'
-					input[1] = 'y'
-					input[2] = 'z'
-					return val + '1'
-				})).to.eventually.satisfy(shallowEquals(['foo', '']))
+			arrayTester.test(['foo', 'bar', 'baz'], function (input, source) {
+				return expect(Promise.resolve(makeIterable(input)).reduce(function (a, b) {
+					input[0] = 'w'
+					input[1] = 'x'
+					input[2] = 'y'
+					input[3] = 'z'
+					return a + b
+				})).to.become('foobarbaz')
 			})
 		})
 	})
+	describe('should invoke catchLater() on each passed promise', function () {
+		if (Promise.suppressUnhandledRejections) {
+			var originalSuppressionValue = Promise.suppressUnhandledRejections
+			before(function () {
+				Promise.suppressUnhandledRejections = false
+			})
+			after(function () {
+				Promise.suppressUnhandledRejections = originalSuppressionValue
+			})
+		}
+		function hookConsole(cb) {
+			var consoleError = console.error
+			var isPending = true
+			console.error = function () {
+				if (isPending) {
+					isPending = false
+					console.error = consoleError
+					cb()
+				}
+			}
+			return function cancel() {
+				if (isPending) {
+					isPending = false
+					console.error = consoleError
+				}
+			}
+		}
+		specify('input array', function (done) {
+			var err = new Error('blahhhh')
+			var logged = false
+			var cancel = hookConsole(function () {logged = true})
+			Promise.resolve([
+				new Promise(function (res) {
+					setTimeout(function () {res('a')}, 50)
+				}),
+				new Promise(function (res) {
+					setTimeout(function () {res('b')}, 100)
+				}),
+				new Promise(function (res) {
+					setTimeout(function () {res('c')}, 150)
+				}),
+				new Promise(function (res, rej) {
+					setTimeout(function () {rej(err)}, 1)
+				})
+			]).filter(returnsSum).then(function () {
+				cancel()
+				done(new Error('This promise should have been rejected.'))
+			}, function (reason) {
+				cancel()
+				if (logged) {
+					done(new Error('Unhandled rejection logging should have been supressed.'))
+					return
+				}
+				if (reason !== err) {
+					done(new Error('Expected rejection reason to be a different error object.'))
+					return
+				}
+				done()
+			})
+		})
+		specify('input iterable', function (done) {
+			var err = new Error('blahhhh')
+			var logged = false
+			var cancel = hookConsole(function () {logged = true})
+			Promise.resolve(makeIterable([
+				new Promise(function (res) {
+					setTimeout(function () {res('a')}, 50)
+				}),
+				new Promise(function (res) {
+					setTimeout(function () {res('b')}, 100)
+				}),
+				new Promise(function (res) {
+					setTimeout(function () {res('c')}, 150)
+				}),
+				new Promise(function (res, rej) {
+					setTimeout(function () {rej(err)}, 1)
+				})
+			])).filter(returnsSum).then(function () {
+				cancel()
+				done(new Error('This promise should have been rejected.'))
+			}, function (reason) {
+				cancel()
+				if (logged) {
+					done(new Error('Unhandled rejection logging should have been supressed.'))
+					return
+				}
+				if (reason !== err) {
+					done(new Error('Expected rejection reason to be a different error object.'))
+					return
+				}
+				done()
+			})
+		})
+	})
+	it('should test seed argument')
 })

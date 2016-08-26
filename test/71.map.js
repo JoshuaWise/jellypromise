@@ -232,4 +232,5 @@ require('../tools/test/describe')('.map', function (Promise, expect) {
 			})
 		})
 	})
+	it('should test context argument')
 })

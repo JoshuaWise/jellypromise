@@ -90,7 +90,7 @@ Promise.prototype.reduce = function (fn, seed) {
 			var array = arr
 			var firstItem = true
 			var len = array.length
-			var i = useSeed ? 0 : 1
+			var i = 0
 			
 			for (var j=0; j<len; j++) {
 				var item = array[j]

@@ -246,4 +246,5 @@ require('../tools/test/describe')('.filter', function (Promise, expect) {
 			})
 		})
 	})
+	it('should test context argument')
 })
