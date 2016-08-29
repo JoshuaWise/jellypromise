@@ -1,6 +1,6 @@
 'use strict'
 var testNonFunctions = require('../tools/test/test-non-functions')
-require('../tools/test/describe')('.promisify', function (Promise, expect) {
+require('../tools/test/describe')('Promise.promisify', function (Promise, expect) {
 	if (!Promise.promisify) {return}
 	function makeFunction(argCount, error, async) {
 		var args = []
