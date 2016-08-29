@@ -16,8 +16,8 @@ Promise.promisify = function (fn) {
 		'return function promisified(' + generateArgumentList(maxArgCount).join(', ') + ') {',
 			'var len = arguments.length',
 			'var promise = new Promise(INTERNAL)',
+			'var cb = function (err, val) {err == null ? resolve.call(promise, val) : reject.call(promise, err)}',
 			'addStackTrace.call(promise, 1)', // @[/development]
-			'var cb = function (err, val) {err == null ? promise._resolve(val) : promise._reject(err)}',
 			'switch (len) {',
 				argGuesses.map(generateSwitchCasePromisify).join('\n'),
 				'default:',
@@ -29,8 +29,8 @@ Promise.promisify = function (fn) {
 			'return promise',
 		'}'
 	].join('\n')
-	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch'], body)(Promise, fn, INTERNAL, tryApply, tryCatch) // @[/production]
-	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch', 'addStackTrace'], body)(Promise, fn, INTERNAL, tryApply, tryCatch, Promise.prototype._addStackTrace) // @[/development]
+	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch', 'resolve', 'reject'], body)(Promise, fn, INTERNAL, tryApply, tryCatch, Promise.prototype._resolve, Promise.prototype._reject) // @[/production]
+	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch', 'resolve', 'reject', 'addStackTrace'], body)(Promise, fn, INTERNAL, tryApply, tryCatch, Promise.prototype._resolve, Promise.prototype._reject, Promise.prototype._addStackTrace) // @[/development]
 }
 function generateArgumentList(count) {
 	var args = new Array(count)
