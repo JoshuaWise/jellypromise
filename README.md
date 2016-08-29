@@ -86,13 +86,13 @@ Prevents an error from being logged if the promise gets rejected but does not ye
 
 ### .finally(*handler*) -> *promise*
 
-Pass a `handler` that will be called regardless of this promise's fate. The `handler` will be invoked with no arguments, and it cannot change the promise chain's current fulfillment value or rejection reason. If `handler` returns a promise, the promise returned by `.finally` will not be settled until that promise is settled.
+Pass a `handler` that will be called regardless of this promise's fate. The `handler` will be invoked with no arguments, and it cannot change the promise chain's current fulfillment value or rejection reason. If `handler` returns a promise, the promise returned by [`.finally`](#finallyhandler---promise) will not be settled until that promise is settled.
 
 This method is primarily used for cleanup operations.
 
 ### .tap(*handler*) -> *promise*
 
-Like `.finally`, but the `handler` will not be called if this promise is rejected. The `handler` cannot change the promise chain's fulfillment value, but it can delay chained promises by returning an unsettled promise (just like `.finally`). The handler is invoked with a single argument: the fulfillment value of the previous promise.
+Like [`.finally`](#finallyhandler---promise), but the `handler` will not be called if this promise is rejected. The `handler` cannot change the promise chain's fulfillment value, but it can delay chained promises by returning an unsettled promise (just like [`.finally`](#finallyhandler---promise)). The handler is invoked with a single argument: the fulfillment value of the previous promise.
 
 This method is primarily used for side-effects.
 
