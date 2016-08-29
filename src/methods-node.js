@@ -13,6 +13,7 @@ Promise.promisify = function (fn) {
 	for (var i=likelyArgCount-1; i>=minArgCount; i--) {argGuesses.push(i)}
 	for (var i=likelyArgCount+1; i<=maxArgCount; i++) {argGuesses.push(i)}
 	var body = [
+		'"use strict"',
 		'return function promisified(' + generateArgumentList(maxArgCount).join(', ') + ') {',
 			'var len = arguments.length',
 			'var promise = new Promise(INTERNAL)',
@@ -81,12 +82,13 @@ Promise.nodeify = function (fn) {
 	for (var i=likelyArgCount-1; i>=minArgCount; i--) {argGuesses.push(i)}
 	for (var i=likelyArgCount+1; i<=maxArgCount; i++) {argGuesses.push(i)}
 	var body = [
+		'"use strict"',
 		'return function nodeified(' + generateArgumentList(maxArgCount).join(', ') + ') {',
 			'var len = arguments.length',
 			'var lenM1',
 			'if (!len || typeof arguments[lenM1 = len - 1] !== "function") {',
 				'fn.apply(this, arguments)',
-				'return',
+				'return this',
 			'}',
 			'switch (len) {',
 				argGuesses.map(generateSwitchCaseNodeify).join('\n'),
@@ -96,8 +98,11 @@ Promise.nodeify = function (fn) {
 					'for (var i=0; i<lenM1; i++) {args[i] = arguments[i]}',
 					'fn.apply(this, args).then(function (value) {',
 						'callback(null, value)',
-					'}, callback)',
+					'}, function (reason) {',
+						'callback(reason == null ? new Error(reason) : reason)',
+					'})',
 			'}',
+			'return this',
 		'}'
 	].join('\n')
 	return new Function('fn', body)(fn)
@@ -110,7 +115,9 @@ function generateSwitchCaseNodeify(argLength) {
 		'case ' + argLength + ':',
 			'fn.call(' + ['this'].concat(args).join(', ') + ').then(function (value) {',
 				callback + '(null, value)',
-			'}, ' + callback + ')',
+			'}, function (reason) {',
+				callback + '(reason == null ? new Error(reason) : reason)',
+			'})',
 			'break'
 	].join('\n')
 }
