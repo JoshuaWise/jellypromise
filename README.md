@@ -1,5 +1,5 @@
 <a href="https://promisesaplus.com/"><img src="https://promisesaplus.com/assets/logo-small.png" align="right" /></a>
-# jellypromise
+# jellypromise [![Build Status](https://img.shields.io/travis/JoshuaWise/jellypromise.svg)](https://travis-ci.org/JoshuaWise/jellypromise)
 
 This is an implementation of Promises that achieves the following design goals:
 - Tiny size (3.12 kB minified and gzipped)
@@ -7,8 +7,6 @@ This is an implementation of Promises that achieves the following design goals:
 - A superset of the [ES6 Promise](http://www.ecma-international.org/ecma-262/6.0/#sec-promise-objects)
 - Has a very useful, carefully-selected set of utilities, without bloat
 - Logs unhandled errors by default (the opposite of what [then/promise](https://github.com/then/promise) does), provides long stack traces, and provides utilities for useful error handling patterns
-
-[![Build Status](https://img.shields.io/travis/JoshuaWise/jellypromise.svg)](https://travis-ci.org/JoshuaWise/jellypromise)
 
 ## Installation
 
@@ -33,7 +31,7 @@ var promise = new Promise(function (resolve, reject) {
 
 When a promise is rejected but has no rejection handlers, the rejection will be logged to the console unless a rejection handler is added before the next event loop cycle. This helps the programmer quickly identify and fix errors.
 
-However, in some situations, you may wish to refrain from adding a rejection handler until a later time. In these cases, you can use the `.catchLater()` utility method to suppress this behavior.
+However, in some situations, you may wish to refrain from adding a rejection handler until a later time. In these cases, you can use the [`.catchLater()`](#catchlater---this) utility method to suppress this behavior.
 
 ## Production Mode
 
@@ -100,7 +98,7 @@ This method is primarily used for side-effects.
 
 ### .else([*...predicates*], *value*) -> *promise*
 
-Sugar for `.catch(function () {return value})`. This method is used for providing default values on a rejected promise chain. Predicates are supported, just like with the `.catch` method.
+Sugar for `.catch(function () {return value})`. This method is used for providing default values on a rejected promise chain. Predicates are supported, just like with the [`.catch`](#catchpredicates-onrejected---promise) method.
 
 ### .delay(*milliseconds*) -> *promise*
 
@@ -149,7 +147,7 @@ Values are passed through the `callback` as soon as possible. They are not passe
 
 ### .map(*callback*, [*thisArg*]) -> *promise*
 
-Similar to the `.filter` method, but instead of filtering the iterable/array, it transforms each value through the mapper `callback` function.
+Similar to the [`.filter`](#filtercallback-thisarg---promise) method, but instead of filtering the iterable/array, it transforms each value through the mapper `callback` function.
 
 `callback` has the following signature: `function callback(value, index, length)`
 
@@ -157,7 +155,7 @@ Values are passed through the `callback` as soon as possible. They are not passe
 
 ### .forEach(*callback*, [*thisArg*]) -> *promise*
 
-Similar to the `.map` method, but instead of transforming each value in the iterable, the resulting array will always contain the same values as the original iterable. Unsettled promises returned from the `callback` function will still delay the overall fulfillment of the promise created from this method. This method is primarily used for side effects.
+Similar to the [`.map`](#mapcallback-thisarg---promise) method, but instead of transforming each value in the iterable, the resulting array will always contain the same values as the original iterable. Unsettled promises returned from the `callback` function will still delay the overall fulfillment of the promise created from this method. This method is primarily used for side effects.
 
 `callback` has the following signature: `function callback(value, index, length)`
 
@@ -210,7 +208,7 @@ Non-promise values in the `iterable` are treated like already-fulfilled promises
 
 ### *static* Promise.props(*object*) -> *promise*
 
-Like `Promise.all`, but for an object's properties instead of iterated values. Returns a promise that will be resolved with an object that has fulfillment values at respective keys to the original `object`. Only the `object`'s own enumerable properties are considered (those retrieved by [`Object.keys`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys)).
+Like [`Promise.all`](#static-promisealliterable---promise), but for an object's properties instead of iterated values. Returns a promise that will be resolved with an object that has fulfillment values at respective keys to the original `object`. Only the `object`'s own enumerable properties are considered (those retrieved by [`Object.keys`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/keys)).
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 

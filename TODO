@@ -18,10 +18,8 @@ and the stack trace says they're from different events
 
 long stack traces of warnings?
 
-add hash links to README
-
 make sure all prototype methods that generate a new, linked promise, use _handleNew, _handle, or _then, so that `this` promise sets SUPPRESS_UNHANDLED_REJECTIONS to 1
 
-add browser test via zuul
+add browser test via zuul, and browser support section to readme
 
 generator (seperate module?)
