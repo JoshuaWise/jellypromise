@@ -2,36 +2,42 @@
 var testNonFunctions = require('../tools/test/test-non-functions')
 require('../tools/test/describe')('Promise.promisify', function (Promise, expect) {
 	if (!Promise.promisify) {return}
-	function makeFunction(argCount, error, async) {
+	function makeFunction(argCount, error, options, async) {
 		var args = []
 		for (var i=0; i<argCount; i++) {args.push('a_' + i)}
 		var pre = 'var args = [].slice.call(arguments); '
 		var callback = 'args[args.length - 1](error, args.slice(0, -1).reduce(function (a, b) {return a + b}, 0))'
 		if (!async) {
-			return Promise.promisify(new Function('error', 'return function (' + args.join(', ') + ') {' + pre + callback + '}')(error))
+			return Promise.promisify(new Function('error', 'return function (' + args.join(', ') + ') {' + pre + callback + '}')(error), options)
 		} else {
-			return Promise.promisify(new Function('error', 'return function (' + args.join(', ') + ') {' + pre + 'setTimeout(function () {' + callback + '}, ' + ~~async + ')}')(error))
+			return Promise.promisify(new Function('error', 'return function (' + args.join(', ') + ') {' + pre + 'setTimeout(function () {' + callback + '}, ' + ~~async + ')}')(error), options)
 		}
 	}
 	function forManyStyles(error, test) {
-		[0, 1, 2, 3, 4, 5, 6, 10, 50, 100].forEach(function (n) {
+		[0, 1, 2, 3, 4, 5, 6, 10, 50, 100, 200].forEach(function (n) {
 			specify('length ' + n + ' (sync)', function () {
-				return test(makeFunction(n, error))
+				return test(makeFunction(n, error, undefined))
 			})
 			specify('length ' + n + ' (async)', function () {
-				return test(makeFunction(n, error, 1))
+				return test(makeFunction(n, error, undefined, 1))
+			})
+			specify('length ' + n + ' (deoptimized)', function () {
+				return test(makeFunction(n, error, {deoptimize: true}))
 			})
 		})
 	}
-	function makeCustomFunction(argCount, error, body) {
+	function makeCustomFunction(argCount, error, body, options) {
 		var args = []
 		for (var i=0; i<argCount; i++) {args.push('a_' + i)}
-		return Promise.promisify(new Function('error', 'return function (' + args.join(', ') + ') {var callback = arguments[arguments.length - 1]; ' + body + '}')(error))
+		return Promise.promisify(new Function('error', 'return function (' + args.join(', ') + ') {var callback = arguments[arguments.length - 1]; ' + body + '}')(error), options)
 	}
 	function forManyCustomStyles(error, body, test) {
-		[0, 1, 2, 3, 4, 5, 6, 10, 50, 100].forEach(function (n) {
+		[0, 1, 2, 3, 4, 5, 6, 10, 50, 100, 200].forEach(function (n) {
 			specify('length ' + n, function () {
-				return test(makeCustomFunction(n, error, body))
+				return test(makeCustomFunction(n, error, body, undefined))
+			})
+			specify('length ' + n + ' (deoptimized)', function () {
+				return test(makeCustomFunction(n, error, body, {deoptimize: true}))
 			})
 		})
 	}
@@ -141,6 +147,27 @@ require('../tools/test/describe')('Promise.promisify', function (Promise, expect
 					expect(reason).to.equal(0)
 				})
 			})
+		})
+	})
+	describe('multiArgs options', function () {
+		it('should fulfill with an array of values', function () {
+			return expect(Promise.promisify(function (a, b, c, cb) {
+				cb(null, a + b + c, a - b - c, a, b, c)
+			}, {multiArgs: true})(5, 6, 8))
+			.to.become([19, -9, 5, 6, 8])
+		})
+		it('should fulfill with an array of a single value', function () {
+			return expect(Promise.promisify(function (a, b, c, cb) {
+				cb(null, a + b + c)
+			}, {multiArgs: true})(5, 6, 8))
+			.to.become([19])
+		})
+		it('should be rejected with an error', function () {
+			var err = new Error('foobar')
+			return expect(Promise.promisify(function (a, b, c, cb) {
+				cb(err, a + b + c, a - b - c, a, b, c)
+			}, {multiArgs: true})(5, 6, 8))
+			.to.be.rejectedWith(err)
 		})
 	})
 })

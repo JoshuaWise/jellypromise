@@ -2,28 +2,39 @@
 var Promise = require('./promise')
 var INTERNAL = require('./util').INTERNAL
 
-Promise.promisify = function (fn) {
+Promise.promisify = function (fn, options) {
 	if (typeof fn !== 'function') {
 		throw new TypeError('Expected argument to be a function.')
 	}
-	var likelyArgCount = Math.max(0, Math.min(1024, fn.length) - 1) || 0
-	var minArgCount = Math.max(0, likelyArgCount - 3)
-	var maxArgCount = Math.max(3, likelyArgCount)
+	options = options || {}
+	if (options.deoptimize) {
+		var likelyArgCount = 0
+		var minArgCount = 0
+		var maxArgCount = 127
+	} else {
+		var likelyArgCount = Math.max(0, Math.min(1024, fn.length) - 1) || 0
+		var minArgCount = Math.max(0, likelyArgCount - 3)
+		var maxArgCount = Math.max(3, likelyArgCount)
+	}
 	var argGuesses = [likelyArgCount]
 	for (var i=likelyArgCount-1; i>=minArgCount; i--) {argGuesses.push(i)}
 	for (var i=likelyArgCount+1; i<=maxArgCount; i++) {argGuesses.push(i)}
+	
+	var callback = options.multiArgs
+		? 'function (err) {if (err != null) {reject.call(promise, err); return} var len = arguments.length - 1; var results = new Array(len); for (var i=0; i<len; ++i) {results[i] = arguments[i + 1]} resolve.call(promise, results)}'
+		: 'function (err, val) {err == null ? resolve.call(promise, val) : reject.call(promise, err)}'
 	var body = [
 		'"use strict"',
 		'return function promisified(' + generateArgumentList(maxArgCount).join(', ') + ') {',
 			'var len = arguments.length',
 			'var promise = new Promise(INTERNAL)',
-			'var cb = function (err, val) {err == null ? resolve.call(promise, val) : reject.call(promise, err)}',
+			'var cb = ' + callback,
 			'addStackTrace.call(promise, 1)', // @[/development]
 			'switch (len) {',
 				argGuesses.map(generateSwitchCasePromisify).join('\n'),
 				'default:',
 					'var args = new Array(len + 1)',
-					'for (var i=0; i<len; i++) {args[i] = arguments[i]}',
+					'for (var i=0; i<len; ++i) {args[i] = arguments[i]}',
 					'args[len] = cb',
 					'tryApply.call(this, fn, args)',
 			'}',
@@ -95,7 +106,7 @@ Promise.nodeify = function (fn) {
 				'default:',
 					'var callback = arguments[lenM1]',
 					'var args = new Array(lenM1)',
-					'for (var i=0; i<lenM1; i++) {args[i] = arguments[i]}',
+					'for (var i=0; i<lenM1; ++i) {args[i] = arguments[i]}',
 					'fn.apply(this, args).then(function (value) {',
 						'callback(null, value)',
 					'}, function (reason) {',

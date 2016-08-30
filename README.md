@@ -244,7 +244,7 @@ This function allows you to potentially iterate indefinitely (if `iterable` neve
 
 Returns either `true` or `false`, whether `value` is a promise-like object (i.e., it has a `.then` method).
 
-### *static* Promise.promisify(*function*) -> *function*
+### *static* Promise.promisify(*function*, [*options*]) -> *function*
 
 **NOTE: This function is not available in the browser!**
 
@@ -259,6 +259,12 @@ var promise = read('foo.json', 'utf8')
     var json = JSON.parse(str)
   })
 ```
+
+There are two possible options:
+  - `multiArgs`
+    * Setting this option to `true` means the resulting promise will always fulfill with an array of the callback's success values (arguments after the first).
+  - `deoptimize`
+    * Setting this option to `true` can potentially improve the performance of functions that are frequently passed a widely varying number of arguments (and typically a very high number of arguments). In most cases though, this option will reduce the performance of the function.
 
 ### *static* Promise.nodeify(*function*) -> *function*
 
