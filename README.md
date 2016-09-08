@@ -43,6 +43,14 @@ To use production mode, just load the module this way:
 var Promise = require('jellypromise/production');
 ```
 
+## Browser Support
+
+- Chrome 5+
+- Firefox 4+
+- Safari 5+
+- Opera 11.6+
+- Internet Explorer 9+
+
 # API
 
 ## new Promise(*handler*)
