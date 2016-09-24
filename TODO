@@ -13,8 +13,7 @@ test if bluebird's async implementation is faster than asap/raw
 
 
 
-Promise.reject(new Error()) creates redundant stack traces,
-and the stack trace says they're from different events
+sometimes valid stack trace lines are erased due to trimming
 
 long stack traces of warnings?
 

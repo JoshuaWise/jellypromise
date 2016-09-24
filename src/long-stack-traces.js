@@ -116,7 +116,7 @@ _Stack.prototype.getTrace = function () {
 		point.void || stacks.push(point)
 		point = point.parent
 	} while (point && stacks.length < TRACE_SIZE)
-	return stacks.map(formatStack).join('\nFrom previous event:\n') + '\n'
+	return stacks.map(formatStack).join('\n') + '\n'
 }
 
 function setNonEnumerable(obj, prop, value) {
@@ -171,7 +171,7 @@ function cleanStackTrace(point) {
 	}
 }
 
-function formatStack(stack) {
+function formatStack(stack, i, array) {
 	var parsedLines = ErrorStackParser.parse({stack: stack.stackPoint})
 	var lines = stack.stackPoint.split('\n')
 	if (lines.length !== parsedLines.length) {
@@ -181,15 +181,20 @@ function formatStack(stack) {
 	lines = lines.map(shrinkPath, parsedLines)
 	lines = lines.slice(stack.trimStart, stack.trimEnd)
 	
-	return lines.join('\n')
+	var result = lines.join('\n')
+	if (!stack.error && i + 1 < array.length) {
+		result += '\nFrom previous event:'
+	}
+	
+	return result
 }
 
 function shrinkPath(line, i) {
 	var fullPath = this[i].fileName || ''
 	if (fullPath) {
 		var parts = fullPath.split(/[/\\]/)
-		if (parts.length > 2) {
-			return line.replace(fullPath, '...' + parts.slice(-2).join('/'))
+		if (parts.length > 3) {
+			return line.replace(fullPath, '...' + parts.slice(-3).join('/'))
 		}
 	}
 	return line
