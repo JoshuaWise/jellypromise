@@ -80,7 +80,6 @@ Promise.prototype._reject = function (newValue) {
 			typeof newValue
 		warn('A promise was rejected with a non-error: ' + type)
 	}
-	this._addStackTraceFromError(newValue)
 	// @[/]
 	
 	if (!(this._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {

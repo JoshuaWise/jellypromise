@@ -13,7 +13,6 @@ test if bluebird's async implementation is faster than asap/raw
 
 
 
-sometimes valid stack trace lines are erased due to trimming
 
 long stack traces of warnings?
 

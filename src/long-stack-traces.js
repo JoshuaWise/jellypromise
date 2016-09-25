@@ -3,6 +3,7 @@ var ErrorStackParser = require('error-stack-parser')
 var TRACE_SIZE = 7
 var rejectionStack = null
 var context = {stack: null, previousStack: null}
+var asapRoot = require('path').dirname(require.resolve('asap'))
 
 exports.init = function () {
 	var Promise = require('./promise')
@@ -10,10 +11,6 @@ exports.init = function () {
 	// Captures the current stack info and pushes it onto the stack trace.
 	// Optionally trims a certain number of lines from the stack info.
 	Promise.prototype._addStackTrace = _addStackTrace
-	
-	// Pushes an Error's stack info onto the stack trace.
-	// This shouldn't be used as a promise's first stack.
-	Promise.prototype._addStackTraceFromError = _addStackTraceFromError
 }
 
 // Used before an asynchronous callback.
@@ -68,7 +65,7 @@ exports.useRejectionStack = function () {
 
 function _addStackTrace(trim) {
 	var stackPoint = captureStackPoint(_addStackTrace)
-	this._trace = new _Stack(stackPoint, this._trace, trim, null)
+	this._trace = new _Stack(stackPoint, this._trace, trim)
 	if (context.stack) {
 		var end = this._trace
 		while (end.parent) {end = end.parent}
@@ -78,45 +75,22 @@ function _addStackTrace(trim) {
 		cleanStackTrace(this._trace)
 	}
 }
-function _addStackTraceFromError(err) {
-	if (err instanceof Error
-			&& err.stack
-			&& typeof err.stack === 'string'
-			&& this._trace.error !== err) {
-		var stackPoint = stackPointFromError(err)
-		this._trace = new _Stack(stackPoint, this._trace, 0, err)
-		cleanStackTrace(this._trace)
-	}
-}
 
-function _Stack(stackPoint, parent, trim, err) {
+function _Stack(stackPoint, parent, trim) {
 	setNonEnumerable(this, 'stackPoint', stackPoint)
 	setNonEnumerable(this, 'parent', parent)
-	setNonEnumerable(this, 'trimStart', trim >>> 0)
-	setNonEnumerable(this, 'trimEnd', 0)
-	setNonEnumerable(this, 'error', err)
-	
-	var isVoid = !stackPoint
-	if (!isVoid) {
-		var match
-		while ((match = uuidRE.exec(stackPoint)) && match[0]) {
-			if (match[1]) {break}
-			++this.trimEnd
-		}
-		isVoid = this.trimEnd <= this.trimStart
-		uuidRE.lastIndex = 0
-	}
-	
-	setNonEnumerable(this, 'void', isVoid)
+	setNonEnumerable(this, 'trim', trim >>> 0)
 }
 _Stack.prototype.getTrace = function () {
 	var point = this
 	var stacks = []
 	do {
-		point.void || stacks.push(point)
+		stacks.push(point)
 		point = point.parent
-	} while (point && stacks.length < TRACE_SIZE)
-	return stacks.map(formatStack).join('\n') + '\n'
+	} while (point)
+	return stacks.map(formatStack, {count: 0})
+		.filter(function (str) {return !!str})
+		.join('\nFrom previous event:\n') + '\n'
 }
 
 function setNonEnumerable(obj, prop, value) {
@@ -134,70 +108,78 @@ if (typeof Error.captureStackTrace === 'function') {
 		Error.captureStackTrace(temp, caller)
 		return temp.stack.replace(/^.*\n?/, '')
 	}
-	var stackPointFromError = function (err) {
-		return err.stack.slice(String(err).length + 1)
-	}
 } else {
 	var captureStackPoint = function () {
 		try {
 			throw new Error('YOU SHOULD NEVER SEE THIS')
 		} catch (err) {
-			return stackPointFromError(err).replace(/^.*\n?.*\n?/, '')
+			if (!err.stack || typeof err.stack !== 'string') {
+				throw new Error('Could not generate stack trace.')
+			}
+			var message = String(err)
+			var indexOfMessage = err.stack.indexOf(message)
+			if (indexOfMessage === -1) {
+				return err.stack
+			}
+			return err.stack.slice(indexOfMessage + message.length)
+				.replace(/^\n*/, '')
+				.replace(/^.*\n?.*\n?/, '')
 		}
-	}
-	var stackPointFromError = function (err) {
-		if (!err.stack || typeof err.stack !== 'string') {
-			throw new Error('Could not generate stack trace.')
-		}
-		var message = String(err)
-		var indexOfMessage = err.stack.indexOf(message)
-		if (indexOfMessage === -1) {
-			return err.stack
-		}
-		return err.stack.slice(indexOfMessage + message.length).replace(/^\n*/, '')
 	}
 }
 
 function cleanStackTrace(point) {
 	var stacks = 0
+	var maxPoints = TRACE_SIZE * 2
 	while (point) {
-		if (!point.void) {
-			if (++stacks === TRACE_SIZE) {
-				point.parent = undefined
-				break
-			}
+		if (++stacks === maxPoints) {
+			point.parent = undefined
+			break
 		}
 		point = point.parent
 	}
 }
 
-function formatStack(stack, i, array) {
+function formatStack(stack, index, allStacks) {
+	if (!stack.stackPoint || this.count === TRACE_SIZE) {
+		return ''
+	}
+	
+	var processed = []
 	var parsedLines = ErrorStackParser.parse({stack: stack.stackPoint})
 	var lines = stack.stackPoint.split('\n')
-	if (lines.length !== parsedLines.length) {
-		throw new Error('Failed to parse stack trace.')
+	var lineCount = lines.length
+	if (lineCount !== parsedLines.length) {
+		this.count += 1
+		return '[Failed to parse stack trace]'
 	}
 	
-	lines = lines.map(shrinkPath, parsedLines)
-	lines = lines.slice(stack.trimStart, stack.trimEnd)
-	
-	var result = lines.join('\n')
-	if (!stack.error && i + 1 < array.length) {
-		result += '\nFrom previous event:'
+	for (var i=stack.trim; i<lineCount; ++i) {
+		var parsedLine = parsedLines[i]
+		var fullPath = parsedLine.fileName || ''
+		if (fullPath.indexOf(asapRoot) === 0) {
+			break
+		}
+		if (fullPath.indexOf(__dirname) !== 0) {
+			processed.push(shrinkPath(lines[i], fullPath))
+		}
 	}
 	
-	return result
+	if (processed.length) {
+		this.count += 1
+		return processed.join('\n')
+	}
+	return ''
 }
 
-function shrinkPath(line, i) {
-	var fullPath = this[i].fileName || ''
-	if (fullPath) {
+function shrinkPath(line, fullPath) {
+	if (fullPath && line.length > 80) {
 		var parts = fullPath.split(/[/\\]/)
-		if (parts.length > 3) {
-			return line.replace(fullPath, '...' + parts.slice(-3).join('/'))
-		}
+		var originalLine = line
+		var tries = 0
+		do {
+			line = originalLine.replace(fullPath, '...' + parts.slice(++tries).join('/'))
+		} while (line.length > 80 && parts.length - tries > 2)
 	}
 	return line
 }
-
-var uuidRE = new RegExp('(?:.*($UUID).*|.*)(?:\\r?\\n|$)', 'g')
