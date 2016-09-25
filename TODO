@@ -9,8 +9,6 @@ optimizations for index.js to import on the server only:
 - use fake promise class (e.g., PromiseArray) for optimized aggregate methods, including Promise.all.
 - make sure to maintain the same long stack traces as with deoptimized versions.
 
-test if bluebird's async implementation is faster than asap/raw
-
 
 
 
