@@ -66,7 +66,7 @@ function processFiles(filenames) {
 	return Promise.resolve(filenames)
 		.map(readFile)
 		.map(obfuscatePrivateMembers())
-		.map(replaceConstants(directives))
+		.map(replaceConstants())
 		.map(processDirectives(directives, filenames))
 		.map(function (data, i) {return fs.writeFileAsync(filenames[i], data)})
 }

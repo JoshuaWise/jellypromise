@@ -14,11 +14,11 @@ Promise.prototype.finally = function (fn) {
 		return this._then(fn)
 	}
 	var self = this // @[/development]
-	return this._then(function $UUID(value) {
+	return this._then(function (value) {
 		return Promise.resolve(fn())._then(function () {
 			return value
 		})
-	}, function $UUID(reason) {
+	}, function (reason) {
 		return Promise.resolve(fn())._then(function () {
 			LST.setRejectionStack(self._getFollowee()._trace) // @[/development]
 			throw reason
@@ -30,7 +30,7 @@ Promise.prototype.tap = function (fn) {
 		// Will be bypassed, but produces a warning in development mode.
 		return this._then(fn)
 	}
-	return this._then(function $UUID(value) {
+	return this._then(function (value) {
 		return Promise.resolve(fn(value))._then(function () {
 			return value
 		})
@@ -81,7 +81,7 @@ Promise.prototype.inspect = function () {
 	return new PromiseDescriptor(this)
 }
 Promise.any = function (iterable) {
-	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		var firstException = INTERNAL
@@ -99,7 +99,7 @@ Promise.any = function (iterable) {
 	})
 }
 Promise.props = function (obj) {
-	return new Promise(INTERNAL)._resolveFromHandler(function $UUID(res, rej) {
+	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		if (obj === null || (typeof obj !== 'object' && typeof obj !== 'function')) {
 			throw new TypeError('Expected argument to be an object.')
 		}
@@ -145,7 +145,7 @@ Promise.settle = function (iterable) {
 }
 Promise.iterate = function (iterable, fn) {
 	var promise = new Promise(INTERNAL)
-	return promise._resolveFromHandler(function $UUID(res, rej) {
+	return promise._resolveFromHandler(function (res, rej) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected second argument to be a function.')
 		}
@@ -157,12 +157,12 @@ Promise.iterate = function (iterable, fn) {
 			throw new TypeError('Expected first argument to be an iterable object.')
 		}
 		rej = LST.upgradeRejector(rej) // @[/development]
-		;(function next$UUID() {
+		;(function next() {
 			var item = it.next()
 			if (item.done) {
 				res()
 			} else {
-				var p = Promise.resolve(item.value)._then(fn)._then(next$UUID)
+				var p = Promise.resolve(item.value)._then(fn)._then(next)
 				p._trace.parent = promise._trace // @[/development]
 				p._then(null, rej)
 			}

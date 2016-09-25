@@ -21,7 +21,7 @@ Promise.prototype._then = function (onFulfilled, onRejected) {
 // It automatically captures stack traces at the correct depth.
 Promise.prototype._resolveFromHandler = function (handler) {
 	this._addStackTrace(2) // @[/development]
-	var ret = tryCallTwo$UUID(handler, this._resolver(), this._rejector())
+	var ret = tryCallTwo(handler, this._resolver(), this._rejector())
 	if (ret === IS_ERROR) {
 		this._reject(LAST_ERROR)
 	}
@@ -45,7 +45,7 @@ Promise.prototype._resolve = function (newValue) {
 		return this._reject(new TypeError('A promise cannot be resolved with itself.'))
 	}
 	if (newValue && (typeof newValue === 'object' || typeof newValue === 'function')) {
-		var then = getThen$UUID(newValue)
+		var then = getThen(newValue)
 		if (then === IS_ERROR) {
 			return this._reject(LAST_ERROR)
 		}
@@ -147,7 +147,7 @@ function handleSettled(self, deferred) {
 			}
 		} else {
 			LST.setContext(self, deferred) // @[/development]
-			var ret = tryCallOne$UUID(cb, self._value)
+			var ret = tryCallOne(cb, self._value)
 			LST.releaseContext() // @[/development]
 			if (ret === IS_ERROR) {
 				deferred.promise._reject(LAST_ERROR)
@@ -199,7 +199,7 @@ function foreignPromise(promise, then) {
 // To avoid using try/catch inside critical functions, we extract them to here.
 var LAST_ERROR = null
 var IS_ERROR = {}
-function getThen$UUID(obj) {
+function getThen(obj) {
 	try {
 		return obj.then
 	} catch (ex) {
@@ -207,7 +207,7 @@ function getThen$UUID(obj) {
 		return IS_ERROR
 	}
 }
-function tryCallOne$UUID(fn, a) {
+function tryCallOne(fn, a) {
 	try {
 		return fn(a)
 	} catch (ex) {
@@ -215,7 +215,7 @@ function tryCallOne$UUID(fn, a) {
 		return IS_ERROR
 	}
 }
-function tryCallTwo$UUID(fn, a, b) {
+function tryCallTwo(fn, a, b) {
 	try {
 		fn(a, b)
 	} catch (ex) {

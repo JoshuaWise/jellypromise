@@ -21,11 +21,11 @@ var LST = require('./long-stack-traces') // @[/development]
 // All indexes are processed, even deleted or non-existent values of an array.
 
 Promise.prototype.filter = function (fn, ctx) {
-	return this._then(function $UUID(iterable) {
+	return this._then(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		return Promise.all(iterable)._then(function $UUID(array) {
+		return Promise.all(iterable)._then(function (array) {
 			var len = array.length
 			var bools = new Array(len)
 			for (var i=0; i<len; i++) {
@@ -44,11 +44,11 @@ Promise.prototype.filter = function (fn, ctx) {
 	})
 }
 Promise.prototype.map = function (fn, ctx) {
-	return this._then(function $UUID(iterable) {
+	return this._then(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		return Promise.all(iterable)._then(function $UUID(array) {
+		return Promise.all(iterable)._then(function (array) {
 			var len = array.length
 			var mapped = new Array(len)
 			for (var i=0; i<len; i++) {
@@ -59,11 +59,11 @@ Promise.prototype.map = function (fn, ctx) {
 	})
 }
 Promise.prototype.forEach = function (fn, ctx) {
-	return this._then(function $UUID(iterable) {
+	return this._then(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		return Promise.all(iterable)._then(function $UUID(array) {
+		return Promise.all(iterable)._then(function (array) {
 			var len = array.length
 			var mapped = new Array(len)
 			for (var i=0; i<len; i++) {
@@ -75,11 +75,11 @@ Promise.prototype.forEach = function (fn, ctx) {
 }
 Promise.prototype.reduce = function (fn, seed) {
 	var useSeed = arguments.length > 1
-	return this._then(function $UUID(iterable) {
+	return this._then(function (iterable) {
 		if (typeof fn !== 'function') {
 			throw new TypeError('Expected first argument to be a function.')
 		}
-		var arr = asArrayCopy$UUID(iterable)
+		var arr = asArrayCopy(iterable)
 		if (useSeed) {
 			arr.unshift(seed)
 		} else if (arr.length === 0) {
@@ -106,7 +106,7 @@ Promise.prototype.reduce = function (fn, seed) {
 				result = value
 				next()
 			}
-			var handler = function $UUID(item) {
+			var handler = function (item) {
 				if (firstItem) {
 					firstItem = false
 					i++
@@ -115,7 +115,7 @@ Promise.prototype.reduce = function (fn, seed) {
 				
 				return Promise.resolve(fn(result, item, displayI + i++, displayLen))._then(setResult)
 			}
-			var next = function $UUID() {
+			var next = function () {
 				i === len
 					? res(result)
 					: Promise.resolve(array[i])._then(handler)._then(null, rej)
@@ -125,7 +125,7 @@ Promise.prototype.reduce = function (fn, seed) {
 	})
 }
 
-function asArrayCopy$UUID(iterable) {
+function asArrayCopy(iterable) {
 	var array = asArray(iterable)
 	if (array === iterable) {
 		var len = array.length
