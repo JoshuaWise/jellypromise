@@ -75,7 +75,7 @@ Promise.prototype._reject = function (newValue) {
 	// @[development]
 	this._trace = LST.useRejectionStack() || this._trace
 	if (!PASSTHROUGH_REJECTION && !(newValue instanceof Error)) {
-		var type = newValue === null ? null :
+		var type = newValue === null ? 'null' :
 			typeof newValue === 'object' ? Object.prototype.toString.call(newValue) :
 			typeof newValue
 		warn('A promise was rejected with a non-error: ' + type)
