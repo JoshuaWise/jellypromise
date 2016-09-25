@@ -90,7 +90,7 @@ A `predicate` can be:
 
 ### .catchLater() -> *this*
 
-Prevents an error from being logged if the promise gets rejected but does not yet have a rejection handler (see [Unhandled Rejections](#unhandled-rejections)).
+Prevents an error from being logged if the promise gets rejected without yet having a rejection handler (see [Unhandled Rejections](#unhandled-rejections)).
 
 ### .finally(*handler*) -> *promise*
 
