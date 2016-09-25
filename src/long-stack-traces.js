@@ -3,7 +3,7 @@ var ErrorStackParser = require('error-stack-parser')
 var TRACE_SIZE = 7
 var rejectionStack = null
 var context = {stack: null, previousStack: null}
-var asapRoot = require('path').dirname(require.resolve('asap'))
+var asapRoot = require('path').dirname(require.resolve('asap/raw')) // @[/node]
 
 exports.init = function () {
 	var Promise = require('./promise')
@@ -187,9 +187,11 @@ function formatStack(stack) {
 	for (var i=stack.trim; i<lineCount; ++i) {
 		var parsedLine = parsedLines[i]
 		var fullPath = parsedLine.fileName || ''
+		// @[node]
 		if (fullPath.indexOf(asapRoot) === 0) {
 			break
 		}
+		// @[/]
 		if (fullPath.indexOf(__dirname) !== 0) {
 			processed.push(shrinkPath(lines[i], fullPath))
 		}
