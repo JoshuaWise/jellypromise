@@ -23,7 +23,7 @@ exports.asArray = function (iterable) {
 	throw new TypeError('Expected argument to be an iterable object.')
 }
 
-// Returns whether the given catch predicate shoulf catch the exception reason.
+// Returns whether the given catch predicate should catch the exception reason.
 exports.catchesError = function (predicate, reason) {
 	if (predicate === Error || (predicate && predicate.prototype instanceof Error)) {
 		return reason instanceof predicate
