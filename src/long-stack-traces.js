@@ -151,7 +151,7 @@ function formatStack(stack, index, allStacks) {
 	var lineCount = lines.length
 	if (lineCount !== parsedLines.length) {
 		this.count += 1
-		return '[Failed to parse stack trace]'
+		return '    [Failed to parse stack trace]'
 	}
 	
 	for (var i=stack.trim; i<lineCount; ++i) {
