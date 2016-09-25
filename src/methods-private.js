@@ -73,13 +73,13 @@ Promise.prototype._reject = function (newValue) {
 	this._value = newValue
 	
 	// @[development]
-	this._trace = LST.useRejectionStack() || this._trace
 	if (!PASSTHROUGH_REJECTION && !(newValue instanceof Error)) {
 		var type = newValue === null ? 'null' :
 			typeof newValue === 'object' ? Object.prototype.toString.call(newValue) :
 			typeof newValue
-		warn('A promise was rejected with a non-error: ' + type)
+		warn('A promise was rejected with a non-error: ' + type, this._trace)
 	}
+	this._trace = LST.useRejectionStack() || this._trace
 	this._addStackTraceFromError(newValue)
 	// @[/]
 	
@@ -92,10 +92,10 @@ Promise.prototype._reject = function (newValue) {
 Promise.prototype._handleNew = function (onFulfilled, onRejected, promise) {
 	// @[development]
 	if (typeof onFulfilled !== 'function' && onFulfilled != null) {
-		warn('Promise handlers must be functions (' + typeof onFulfilled + 's will be ignored).')
+		warn('Promise handlers must be functions (' + typeof onFulfilled + 's will be ignored).', promise._trace)
 	}
 	if (typeof onRejected !== 'function' && onRejected != null) {
-		warn('Promise handlers must be functions (' + typeof onRejected + 's will be ignored).')
+		warn('Promise handlers must be functions (' + typeof onRejected + 's will be ignored).', promise._trace)
 	}
 	// @[/]
 	return this._handle({

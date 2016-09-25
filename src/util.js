@@ -43,7 +43,7 @@ exports.catchesError = function (predicate, reason) {
 			return true
 		}
 	}
-	warn('The predicate passed to .catch() is invalid, and will be ignored.') // @[/development]
+	warn('The predicate passed to .catch() is invalid, and will be ignored.', arguments[2]._trace) // @[/development]
 	return false
 }
 

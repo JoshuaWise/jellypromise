@@ -2,15 +2,14 @@
 var clc = require('cli-color') // @[/node]
 var console = require('./util').console // @[/browser]
 
-module.exports = function (str) {
-	// @[development]
+module.exports = function (str, stack) {
 	if (require('./promise').suppressWarnings) {
 		var originalWarn = console.warn
 		console.warn = function () {console.warn = originalWarn}
 	}
-	// @[/]
-	var err = new Error(str)
-	err.name = 'Warning'
-	console.warn(clc.yellow(String(err.stack || err))) // @[/node]
-	console.warn(err) // @[/browser]
+	console.warn(
+		clc.yellow( // @[/node]
+			'Warning: ' + String(str) + '\n' + stack.getTrace()
+		) // @[/node]
+	)
 }

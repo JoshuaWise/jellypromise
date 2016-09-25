@@ -30,11 +30,11 @@ Promise.prototype.catch = function (onRejected) {
 		}
 		onRejected = arguments[i]
 		var self = this // @[/development]
-		return this._then(null, function (reason) {
+		var newPromise
+		return newPromise = this._then(null, function (reason) {
 			for (var i=0; i<len; i++) {
-				if (catchesError(args[i], reason)) {
-					return onRejected(reason)
-				}
+				if (catchesError(args[i], reason, newPromise)) {return onRejected(reason)} // @[/development]
+				if (catchesError(args[i], reason)) {return onRejected(reason)} // @[/production]
 			}
 			LST.setRejectionStack(self._getFollowee()._trace) // @[/development]
 			throw reason

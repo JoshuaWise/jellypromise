@@ -12,7 +12,6 @@ optimizations for index.js to import on the server only:
 
 
 
-long stack traces of warnings?
 
 make sure all prototype methods that generate a new, linked promise, use _handleNew, _handle, or _then, so that `this` promise sets SUPPRESS_UNHANDLED_REJECTIONS to 1
 
