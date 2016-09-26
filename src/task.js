@@ -49,7 +49,7 @@ function TaskQueue() {
 
 TaskQueue.prototype.push = function (receiver, arg) {
 	if (this.capacity === this.length) {
-		arrayMove(this, this.capacity, (this.front + this.length) & (this.capacity - 1))
+		arrayMove(this, this.capacity, this.front)
 		this.capacity <<= 1
 	}
 	var j = this.front + this.length
