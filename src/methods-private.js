@@ -1,6 +1,6 @@
 'use strict'
 var Promise = require('./promise')
-var asap = require('asap/raw')
+var task = require('./task').init(handleSettled, onUnhandledRejection)
 var clc = require('cli-color') // @[/node]
 var console = require('./util').console // @[/browser]
 var INTERNAL = require('./util').INTERNAL
@@ -84,7 +84,7 @@ Promise.prototype._reject = function (newValue) {
 	// @[/]
 	
 	if (!(this._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
-		asap(onUnhandledRejection(this, newValue))
+		task(true, this, newValue)
 	}
 	finale(this)
 }
@@ -121,7 +121,7 @@ Promise.prototype._handle = function (deferred) {
 			self._deferreds.push(deferred)
 		}
 	} else {
-		handleSettled(self, deferred)
+		task(false, self, deferred)
 	}
 }
 Promise.prototype._getFollowee = function () {
@@ -130,32 +130,6 @@ Promise.prototype._getFollowee = function () {
 		self = self._value
 	}
 	return self
-}
-
-function handleSettled(self, deferred) {
-	asap(function () {
-		var isFulfilled = self._state & $IS_FULFILLED
-		var cb = isFulfilled ? deferred.onFulfilled : deferred.onRejected
-		if (cb === null) {
-			deferred.promise._trace = self._trace // @[/development]
-			if (isFulfilled) {
-				deferred.promise._resolve(self._value)
-			} else {
-				PASSTHROUGH_REJECTION = true // @[/development]
-				deferred.promise._reject(self._value)
-				PASSTHROUGH_REJECTION = false // @[/development]
-			}
-		} else {
-			LST.setContext(self, deferred) // @[/development]
-			var ret = tryCallOne(cb, self._value)
-			LST.releaseContext() // @[/development]
-			if (ret === IS_ERROR) {
-				deferred.promise._reject(LAST_ERROR)
-			} else {
-				deferred.promise._resolve(ret)
-			}
-		}
-	})
 }
 
 function finale(self) {
@@ -171,24 +145,46 @@ function finale(self) {
 	}
 }
 
-function onUnhandledRejection(self, reason) {
-	return function () {
-		if (!(self._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
-			// @[development]
-			if (Promise.suppressUnhandledRejections) {
-				var originalError = console.error
-				console.error = function () {console.error = originalError}
-			}
-			// @[/]
-			console.error(
-				clc.red( // @[/node]
-					'Unhandled rejection'
-					+ ' ' + String(reason) + '\n' + self._trace.getTrace() // @[/development]
-					+ ' ' + String(reason instanceof Error && reason.stack || reason) // @[/production node]
-					, reason // @[/production browser]
-				) // @[/node]
-			)
+function handleSettled(deferred) {
+	var isFulfilled = this._state & $IS_FULFILLED
+	var cb = isFulfilled ? deferred.onFulfilled : deferred.onRejected
+	if (cb === null) {
+		deferred.promise._trace = this._trace // @[/development]
+		if (isFulfilled) {
+			deferred.promise._resolve(this._value)
+		} else {
+			PASSTHROUGH_REJECTION = true // @[/development]
+			deferred.promise._reject(this._value)
+			PASSTHROUGH_REJECTION = false // @[/development]
 		}
+	} else {
+		LST.setContext(this, deferred) // @[/development]
+		var ret = tryCallOne(cb, this._value)
+		LST.releaseContext() // @[/development]
+		if (ret === IS_ERROR) {
+			deferred.promise._reject(LAST_ERROR)
+		} else {
+			deferred.promise._resolve(ret)
+		}
+	}
+}
+
+function onUnhandledRejection(reason) {
+	if (!(this._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
+		// @[development]
+		if (Promise.suppressUnhandledRejections) {
+			var originalError = console.error
+			console.error = function () {console.error = originalError}
+		}
+		// @[/]
+		console.error(
+			clc.red( // @[/node]
+				'Unhandled rejection'
+				+ ' ' + String(reason) + '\n' + this._trace.getTrace() // @[/development]
+				+ ' ' + String(reason instanceof Error && reason.stack || reason) // @[/production node]
+				, reason // @[/production browser]
+			) // @[/node]
+		)
 	}
 }
 

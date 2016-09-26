@@ -61,7 +61,7 @@ Promise.prototype.timeout = function (ms, reason) {
 	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
 		var timer = setTimeout(function () {
 			rej(
-				reason == null ? new TimeoutError('The operation timed out after ' + ~~ms + 'ms.')
+				reason == null ? new TimeoutError('The operation timed out after ' + (~~ms > 0 ? ~~ms : 0) + 'ms.')
 			  : reason instanceof Error ? rej(reason) : new TimeoutError(String(reason))
 			)
 		}, ~~ms)

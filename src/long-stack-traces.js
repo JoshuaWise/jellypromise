@@ -3,7 +3,6 @@ var ErrorStackParser = require('error-stack-parser')
 var TRACE_SIZE = 7
 var rejectionStack = null
 var context = {stack: null, previousStack: null}
-var asapRoot = require('path').dirname(require.resolve('asap/raw')) // @[/node]
 
 exports.init = function () {
 	var Promise = require('./promise')
@@ -175,6 +174,7 @@ function formatStack(stack) {
 		return ''
 	}
 	
+	// @[node]
 	var processed = []
 	var parsedLines = ErrorStackParser.parse({stack: stack.stackPoint})
 	var lines = stack.stackPoint.split('\n')
@@ -185,17 +185,15 @@ function formatStack(stack) {
 	}
 	
 	for (var i=stack.trim; i<lineCount; ++i) {
-		var parsedLine = parsedLines[i]
-		var fullPath = parsedLine.fileName || ''
-		// @[node]
-		if (fullPath.indexOf(asapRoot) === 0) {
-			break
-		}
-		// @[/]
+		var fullPath = parsedLines[i].fileName || ''
 		if (fullPath.indexOf(__dirname) !== 0) {
 			processed.push(shrinkPath(lines[i], fullPath))
 		}
 	}
+	// @[/]
+	// @[browser]
+	var processed = stack.stackPoint.split('\n').slice(stack.trim)
+	// @[/]
 	
 	if (processed.length) {
 		this.count += 1
@@ -204,9 +202,8 @@ function formatStack(stack) {
 	return ''
 }
 
+// @[node]
 function shrinkPath(line, fullPath) {
-	return line // @[/browser]
-	// @[node]
 	var consoleWidth = process.stdout.columns
 	if (consoleWidth && fullPath && line.length > consoleWidth) {
 		var parts = fullPath.split(/[/\\]/)
@@ -217,8 +214,8 @@ function shrinkPath(line, fullPath) {
 		} while (line.length > consoleWidth && parts.length - tries > 2)
 	}
 	return line
-	// @[/]
 }
+// @[/]
 
 function combineStackPoints(stack1, stack2) {
 	var uniqueLines = []
