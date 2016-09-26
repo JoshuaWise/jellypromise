@@ -42,25 +42,21 @@ function flushQueue(queue, fn) {
 }
 
 function TaskQueue() {
-	this.capacity = 16
+	this.capacity = 16 // Must be a multiple of 2
 	this.length = 0
 	this.front = 0
 }
 
 TaskQueue.prototype.push = function (receiver, arg) {
-	var length = this.length + 2
-	if (this.capacity < length) {
-		this._push1(receiver)
-		this._push1(arg)
-	} else {
-		// If we don't need to increase the capacity,
-		// we can optimize away some things
-		var j = this.front + this.length
-		var wrapMask = this.capacity - 1
-		this[j & wrapMask] = receiver
-		this[(j + 1) & wrapMask] = arg
-		this.length = length
+	if (this.capacity === this.length) {
+		arrayMove(this, this.capacity, (this.front + this.length) & (this.capacity - 1))
+		this.capacity <<= 1
 	}
+	var j = this.front + this.length
+	var wrapMask = this.capacity - 1
+	this[j & wrapMask] = receiver
+	this[(j + 1) & wrapMask] = arg
+	this.length += 2
 }
 
 TaskQueue.prototype.shift = function () {
@@ -70,18 +66,6 @@ TaskQueue.prototype.shift = function () {
 	this.front = (front + 1) & (this.capacity - 1)
 	--this.length
 	return ret
-}
-
-TaskQueue.prototype._push1 = function (value) {
-	this._ensureCapacity(this.length + 1)
-	this[(this.front + this.length++) & (this.capacity - 1)] = value
-}
-
-TaskQueue.prototype._ensureCapacity = function (newSize) {
-	if (this.capacity < newSize) {
-		arrayMove(this, this.capacity, (this.front + this.length) & (this.capacity - 1))
-		this.capacity <<= 1
-	}
 }
 
 function arrayMove(array, moveAmount, len) {
