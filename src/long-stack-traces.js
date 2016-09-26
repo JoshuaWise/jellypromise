@@ -3,6 +3,7 @@ var ErrorStackParser = require('error-stack-parser')
 var TRACE_SIZE = 7
 var rejectionStack = null
 var context = {stack: null, previousStack: null}
+var taskFile = require.resolve('./task')
 
 exports.init = function () {
 	var Promise = require('./promise')
@@ -186,6 +187,9 @@ function formatStack(stack) {
 	
 	for (var i=stack.trim; i<lineCount; ++i) {
 		var fullPath = parsedLines[i].fileName || ''
+		if (fullPath === taskFile) {
+			break
+		}
 		if (fullPath.indexOf(__dirname) !== 0) {
 			processed.push(shrinkPath(lines[i], fullPath))
 		}
