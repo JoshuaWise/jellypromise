@@ -62,7 +62,7 @@ Promise.prototype.timeout = function (ms, reason) {
 		var timer = setTimeout(function () {
 			rej(
 				reason == null ? new TimeoutError('The operation timed out after ' + (~~ms > 0 ? ~~ms : 0) + 'ms.')
-			  : reason instanceof Error ? rej(reason) : new TimeoutError(String(reason))
+			  : reason instanceof Error ? reason : new TimeoutError(String(reason))
 			)
 		}, ~~ms)
 		var cancel = function () {clearTimeout(timer)}
