@@ -11,9 +11,9 @@ PromiseDev.suppressWarnings = true
 // (1) expect - Chai's expect() function, with the chai-as-promised plugin.
 module.exports = function (description, fn) {
 	describe(description, function () {
-		return fn.call(this, PromiseDev, expect)
+		return fn.call(this, PromiseDev, expect, false)
 	})
 	describe(description + ' (production)', function () {
-		return fn.call(this, Promise, expect)
+		return fn.call(this, Promise, expect, true)
 	})
 }

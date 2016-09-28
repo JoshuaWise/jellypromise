@@ -1,7 +1,7 @@
 'use strict'
 var ErrorStackParser = require('error-stack-parser')
 var clc = require('cli-color')
-require('../tools/test/describe')('Long stack traces', function (Promise, expect) {
+require('../tools/test/describe')('Long stack traces', function (Promise, expect, isProduction) {
 	if (Promise.suppressUnhandledRejections) {
 		var originalSuppressionValue = Promise.suppressUnhandledRejections
 		before(function () {
@@ -13,18 +13,20 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 	}
 	
 	function cleanLines(parsedLines, lines) {
+		var specialLineRE = /^(From previous event:|Used to reject promise:)$/
 		for (var i=0; i<lines.length; ++i) {
-			if (lines[i] === 'Used to reject promise:' || lines[i] === 'From previous event:') {
+			if (specialLineRE.test(lines[i])) {
 				parsedLines.splice(i, 0, {})
 			}
 		}
 		expect(parsedLines.length).to.equal(lines.length)
 		for (var i=0; i<lines.length; ++i) {
-			var file = parsedLines[i].fileName
-			if (file === 'module.js' || file === 'bootstrap_node.js') {
-				parsedLines.splice(i, 1)
-				lines.splice(i, 1)
-				--i
+			var fnName = parsedLines[i].functionName
+			if (fnName === 'Context.<anonymous>') {
+				do {
+					parsedLines.splice(i, 1)
+					lines.splice(i, 1)
+				} while (i in lines && !specialLineRE.test(lines[i]))
 			}
 		}
 	}
@@ -32,14 +34,23 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 		return function (done) {
 			var consoleError = console.error
 			var isPending = true
+			var productionStack
 			console.error = function (str) {
 				if (!isPending) {return}
 				isPending = false
 				console.error = consoleError
+				
 				str = clc.strip(str).replace(/\n+$/g, '')
+				if (isProduction) {
+					expect(str).to.be.a('string')
+					expect(str).to.equal('Unhandled rejection ' + productionStack)
+					return done()
+				}
+				
 				var lines = str.split('\n').slice(1)
 				var parsedLines = ErrorStackParser.parse({stack: str})
 				cleanLines(parsedLines, lines)
+				
 				expect(lines.length).to.equal(trace.length)
 				for (var i=0; i<trace.length; ++i) {
 					var desired = trace[i]
@@ -59,15 +70,21 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 					}
 				}
 				done()
+				
 			}
-			test()
+			test(function (error) {
+				productionStack = error && error.stack || Symbol()
+				return error
+			})
 		}
 	}
 	
-	it('foo bar', testTrace([], function () {
-		Promise.resolve().then(function () {
-			return Promise.resolve().then(function () {
-				throw new Error('foo')
+	it('foo bar', testTrace(['d', 'c', '[from]', 'b', '[from]', 'a'], function a(throws) {
+		Promise.resolve().then(function b() {
+			return Promise.resolve().then(function c() {
+				return new Promise(function d(res, rej) {
+					rej(throws(new Error('foo')))
+				})
 			})
 		})
 	}))
