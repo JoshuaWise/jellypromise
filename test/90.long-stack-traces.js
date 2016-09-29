@@ -12,8 +12,8 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 		})
 	}
 	
+	var specialLineRE = /^(Used to reject promise:|From previous event:)$/
 	function cleanLines(parsedLines, lines) {
-		var specialLineRE = /^(From previous event:|Used to reject promise:)$/
 		for (var i=0; i<lines.length; ++i) {
 			if (specialLineRE.test(lines[i])) {
 				parsedLines.splice(i, 0, {})
@@ -42,7 +42,6 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 				
 				str = clc.strip(str).replace(/\n+$/g, '')
 				if (isProduction) {
-					expect(str).to.be.a('string')
 					expect(str).to.equal('Unhandled rejection ' + productionStack)
 					return done()
 				}
@@ -54,12 +53,12 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 				expect(lines.length).to.equal(trace.length)
 				for (var i=0; i<trace.length; ++i) {
 					var desired = trace[i]
-					if (i > 0 && i + 1 < trace.length && /\[.*\]/.test(desired)) {
+					if (i > 0 && i + 1 < trace.length && !/\w/.test(desired)) {
 						switch (desired) {
-							case '[used for]':
+							case '->':
 								expect(lines[i]).equal('Used to reject promise:')
 								break
-							case '[from]':
+							case '|':
 								expect(lines[i]).equal('From previous event:')
 								break
 							default:
@@ -79,12 +78,10 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 		}
 	}
 	
-	it('foo bar', testTrace(['d', 'c', '[from]', 'b', '[from]', 'a'], function a(throws) {
+	it('foo bar', testTrace(['c', '->', 'b', '|', 'a'], function a(throws) {
 		Promise.resolve().then(function b() {
 			return Promise.resolve().then(function c() {
-				return new Promise(function d(res, rej) {
-					rej(throws(new Error('foo')))
-				})
+				throw throws(new Error('foo'))
 			})
 		})
 	}))
