@@ -143,42 +143,6 @@ If the promise is:
 
 In Node.js, you'll always see this descriptor object when passing a `jellypromise` to `console.log()`.
 
-### .filter(*callback*, [*thisArg*]) -> *promise*
-
-Used on a promise whose value is (or will be) an iterable object of promises or values (or a mix thereof). This method returns a new promise that will be fulfilled with an array of the values that pass the filter function `callback`. Promises returned by `callback` are awaited for (i.e., the promise returned by this method won't fulfill until all mapped promises have fulfilled as well).
-
-If any of the iterable's promises are rejected, or if `callback` throws, or if `callback` returns a rejected promise, the promise returned by this method will be rejected.
-
-`callback` has the following signature: `function callback(value, index, length)`
-
-Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
-
-### .map(*callback*, [*thisArg*]) -> *promise*
-
-Similar to the [`.filter`](#filtercallback-thisarg---promise) method, but instead of filtering the iterable/array, it transforms each value through the mapper `callback` function.
-
-`callback` has the following signature: `function callback(value, index, length)`
-
-Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
-
-### .forEach(*callback*, [*thisArg*]) -> *promise*
-
-Similar to the [`.map`](#mapcallback-thisarg---promise) method, but instead of transforming each value in the iterable, the resulting array will always contain the same values as the original iterable. Unsettled promises returned from the `callback` function will still delay the overall fulfillment of the promise created from this method. This method is primarily used for side effects.
-
-`callback` has the following signature: `function callback(value, index, length)`
-
-Values are passed through the `callback` as soon as possible. They are not passed in any particular order. However, you can see an item's position in the original iterable/array via the `index` argument of the `callback`.
-
-### .reduce(*callback*, [*initialValue*]) -> *promise*
-
-Used on a promise whose value is (or will be) an iterable object of promises or values (or a mix thereof). The `callback` function is applied against an accumulator and each value yielded by the iterable, **in order**, to reduce it to a single value which will become the fulfillment value of the promise returned by this method.
-
-If the `callback` function returns a promise, then the result of that promise will be awaited before continuing with the next iteration.
-
-If any of the iterable's promises are rejected, or if `callback` throws, or if `callback` returns a rejected promise, the promise returned by this method will be rejected.
-
-`callback` has the following signature: `function callback(previousValue, currentValue, currentIndex, length)`
-
 ### *static* Promise.resolve(*value*) -> *promise*
 
 Creates a promise that is resolved with the given `value`. If you pass a promise or promise-like object, the returned promise takes on the state of that promise-like object (fulfilled or rejected).
@@ -237,16 +201,6 @@ If the corresponding input promise is:
  - rejected, the descriptor will be `{ state: 'rejected', reason: <rejectionReason> }`
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
-
-### *static* Promise.iterate(*iterable*, *callback*) -> *promise*
-
-Asynchronously iterates through each value in `iterable`, in order, and invokes the `callback` function for each value. If `iterable` yields a promise, that promise's fulfillment value will be awaited before being passed to `callback` for that iteration. If `callback` returns a promise, the next iteration will be delayed until that promise is fulfilled.
-
-This function returns a promise that will be fulfilled when `iterable` is done producing values. Its fulfillment value will always be `undefined`.
-
-If any promises yielded by `iterable` are rejected, or if `callback` throws, or if `callback` returns a rejected promise, then the returned promise will be rejected and iteration is stopped.
-
-This function allows you to potentially iterate indefinitely (if `iterable` never stops producing values). As long as each iteration involves an asynchronous operation, the program will never be blocked by infinite iteration.
 
 ### *static* Promise.isPromise(*value*) -> *boolean*
 
