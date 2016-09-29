@@ -6,8 +6,4 @@ cat ./.next-version-arg >/dev/null 2>&1 || {
 }
 echo "Version:" "$(cat ./.next-version-arg)"
 $(npm bin)/gulp
-git add -f lib-* production.js
-git commit -m 'prepublish build'
 npm version "$(cat ./.next-version-arg)"
-git push
-git push --tags
