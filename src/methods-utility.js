@@ -143,47 +143,12 @@ Promise.settle = function (iterable) {
 		}
 	})
 }
-Promise.iterate = function (iterable, fn) {
-	var promise = new Promise(INTERNAL)
-	return promise._resolveFromHandler(function (res, rej) {
-		if (typeof fn !== 'function') {
-			throw new TypeError('Expected second argument to be a function.')
-		}
-		if (iterator && iterable != null && typeof iterable[iterator] === 'function') {
-			var it = iterable[iterator]()
-		} else if (Array.isArray(iterable)) {
-			var it = makeIterator(iterable)
-		} else {
-			throw new TypeError('Expected first argument to be an iterable object.')
-		}
-		rej = LST.upgradeRejector(rej) // @[/development]
-		;(function next() {
-			var item = it.next()
-			if (item.done) {
-				res()
-			} else {
-				var p = Promise.resolve(item.value)._then(fn)._then(next)
-				p._trace.parent = promise._trace // @[/development]
-				p._then(null, rej)
-			}
-		}())
-	})
-}
 Promise.isPromise = function (value) {
 	return !!value
 		&& (typeof value === 'object' || typeof value === 'function')
 		&& typeof value.then === 'function'
 }
 Promise.TimeoutError = TimeoutError
-
-function makeIterator(array) {
-	var i = 0
-	return {next: function () {
-		return i < array.length
-			? {done: false, value: array[i++]}
-			: (i = NaN, {done: true, value: undefined})
-	}}
-}
 
 var PromiseDescriptor = function Promise(promise) {
 	promise = promise._getFollowee()
