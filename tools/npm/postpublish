@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
 set -e
-rm ./.next-version-arg
 $(npm bin)/gulp clear
 git status

@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-if [ "$#" -ne 1 ]
-then
-    echo "Single argument required: major, minor, patch"
-    exit 1
-fi
-printf "$1" > ./.next-version-arg
-npm publish
