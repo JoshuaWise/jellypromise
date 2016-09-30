@@ -12,11 +12,9 @@ function PromiseStream(source) {
 	this._processing = 0
 	this._closedPromise = new Promise(INTERNAL)
 	this._process = null
+	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
 	this._flush = _flushQueue
 	// Could signal desiredSize as (highWaterMark - processing - queue._length)
-	// When cleanly CLOSED, should use ._end() on forward piped streams
-	// Should propagate errors to forward piped streams
-	// Should propagate cancels to forward piped streams
 	// Should queued input promises get catchLater() invoked on them?
 	// Provide reading methods that don't pipe to a new stream; possibilities:
 	// - drain() -> emitter
@@ -52,6 +50,7 @@ PromiseStream.prototype.cancel = function () {
 	if (this._state === $STREAM_CLOSED) {
 		return this._closedPromise
 	}
+	this._pipedStream && this._pipedStream.cancel()
 	this._state = $STREAM_CLOSED
 	this._closedPromise._resolve(true)
 	this._processing = 0
@@ -73,6 +72,7 @@ PromiseStream.prototype.map = function (concurrency, handler) {
 	var self = this
 	var stream = new PromiseStream(INTERNAL)
 	this._closedPromise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._pipedStream = stream
 	this._process = MapProcess(this, stream, handler)
 	this._flush()
 	return stream
@@ -93,6 +93,7 @@ PromiseStream.prototype._write = function (data) {
 PromiseStream.prototype._end = function () {
 	if (this._state !== $STREAM_OPEN) {return}
 	if (this._process && this._processing === 0) {
+		this._pipedStream && this._pipedStream._end()
 		this._state = $STREAM_CLOSED
 		this._closedPromise._resolve(false)
 		this._cleanup()
@@ -102,6 +103,7 @@ PromiseStream.prototype._end = function () {
 }
 PromiseStream.prototype._error = function (reason) {
 	if (this._state === $STREAM_CLOSED) {return}
+	this._pipedStream && this._pipedStream._error(reason)
 	this._state = $STREAM_CLOSED
 	this._closedPromise._reject(reason)
 	this._processing = 0
@@ -124,6 +126,7 @@ PromiseStream.prototype._switchToIteratorMode = function (iterable) {
 PromiseStream.prototype._cleanup = function () {
 	this._queue = null
 	this._process = null
+	this._pipedStream = null
 	this._removeListeners()
 }
 function _flushIterator() {
@@ -153,13 +156,14 @@ function MapProcess(source, dest, handler) {
 	function onFulfilled(value) {
 		if (source._state === $STREAM_CLOSED) {return}
 		--source._processing
+		dest._write(value)
 		source._flush()
 		if (source._state === $STREAM_CLOSING && source._processing === 0) {
+			dest._end()
 			source._state = $STREAM_CLOSED
 			source._closedPromise._resolve(false)
 			source._cleanup()
 		}
-		dest._write(value)
 	}
 	function onRejected(reason) {
 		source._error(reason)
