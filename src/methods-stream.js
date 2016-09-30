@@ -10,14 +10,13 @@ function PromiseStream(source) {
 	this._queue = new FastQueue
 	this._concurrency = Infinity
 	this._processing = 0
-	this._reason = null
+	this._closedPromise = new Promise(INTERNAL)
 	this._process = null
 	this._flush = _flushQueue
 	// Could signal desiredSize as (highWaterMark - processing - queue._length)
-	// When cleanly CLOSED, should use ._end() on piped streams
-	// Should propagate errors to piped streams
-	// Errors should also propagate backwards until reaching a CLOSED stream
-	// Should be able to access a closedPromise (that rejects with _reason)
+	// When cleanly CLOSED, should use ._end() on forward piped streams
+	// Should propagate errors to forward piped streams
+	// Should propagate cancels to forward piped streams
 	// Should queued input promises get catchLater() invoked on them?
 	// Provide reading methods that don't pipe to a new stream; possibilities:
 	// - drain() -> emitter
@@ -49,12 +48,15 @@ PromiseStream.from = function (iterable) {
 	stream._switchToIteratorMode(iterable)
 	return stream
 }
-PromiseStream.prototype.abort = function (reason) {
-	if (reason == null) {
-		reason = new TypeError('This stream was aborted.')
+PromiseStream.prototype.cancel = function () {
+	if (this._state === $STREAM_CLOSED) {
+		return this._closedPromise
 	}
-	this._error(reason)
-	// intentionally returns undefined
+	this._state = $STREAM_CLOSED
+	this._closedPromise._resolve(true)
+	this._processing = 0
+	this._cleanup()
+	return this._closedPromise
 }
 PromiseStream.prototype.map = function (concurrency, handler) {
 	if (this._state === $STREAM_CLOSED) {
@@ -70,10 +72,15 @@ PromiseStream.prototype.map = function (concurrency, handler) {
 	}
 	var self = this
 	var stream = new PromiseStream(INTERNAL)
+	this._closedPromise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._process = MapProcess(this, stream, handler)
 	this._flush()
 	return stream
 }
+Object.defineProperty(PromiseStream.prototype, 'closed', {
+	enumerable: true, configurable: true,
+	get: function () {return this._closedPromise}
+})
 PromiseStream.prototype._write = function (data) {
 	if (this._state !== $STREAM_OPEN) {return}
 	if (this._process && this._processing < this._concurrency) {
@@ -87,6 +94,7 @@ PromiseStream.prototype._end = function () {
 	if (this._state !== $STREAM_OPEN) {return}
 	if (this._process && this._processing === 0) {
 		this._state = $STREAM_CLOSED
+		this._closedPromise._resolve(false)
 		this._cleanup()
 	} else {
 		this._state = $STREAM_CLOSING
@@ -95,7 +103,7 @@ PromiseStream.prototype._end = function () {
 PromiseStream.prototype._error = function (reason) {
 	if (this._state === $STREAM_CLOSED) {return}
 	this._state = $STREAM_CLOSED
-	this._reason = reason
+	this._closedPromise._reject(reason)
 	this._processing = 0
 	this._cleanup()
 }
@@ -148,6 +156,7 @@ function MapProcess(source, dest, handler) {
 		source._flush()
 		if (source._state === $STREAM_CLOSING && source._processing === 0) {
 			source._state = $STREAM_CLOSED
+			source._closedPromise._resolve(false)
 			source._cleanup()
 		}
 		dest._write(value)
