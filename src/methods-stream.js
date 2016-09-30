@@ -81,11 +81,11 @@ PromiseStream.prototype._flushIterator = function () {
 	var iterator = this._iterator
 	for (; processing < concurrency; ++processing) {
 		var data = getNext(iterator)
-		if (next === IS_ERROR) {
+		if (data === IS_ERROR) {
 			this._error(LAST_ERROR)
 			return
 		}
-		if (LAST_DONE) {
+		if (data === IS_DONE) {
 			this._end()
 			break
 		}
@@ -100,14 +100,13 @@ PromiseStream.prototype._cleanup = function () {
 }
 
 
-var LAST_DONE = false
 var LAST_ERROR = null
 var IS_ERROR = {}
+var IS_DONE = {}
 function getNext(iterator) {
 	try {
 		var next = iterator.next()
-		LAST_DONE = next.done
-		return next.value
+		return next.done ? IS_DONE : next.value
 	} catch (ex) {
 		LAST_ERROR = ex
 		return IS_ERROR
