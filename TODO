@@ -7,10 +7,11 @@ optimizations for index.js to import on the server only:
 
 add long stack trace tests
 
+use .then instead of ._then
 
 
 
 make sure all prototype methods that generate a new, linked promise, use _handleNew, _handle, or _then, so that `this` promise sets SUPPRESS_UNHANDLED_REJECTIONS to 1
 
-promise stream (seperate module)
+promise stream (seperate module?)
 generator (seperate module)

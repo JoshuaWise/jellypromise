@@ -5,17 +5,16 @@ var iterator = require('./util').iterator
 var INTERNAL = require('./util').INTERNAL
 var NOOP = function () {}
 
-function PromiseStream(source, concurrency) {
-	if (concurrency !== undefined && typeof concurrency !== 'number') {
-		throw new TypeError('Expected concurrency to be a number, if provided.')
-	}
-	
+function PromiseStream(source) {
 	this._state = $STREAM_OPEN
 	this._iterator = null // Only used in iterator mode.
 	this._queue = new FastQueue // Removed when using iterator mode.
-	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
+	this._concurrency = Infinity
 	this._processing = 0
 	this._reason = null
+	this._process = null
+	this._flush = flushQueue
+	// Could signal desiredSize as (highWaterMark - processing - queue.length)
 	
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
@@ -35,13 +34,34 @@ function PromiseStream(source, concurrency) {
 PromiseStream.from = function (iterable) {
 	var stream = new PromiseStream(INTERNAL)
 	stream._switchToIteratorMode(iterable)
-	stream._flushIterator()
+	return stream
+}
+PromiseStream.prototype.abort = function () {
+	this._error(new TypeError('This stream was aborted.'))
+}
+PromiseStream.prototype.map = function (concurrency, handler) {
+	if (this._state === $STREAM_CLOSED) {
+		throw TypeError('This stream is closed.')
+	}
+	if (this._process) {
+		throw TypeError('This stream already has a destination.')
+	}
+	if (typeof concurrency === 'number') {
+		this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
+	} else {
+		handler = concurrency
+	}
+	var self = this
+	var stream = new PromiseStream(INTERNAL)
+	this._process = MapProcess(this, stream, handler)
+	this._flush()
 	return stream
 }
 PromiseStream.prototype._write = function (data) {
 	if (this._state !== $STREAM_OPEN) {return}
-	if (this._processing++ < this._concurrency) {
-		/* processData(data) nothrow */
+	if (this._process && this._processing < this._concurrency) {
+		this._process(data)
+		++this._processing
 	} else {
 		this._queue.push(data)
 	}
@@ -53,7 +73,6 @@ PromiseStream.prototype._end = function () {
 		this._cleanup()
 	} else {
 		this._state = $STREAM_CLOSING
-		/* ... when processing hits zero, set state to CLOSED and cleanup */
 	}
 }
 PromiseStream.prototype._error = function (reason) {
@@ -61,42 +80,74 @@ PromiseStream.prototype._error = function (reason) {
 	this._state = $STREAM_CLOSED
 	this._reason = reason
 	this._processing = 0
-	/* cancel processing if possible */
 	this._cleanup()
 }
 PromiseStream.prototype._switchToIteratorMode = function (iterable) {
-	if (Array.isArray(iterable)) {
-		this._iterator = new ArrayIterator(iterable)
-	} else if (iterator && iterable != null && typeof iterable[iterator] === 'function') {
-		this._iterator = iterable[iterator]()
-	} else {
-		throw new TypeError('Expected value to be an iterable object.')
+	if (this._state !== $STREAM_OPEN) {return}
+	try {
+		if (Array.isArray(iterable)) {
+			this._iterator = new ArrayIterator(iterable)
+		} else if (iterator && iterable != null && typeof iterable[iterator] === 'function') {
+			this._iterator = iterable[iterator]()
+		} else {
+			throw new TypeError('Expected value to be an iterable object.')
+		}
+	} catch (reason) {
+		this._error(reason)
+		return
 	}
 	this._queue = null
+	this._flush = flushIterator
+	this._process && this._flush()
 }
-PromiseStream.prototype._flushIterator = function () {
+PromiseStream.prototype._cleanup = function () {
+	this._iterator = null
+	this._queue = null
+	this._process = null
+	this._removeListeners()
+}
+function flushIterator() {
 	if (this._state !== $STREAM_OPEN) {return}
-	var concurrency = this._concurrency
-	var processing = this._processing
-	var iterator = this._iterator
-	for (; processing < concurrency; ++processing) {
-		var data = getNext(iterator)
+	for (; this._processing < this._concurrency; ++this._processing) {
+		var data = getNext(this._iterator)
 		if (data === IS_ERROR) {
 			this._error(LAST_ERROR)
-			return
+			break
 		}
 		if (data === IS_DONE) {
 			this._end()
 			break
 		}
-		/* processData(data) nothrow */
+		this._process(data)
 	}
-	this._processing = processing
 }
-PromiseStream.prototype._cleanup = function () {
-	this._iterator = null
-	this._queue = null
-	this._removeListeners()
+function flushQueue() {
+	if (this._state === $STREAM_CLOSED) {return}
+	for (; this._queue.length > 0 && this._processing < this._concurrency; ++this._processing) {
+		this._process(this._queue.shift())
+	}
+}
+
+
+function MapProcess(source, dest, handler) {
+	function onFulfilled(value) {
+		if (source._state === $STREAM_CLOSED) {return}
+		--source._processing
+		source._flush()
+		if (source._state === $STREAM_CLOSING
+				&& source._processing === 0
+				&& (source._queue === null || source._queue.length === 0)) {
+			source._state = $STREAM_CLOSED
+			source._cleanup()
+		}
+		dest._write(value)
+	}
+	function onRejected(reason) {
+		source._error(reason)
+	}
+	return function (data) {
+		Promise.resolve(data)._then(handler)._then(onFulfilled, onRejected)
+	}
 }
 
 
@@ -131,8 +182,7 @@ Promise.prototype.stream = function () {
 	var stream = new PromiseStream(INTERNAL)
 	this._then(function (iterable) {
 		stream._switchToIteratorMode(iterable)
-		stream._flushIterator()
-	})._then(null, function (reason) {
+	}, function (reason) {
 		stream._error(reason)
 	})
 	return stream
