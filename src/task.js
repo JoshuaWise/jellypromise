@@ -39,7 +39,7 @@ function flush() {
 }
 
 function flushQueue(queue, fn) {
-	while (queue.length > 0) {
+	while (queue._length > 0) {
 		fn.call(queue.shift(), queue.shift())
 	}
 }

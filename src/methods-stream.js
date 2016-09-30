@@ -7,14 +7,13 @@ var NOOP = function () {}
 
 function PromiseStream(source) {
 	this._state = $STREAM_OPEN
-	this._iterator = null // Only used in iterator mode.
-	this._queue = new FastQueue // Removed when using iterator mode.
+	this._queue = new FastQueue
 	this._concurrency = Infinity
 	this._processing = 0
 	this._reason = null
 	this._process = null
-	this._flush = flushQueue
-	// Could signal desiredSize as (highWaterMark - processing - queue.length)
+	this._flush = _flushQueue
+	// Could signal desiredSize as (highWaterMark - processing - queue._length)
 	
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
@@ -86,9 +85,9 @@ PromiseStream.prototype._switchToIteratorMode = function (iterable) {
 	if (this._state !== $STREAM_OPEN) {return}
 	try {
 		if (Array.isArray(iterable)) {
-			this._iterator = new ArrayIterator(iterable)
+			this._queue = new ArrayIterator(iterable)
 		} else if (iterator && iterable != null && typeof iterable[iterator] === 'function') {
-			this._iterator = iterable[iterator]()
+			this._queue = iterable[iterator]()
 		} else {
 			throw new TypeError('Expected value to be an iterable object.')
 		}
@@ -96,20 +95,18 @@ PromiseStream.prototype._switchToIteratorMode = function (iterable) {
 		this._error(reason)
 		return
 	}
-	this._queue = null
-	this._flush = flushIterator
+	this._flush = _flushIterator
 	this._process && this._flush()
 }
 PromiseStream.prototype._cleanup = function () {
-	this._iterator = null
 	this._queue = null
 	this._process = null
 	this._removeListeners()
 }
-function flushIterator() {
+function _flushIterator() {
 	if (this._state !== $STREAM_OPEN) {return}
 	for (; this._processing < this._concurrency; ++this._processing) {
-		var data = getNext(this._iterator)
+		var data = getNext(this._queue)
 		if (data === IS_ERROR) {
 			this._error(LAST_ERROR)
 			break
@@ -121,9 +118,9 @@ function flushIterator() {
 		this._process(data)
 	}
 }
-function flushQueue() {
+function _flushQueue() {
 	if (this._state === $STREAM_CLOSED) {return}
-	for (; this._queue.length > 0 && this._processing < this._concurrency; ++this._processing) {
+	for (; this._queue._length > 0 && this._processing < this._concurrency; ++this._processing) {
 		this._process(this._queue.shift())
 	}
 }
@@ -136,7 +133,7 @@ function MapProcess(source, dest, handler) {
 		source._flush()
 		if (source._state === $STREAM_CLOSING
 				&& source._processing === 0
-				&& (source._queue === null || source._queue.length === 0)) {
+				&& (source._flush === _flushIterator || source._queue._length === 0)) {
 			source._state = $STREAM_CLOSED
 			source._cleanup()
 		}

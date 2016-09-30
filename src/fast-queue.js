@@ -1,26 +1,26 @@
 'use strict'
-module.exports = FastQueue
+module.exports = _FastQueue
 
-function FastQueue() {
-	this.capacity = 16 // Must be a multiple of 2
-	this.length = 0
-	this.front = 0
+function _FastQueue() {
+	this._capacity = 16 // Must be a multiple of 2
+	this._length = 0
+	this._front = 0
 }
 
-FastQueue.prototype.push = function (value) {
-	if (this.capacity === this.length) {
-		arrayMove(this, this.capacity, this.front)
-		this.capacity <<= 1
+_FastQueue.prototype.push = function (value) {
+	if (this._capacity === this._length) {
+		arrayMove(this, this._capacity, this._front)
+		this._capacity <<= 1
 	}
-	this[(this.front + this.length++) & (this.capacity - 1)] = value
+	this[(this._front + this._length++) & (this._capacity - 1)] = value
 }
 
-FastQueue.prototype.shift = function () {
-	var front = this.front
+_FastQueue.prototype.shift = function () {
+	var front = this._front
 	var ret = this[front]
 	this[front] = undefined
-	this.front = (front + 1) & (this.capacity - 1)
-	--this.length
+	this._front = (front + 1) & (this._capacity - 1)
+	--this._length
 	return ret
 }
 
