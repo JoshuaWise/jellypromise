@@ -1,6 +1,5 @@
 'use strict'
 var Promise = require('./promise')
-var TimeoutError = require('./timeout-error')
 var console = require('./util').console // @[/browser]
 var asArray = require('./util').asArray
 var iterator = require('./util').iterator
@@ -150,6 +149,7 @@ Promise.isPromise = function (value) {
 }
 Promise.TimeoutError = TimeoutError
 
+
 var PromiseDescriptor = function Promise(promise) {
 	promise = promise._getFollowee()
 	if (promise._state & $IS_FULFILLED) {
@@ -162,3 +162,15 @@ var PromiseDescriptor = function Promise(promise) {
 		this.state = 'pending'
 	}
 }
+
+
+function TimeoutError(message) {
+	Error.call(this)
+	this.message = message
+	if (typeof Error.captureStackTrace === 'function') {
+		Error.captureStackTrace(this, TimeoutError)
+	}
+}
+TimeoutError.prototype.__proto__ = Error.prototype
+TimeoutError.prototype.name = 'TimeoutError'
+

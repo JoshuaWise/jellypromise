@@ -12,7 +12,11 @@ var constants = {
 	
 	IS_FINAL: 0x1 | 0x2,
 	IS_RESOLVED: 0x1 | 0x2 | 0x4,
-	HAS_SOME_HANDLER: 0x8 | 0x10
+	HAS_SOME_HANDLER: 0x8 | 0x10,
+	
+	STREAM_OPEN: 0,
+	STREAM_CLOSING: 1,
+	STREAM_CLOSED: 2
 }
 
 function Constants() {
