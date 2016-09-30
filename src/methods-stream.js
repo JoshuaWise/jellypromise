@@ -29,8 +29,8 @@ function PromiseStream(source) {
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
 	} else {
-		var self = this, a, b, c
-		source.on('data', a = function (data) {self._write(data)})
+		var self = this, index = 0, a, b, c
+		source.on('data', a = function (data) {self._write(data, index++)})
 		source.on('end', b = function () {self._end()})
 		source.on('error', c = function (reason) {self._error(reason)})
 		this._removeListeners = function () {
@@ -81,13 +81,14 @@ Object.defineProperty(PromiseStream.prototype, 'closed', {
 	enumerable: true, configurable: true,
 	get: function () {return this._closedPromise}
 })
-PromiseStream.prototype._write = function (data) {
+PromiseStream.prototype._write = function (data, index) {
 	if (this._state !== $STREAM_OPEN) {return}
 	if (this._process && this._processing < this._concurrency) {
-		this._process(data)
+		this._process(data, index)
 		++this._processing
 	} else {
 		this._queue.push(data)
+		this._queue.push(index)
 	}
 }
 PromiseStream.prototype._end = function () {
@@ -120,6 +121,7 @@ PromiseStream.prototype._switchToIteratorMode = function (iterable) {
 		}
 		this._queue = it
 	}
+	this._nextIndex = 0
 	this._flush = _flushIterator
 	this._process && this._flush()
 }
@@ -141,22 +143,22 @@ function _flushIterator() {
 			this._end()
 			break
 		}
-		this._process(data)
+		this._process(data, this._nextIndex++)
 	}
 }
 function _flushQueue() {
 	if (this._state === $STREAM_CLOSED) {return}
 	for (; this._queue._length > 0 && this._processing < this._concurrency; ++this._processing) {
-		this._process(this._queue.shift())
+		this._process(this._queue.shift(), this._queue.shift())
 	}
 }
 
 
 function MapProcess(source, dest, handler) {
-	function onFulfilled(value) {
+	function onFulfilled(value, index) {
 		if (source._state === $STREAM_CLOSED) {return}
+		dest._write(value, index)
 		--source._processing
-		dest._write(value)
 		source._flush()
 		if (source._state === $STREAM_CLOSING && source._processing === 0) {
 			dest._end()
@@ -168,9 +170,11 @@ function MapProcess(source, dest, handler) {
 	function onRejected(reason) {
 		source._error(reason)
 	}
-	return function (data) {
+	return function (data, index) {
 		// All processors must NOT decrement source._processing synchronously.
-		Promise.resolve(data)._then(handler)._then(onFulfilled, onRejected)
+		// All processors must NOT allow external code (handlers) to execute synchronously.
+		
+		Promise.resolve(data)._then(handler, undefined, index)._then(onFulfilled, onRejected, index)
 	}
 }
 

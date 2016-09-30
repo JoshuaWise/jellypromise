@@ -10,10 +10,10 @@ var PASSTHROUGH_REJECTION = false // @[/development]
 
 // This is the .then() method used by all internal functions.
 // It automatically captures stack traces at the correct depth.
-Promise.prototype._then = function (onFulfilled, onRejected) {
+Promise.prototype._then = function (onFulfilled, onRejected, smuggled) {
 	var promise = new Promise(INTERNAL)
 	promise._addStackTrace(2) // @[/development]
-	this._handleNew(onFulfilled, onRejected, promise)
+	this._handleNew(onFulfilled, onRejected, promise, smuggled)
 	return promise
 }
 
@@ -89,7 +89,7 @@ Promise.prototype._reject = function (newValue) {
 	finale(this)
 }
 
-Promise.prototype._handleNew = function (onFulfilled, onRejected, promise) {
+Promise.prototype._handleNew = function (onFulfilled, onRejected, promise, smuggled) {
 	// @[development]
 	if (typeof onFulfilled !== 'function' && onFulfilled != null) {
 		warn('Promise handlers must be functions (' + typeof onFulfilled + 's will be ignored).', promise._trace)
@@ -101,7 +101,8 @@ Promise.prototype._handleNew = function (onFulfilled, onRejected, promise) {
 	return this._handle({
 		onFulfilled: typeof onFulfilled === 'function' ? onFulfilled : null,
 		onRejected: typeof onRejected === 'function' ? onRejected : null,
-		promise: promise
+		promise: promise,
+		smuggled: smuggled
 	})
 }
 Promise.prototype._handle = function (deferred) {
@@ -159,7 +160,9 @@ function handleSettled(deferred) {
 		}
 	} else {
 		LST.setContext(this, deferred) // @[/development]
-		var ret = tryCallOne(cb, this._value)
+		var ret = deferred.smuggled === undefined
+			? tryCallOne(cb, this._value)
+			: tryCallTwo(cb, this._value, deferred.smuggled)
 		LST.releaseContext() // @[/development]
 		if (ret === IS_ERROR) {
 			deferred.promise._reject(LAST_ERROR)
@@ -213,7 +216,7 @@ function tryCallOne(fn, a) {
 }
 function tryCallTwo(fn, a, b) {
 	try {
-		fn(a, b)
+		return fn(a, b)
 	} catch (ex) {
 		LAST_ERROR = ex
 		return IS_ERROR
