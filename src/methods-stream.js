@@ -16,8 +16,9 @@ function PromiseStream(source) {
 	// Could signal desiredSize as (highWaterMark - processing - queue._length)
 	// When cleanly CLOSED, should use ._end() on piped streams
 	// Should propagate errors to piped streams
-	// If no teeing is implemented, errors should also propagate backwards
+	// Errors should also propagate backwards until reaching a CLOSED stream
 	// Should be able to access a closedPromise (that rejects with _reason)
+	// Should queued input promises get catchLater() invoked on them?
 	// Provide reading methods that don't pipe to a new stream; possibilities:
 	// - drain() -> emitter
 	// - merge() -> promise of array

@@ -104,6 +104,10 @@ Like [`.finally`](#finallyhandler---promise), but the `handler` will not be call
 
 This method is primarily used for side-effects.
 
+### .become(*value*) -> *promise*
+
+Sugar for `.then(function () {return value})`.
+
 ### .else([*...predicates*], *value*) -> *promise*
 
 Sugar for `.catch(function () {return value})`. This method is used for providing default values on a rejected promise chain. Predicates are supported, just like with the [`.catch`](#catchpredicates-onrejected---promise) method.
