@@ -136,13 +136,13 @@ Promise.prototype._getFollowee = function () {
 function finale(self) {
 	if (self._state & $SINGLE_HANDLER) {
 		self._handle(self._deferreds)
-		self._deferreds = null
+		self._deferreds = undefined
 	} else if (self._state & $MANY_HANDLERS) {
 		var deferreds = self._deferreds
 		for (var i=0, len=deferreds.length; i<len; i++) {
 			self._handle(deferreds[i])
 		}
-		self._deferreds = null
+		self._deferreds = undefined
 	}
 }
 

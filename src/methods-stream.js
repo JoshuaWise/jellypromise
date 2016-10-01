@@ -19,6 +19,7 @@ function PromiseStream(source) {
 	this._onerror = function (reason) {self._error(reason)}
 	// Implement sort()
 	// If desiredSize is available, some way of notifying backpressure change should also exist
+	// Is merge slow because of the array with holes?
 	// ending processes:
 	// - merge() -> promise of array
 	// - reduce() -> promise of value
@@ -96,6 +97,14 @@ PromiseStream.prototype.drain = function (handler) {
 	this._flush()
 	return this
 }
+PromiseStream.prototype.merge = function () {
+	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	this._concurrency = Infinity
+	this._process = MergeProcess(this)
+	this._flush()
+	return this
+}
 Object.defineProperty(PromiseStream.prototype, 'desiredSize', {
 	enumerable: true, configurable: true,
 	get: function () {
@@ -127,7 +136,7 @@ PromiseStream.prototype._end = function () {
 	if (this._process && this._processing === 0) {
 		this._pipedStream && this._pipedStream._end()
 		this._streamState = $STREAM_CLOSED
-		this._resolve()
+		this._resolve(this._value)
 		this._cleanup()
 	} else {
 		this._streamState = $STREAM_CLOSING
@@ -259,7 +268,7 @@ function FilterProcess(source, dest, handler) {
 	}
 }
 function DrainProcess(source, handler) {
-	function onFulfilled(value) {
+	function onFulfilled(value, index) {
 		if (source._streamState === $STREAM_CLOSED) {return}
 		// With _handleNew, this function is not in a try-catch block.
 		// Because of this, normally, it should never be used for external code.
@@ -273,10 +282,22 @@ function DrainProcess(source, handler) {
 		// to end. And when it comes to the user knowing about it ending,
 		// we're still safe because the stream's promise interface will
 		// always notify its handlers asynchronously.
-		handler(value)
+		handler(value, index)
 	}
-	return function (promise) {
-		promise._handleNew(onFulfilled, source._onerror)
+	return function (promise, index) {
+		promise._handleNew(onFulfilled, source._onerror, undefined, index)
+	}
+}
+function MergeProcess(source) {
+	function onFulfilled(value, index) {
+		if (source._streamState === $STREAM_CLOSED) {return}
+		array[index] = value
+		--source._processing
+		source._flush()
+	}
+	var array = source._value = []
+	return function (promise, index) {
+		promise._handleNew(onFulfilled, source._onerror, undefined, index)
 	}
 }
 

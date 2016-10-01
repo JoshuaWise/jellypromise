@@ -12,8 +12,8 @@ function Promise(fn) {
 		throw new TypeError('Promises must be constructed with a function argument.')
 	}
 	this._state = $NO_STATE
-	this._value = null
-	this._deferreds = null
+	this._value = undefined
+	this._deferreds = undefined
 	if (fn !== INTERNAL) {
 		this._resolveFromHandler(fn)
 	}
