@@ -127,7 +127,7 @@ PromiseStream.prototype._write = function (data, index) {
 
 // Used to indicate that there will be no more data added to the stream.
 PromiseStream.prototype._end = function () {
-	if (this._state !== $STREAM_OPEN) {return}
+	if (this._state === $STREAM_CLOSED) {return}
 	if (this._process && this._processing === 0) {
 		this._pipedStream && this._pipedStream._end()
 		this._state = $STREAM_CLOSED
@@ -185,19 +185,13 @@ PromiseStream.prototype._cleanup = function () {
 PromiseStream.prototype._finishProcess = function () {
 	--this._processing
 	this._flush()
-	if (this._state === $STREAM_CLOSING && this._processing === 0) {
-		this._pipedStream && this._pipedStream._end()
-		this._state = $STREAM_CLOSED
-		this._closedPromise._resolve(false)
-		this._cleanup()
-	}
 }
 
 
 // Flushes and processes the iterable until the concurrency limit is reached,
 // or until the entire iterable has been flushed.
 function _flushIterator() {
-	if (this._state !== $STREAM_OPEN) {return}
+	if (this._state === $STREAM_CLOSED) {return}
 	for (; this._processing < this._concurrency; ++this._processing) {
 		var data = getNext(this._queue)
 		if (data === IS_ERROR) {
@@ -220,11 +214,16 @@ function _flushQueue() {
 	for (; this._queue._length > 0 && this._processing < this._concurrency; ++this._processing) {
 		this._process(this._queue.shift(), this._queue.shift())
 	}
+	if (this._state === $STREAM_CLOSING && this._processing === 0) {
+		this._end()
+	}
 }
 
 
 // ========== Pipe Processes ==========
 // It is important that no processes fulfill or reject synchronously
+
+
 function MapProcess(source, dest, handler) {
 	function onFulfilled(value, index) {
 		if (source._state === $STREAM_CLOSED) {return}
