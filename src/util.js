@@ -20,7 +20,7 @@ exports.asArray = function (iterable) {
 		}
 		return arr
 	}
-	throw new TypeError('Expected argument to be an iterable object.')
+	throw new TypeError('Expected value to be an iterable object.')
 }
 
 // Returns whether the given catch predicate should catch the exception reason.

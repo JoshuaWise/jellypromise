@@ -19,7 +19,6 @@ function PromiseStream(source) {
 	this._onerror = function (reason) {self._error(reason)}
 	// Implement sort()
 	// If desiredSize is available, some way of notifying backpressure change should also exist
-	// Test drain handler exceptions
 	// Flushing the iterable is probably slow
 	// ending processes:
 	// - merge() -> promise of array
@@ -153,15 +152,16 @@ PromiseStream.prototype._error = function (reason) {
 PromiseStream.prototype._switchToIteratorMode = function (iterable) {
 	if (this._streamState !== $STREAM_OPEN) {return}
 	if (Array.isArray(iterable)) {
-		this._queue = new ArrayIterator(iterable)
+		this._queue = iterable
+		this._flush = _flushArray
 	} else {
 		var it = getIterator(iterable)
 		if (it === IS_ERROR) {
 			return this._error(LAST_ERROR)
 		}
 		this._queue = it
+		this._flush = _flushIterator
 	}
-	this._flush = _flushIterator
 	this._flush()
 }
 
@@ -191,6 +191,20 @@ function _flushIterator() {
 			break
 		}
 		this._process(Promise.resolve(data), this._nextIndex++)
+	}
+}
+
+
+// Same as _flushIterator, but optimized for arrays.
+function _flushArray() {
+	if (this._streamState === $STREAM_CLOSED) {return}
+	for (; this._processing < this._concurrency; ++this._processing) {
+		if (!(this._nextIndex < this._queue.length)) {
+			this._nextIndex = NaN
+			this._end()
+			break
+		}
+		this._process(Promise.resolve(this._queue[this._nextIndex]), this._nextIndex++)
 	}
 }
 
@@ -286,22 +300,11 @@ function getIterator(iterable) {
 		if (iterator && iterable != null && typeof iterable[iterator] === 'function') {
 			return iterable[iterator]()
 		}
+		throw new TypeError('Expected value to be an iterable object.')
 	} catch (ex) {
 		LAST_ERROR = ex
 		return IS_ERROR
 	}
-}
-
-
-// ========== ArrayIterator ==========
-function ArrayIterator(array) {
-	this._array = array
-	this._index = 0
-}
-ArrayIterator.prototype.next = function () {
-	return this._index < this._array.length
-		? {value: this._array[this._index++], done: false}
-		: (this._index = NaN, {value: undefined, done: true})
 }
 
 
