@@ -21,7 +21,6 @@ function PromiseStream(source) {
 	// If desiredSize is available, some way of notifying backpressure change should also exist
 	// Is merge slow because of the array with holes?
 	// ending processes:
-	// - merge() -> promise of array
 	// - reduce() -> promise of value
 	
 	if (source === INTERNAL) {
