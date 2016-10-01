@@ -18,8 +18,7 @@ var constants = {
 	STREAM_CLOSING: 1,
 	STREAM_CLOSED: 2,
 	
-	$DEAD_PROCESS: 1,
-	$READ_PROCESS: 2,
+	$DEAD_PROCESS: 1
 }
 
 function Constants() {
