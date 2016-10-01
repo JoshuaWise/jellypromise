@@ -22,9 +22,9 @@ function PromiseStream(source) {
 		this._removeListeners = NOOP
 	} else {
 		var self = this, a, b, c
-		source.on('data', a = function (data) {self._write(Promise.resolve(data), self._nextIndex++)})
-		source.on('end', b = function () {self._end()})
-		source.on('error', c = this._onerror)
+		source.addListener('data', a = function (data) {self._write(Promise.resolve(data), self._nextIndex++)})
+		source.addListener('end', b = function () {self._end()})
+		source.addListener('error', c = this._onerror)
 		this._removeListeners = function () {
 			source.removeListener('data', a)
 			source.removeListener('end', b)
@@ -160,9 +160,6 @@ PromiseStream.prototype._cleanup = function () {
 
 
 // Pipes to a new stream, and assigns the given process and concurrency.
-// Two signatures of Processes are supports:
-//   function (dest, function)
-//   function (non-function)
 PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	this._concurrency = concurrency
@@ -174,7 +171,7 @@ PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 		dest._error(this._value)
 		return dest
 	}
-	this._process = Process(this, typeof arg === 'function' ? dest : arg, arg)
+	this._process = Process(this, dest, arg)
 	this._flush()
 	return dest
 }
@@ -263,7 +260,7 @@ function _FilterProcess(source, dest, handler) {
 		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, {promise: promise, index: index})
 	}
 }
-function _TakeUntilProcess(source, donePromise) {
+function _TakeUntilProcess(source, dest, donePromise) {
 	function onFulfilled(value, original) {
 		if (source._streamState === $STREAM_CLOSED) {return}
 		dest._write(original.promise, original.index)

@@ -2,11 +2,12 @@
 # jellypromise [![Build Status](https://img.shields.io/travis/JoshuaWise/jellypromise.svg)](https://travis-ci.org/JoshuaWise/jellypromise)
 
 This is an implementation of Promises that achieves the following design goals:
-- Tiny size (2.51 kB minified and gzipped)
+- Tiny size (3.72 kB minified and gzipped)
 - Fast performance (faster than [bluebird](https://github.com/petkaantonov/bluebird/))
 - A superset of the [ES6 Promise](http://www.ecma-international.org/ecma-262/6.0/#sec-promise-objects)
-- Has a very useful, carefully-selected set of utilities, without bloat
+- Has a useful, carefully-selected set of utilities, without bloat
 - Logs unhandled errors by default (the opposite of what [then/promise](https://github.com/then/promise) does), provides long stack traces, and provides utilities for useful error handling patterns
+- Provides a very efficient object streaming library for asynchronous processing chains with concurrency control
 
 ## Installation
 
@@ -245,6 +246,12 @@ callbackAPI('foo', 'bar', function (err, result) {
   // handle error or result here
 })
 ```
+
+# Stream API
+
+Some promise libraries have functions like `.map()` or `.filter()` which operate on arrays of promises. Unfortunately, this is a very inefficient way to do batch processing on promises. Large and unnecessary arrays are kept in memory, and usually thousands of closures are created when processing large datasets this way. Additionally, every promise must wait to finish one operation before the next operation can be started, which can cause serious bottlenecks.
+
+To solve these problems `jellypromise` provides the class `Promise.Stream`, which can asynchronously stream collections of promises through various processing methods. For usage and documentation, see the [Stream API](https://github.com/JoshuaWise/better-sqlite3/wiki/Stream-API).
 
 ## License
 
