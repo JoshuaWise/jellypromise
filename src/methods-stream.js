@@ -42,68 +42,20 @@ PromiseStream.prototype.__proto__ = Promise.prototype
 PromiseStream.prototype.map = function (concurrency, handler) {
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
-	if (this._process) {throw new TypeError('This stream already has a destination.')}
-	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
-	var dest = new PromiseStream(INTERNAL)
-	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
-	this._pipedStream = dest
-	if (this._state & $IS_REJECTED) {
-		this._process = $DEAD_PROCESS
-		dest._error(this._value)
-		return dest
-	}
-	this._process = _MapProcess(this, dest, handler)
-	this._flush()
-	return dest
+	return this._pipe(_MapProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
 }
 PromiseStream.prototype.forEach = function (concurrency, handler) {
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
-	if (this._process) {throw new TypeError('This stream already has a destination.')}
-	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
-	var dest = new PromiseStream(INTERNAL)
-	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
-	this._pipedStream = dest
-	if (this._state & $IS_REJECTED) {
-		this._process = $DEAD_PROCESS
-		dest._error(this._value)
-		return dest
-	}
-	this._process = _ForEachProcess(this, dest, handler)
-	this._flush()
-	return dest
+	return this._pipe(_ForEachProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
 }
 PromiseStream.prototype.filter = function (concurrency, handler) {
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
-	if (this._process) {throw new TypeError('This stream already has a destination.')}
-	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
-	var dest = new PromiseStream(INTERNAL)
-	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
-	this._pipedStream = dest
-	if (this._state & $IS_REJECTED) {
-		this._process = $DEAD_PROCESS
-		dest._error(this._value)
-		return dest
-	}
-	this._process = _FilterProcess(this, dest, handler)
-	this._flush()
-	return dest
+	return this._pipe(_FilterProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
 }
 PromiseStream.prototype.takeUntil = function (promise) {
-	if (this._process) {throw new TypeError('This stream already has a destination.')}
-	this._concurrency = Infinity
-	var dest = new PromiseStream(INTERNAL)
-	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
-	this._pipedStream = dest
-	if (this._state & $IS_REJECTED) {
-		this._process = $DEAD_PROCESS
-		dest._error(this._value)
-		return dest
-	}
-	this._process = _TakeUntilProcess(this, promise)
-	this._flush()
-	return dest
+	return this._pipe(_TakeUntilProcess, Infinity, promise)
 }
 PromiseStream.prototype.reduce = function (handler, seed) {
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
@@ -204,6 +156,27 @@ PromiseStream.prototype._cleanup = function () {
 	this._pipedStream = null
 	this._onerror = NOOP
 	this._removeListeners()
+}
+
+
+// Pipes to a new stream, and assigns the given process and concurrency.
+// Two signatures of Processes are supports:
+//   function (dest, function)
+//   function (non-function)
+PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	this._concurrency = concurrency
+	var dest = new PromiseStream(INTERNAL)
+	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._pipedStream = dest
+	if (this._state & $IS_REJECTED) {
+		this._process = $DEAD_PROCESS
+		dest._error(this._value)
+		return dest
+	}
+	this._process = Process(this, typeof arg === 'function' ? dest : arg, arg)
+	this._flush()
+	return dest
 }
 
 
