@@ -150,24 +150,30 @@ function handleSettled(deferred) {
 	var isFulfilled = this._state & $IS_FULFILLED
 	var cb = isFulfilled ? deferred.onFulfilled : deferred.onRejected
 	if (cb === null) {
-		deferred.promise._trace = this._trace // @[/development]
-		if (isFulfilled) {
-			deferred.promise._resolve(this._value)
-		} else {
-			PASSTHROUGH_REJECTION = true // @[/development]
-			deferred.promise._reject(this._value)
-			PASSTHROUGH_REJECTION = false // @[/development]
+		if (deferred.promise) {
+			deferred.promise._trace = this._trace // @[/development]
+			if (isFulfilled) {
+				deferred.promise._resolve(this._value)
+			} else {
+				PASSTHROUGH_REJECTION = true // @[/development]
+				deferred.promise._reject(this._value)
+				PASSTHROUGH_REJECTION = false // @[/development]
+			}
 		}
 	} else {
-		LST.setContext(this, deferred) // @[/development]
-		var ret = deferred.smuggled === undefined
-			? tryCallOne(cb, this._value)
-			: tryCallTwo(cb, this._value, deferred.smuggled)
-		LST.releaseContext() // @[/development]
-		if (ret === IS_ERROR) {
-			deferred.promise._reject(LAST_ERROR)
+		if (deferred.promise) {
+			LST.setContext(this, deferred) // @[/development]
+			var ret = deferred.smuggled === undefined
+				? tryCallOne(cb, this._value)
+				: tryCallTwo(cb, this._value, deferred.smuggled)
+			LST.releaseContext() // @[/development]
+			if (ret === IS_ERROR) {
+				deferred.promise._reject(LAST_ERROR)
+			} else {
+				deferred.promise._resolve(ret)
+			}
 		} else {
-			deferred.promise._resolve(ret)
+			cb(this._value, deferred.smuggled)
 		}
 	}
 }

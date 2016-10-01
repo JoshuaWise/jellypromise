@@ -31,7 +31,7 @@ Promise.prototype.catch = function (onRejected) {
 		onRejected = arguments[i]
 		var self = this // @[/development]
 		var newPromise
-		return newPromise = this._then(null, function (reason) {
+		return newPromise = this._then(undefined, function (reason) {
 			for (var i=0; i<len; i++) {
 				if (catchesError(args[i], reason, newPromise)) {return onRejected(reason)} // @[/development]
 				if (catchesError(args[i], reason)) {return onRejected(reason)} // @[/production]
@@ -40,7 +40,7 @@ Promise.prototype.catch = function (onRejected) {
 			throw reason
 		})
 	}
-	return this._then(null, onRejected)
+	return this._then(undefined, onRejected)
 }
 Promise.prototype.catchLater = function () {
 	this._getFollowee()._state |= $SUPPRESS_UNHANDLED_REJECTIONS

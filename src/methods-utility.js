@@ -49,7 +49,7 @@ Promise.prototype.else = function (value) {
 		args[i] = function () {return value}
 		return this.catch.apply(this, args)
 	}
-	return this._then(null, function () {return value})
+	return this._then(undefined, function () {return value})
 }
 Promise.prototype.delay = function (ms) {
 	return this._then(function (value) {

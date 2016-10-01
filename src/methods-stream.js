@@ -8,6 +8,7 @@ var NOOP = function () {}
 function PromiseStream(source) {
 	this._state = $STREAM_OPEN
 	this._queue = new FastQueue
+	this._nextIndex = 0
 	this._concurrency = Infinity
 	this._processing = 0
 	this._closedPromise = new Promise(INTERNAL)
@@ -17,16 +18,16 @@ function PromiseStream(source) {
 	// Benchmark different sort methods (2 queues, hash map)
 	// See if improvements can be made with waiting on promises too late (i.e., it it's says processing but it isn't really; maybe always queue values that are unresolved promises)
 	// Could signal desiredSize as (highWaterMark - processing - queue._length)
-	// Provide reading methods that don't pipe to a new stream; possibilities:
-	// - drain() -> emitter
+	// Test drain handler exceptions
+	// ending processes:
 	// - merge() -> promise of array
 	// - reduce() -> promise of value
 	
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
 	} else {
-		var self = this, index = 0, a, b, c
-		source.on('data', a = function (data) {self._write(Promise.resolve(data), index++)})
+		var self = this, a, b, c
+		source.on('data', a = function (data) {self._write(Promise.resolve(data), self._nextIndex++)})
 		source.on('end', b = function () {self._end()})
 		source.on('error', c = function (reason) {self._error(reason)})
 		this._removeListeners = function () {
@@ -41,17 +42,6 @@ PromiseStream.from = function (iterable) {
 	var stream = new PromiseStream(INTERNAL)
 	stream._switchToIteratorMode(iterable)
 	return stream
-}
-PromiseStream.prototype.cancel = function () {
-	if (this._state === $STREAM_CLOSED) {
-		return this._closedPromise
-	}
-	this._pipedStream && this._pipedStream.cancel()
-	this._state = $STREAM_CLOSED
-	this._closedPromise._resolve(true)
-	this._processing = 0
-	this._cleanup()
-	return this._closedPromise
 }
 PromiseStream.prototype.map = function (concurrency, handler) {
 	if (this._state === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
@@ -102,6 +92,14 @@ PromiseStream.prototype.sort = function () {
 	this._flush()
 	return dest
 }
+PromiseStream.prototype.drain = function (handler) {
+	if (this._state === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
+	this._process = DrainProcess(this, handler)
+	this._flush()
+	return this._closedPromise
+}
 Object.defineProperty(PromiseStream.prototype, 'closed', {
 	enumerable: true, configurable: true,
 	get: function () {return this._closedPromise}
@@ -130,7 +128,7 @@ PromiseStream.prototype._end = function () {
 	if (this._process && this._processing === 0) {
 		this._pipedStream && this._pipedStream._end()
 		this._state = $STREAM_CLOSED
-		this._closedPromise._resolve(false)
+		this._closedPromise._resolve()
 		this._cleanup()
 	} else {
 		this._state = $STREAM_CLOSING
@@ -162,7 +160,6 @@ PromiseStream.prototype._switchToIteratorMode = function (iterable) {
 		}
 		this._queue = it
 	}
-	this._nextIndex = 0
 	this._flush = _flushIterator
 	this._process && this._flush()
 }
@@ -174,16 +171,6 @@ PromiseStream.prototype._cleanup = function () {
 	this._process = null
 	this._pipedStream = null
 	this._removeListeners()
-}
-
-
-// Indicates that a single item is done processing.
-// If there are queued items (or items available in the iterable), they will be
-// flushed and processed until the concurrency limit is reached once again.
-// This method should not be invoked if the stream is CLOSED.
-PromiseStream.prototype._finishProcess = function () {
-	--this._processing
-	this._flush()
 }
 
 
@@ -227,57 +214,115 @@ function MapProcess(source, dest, handler) {
 	function onFulfilled(value, index) {
 		if (source._state === $STREAM_CLOSED) {return}
 		dest._write(Promise.resolve(value), index)
-		source._finishProcess()
+		--this._processing
+		this._flush()
 	}
 	function onRejected(reason) {source._error(reason)}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._then(onFulfilled, onRejected, index)
+		promise._then(handler, undefined, index)._handleNew(onFulfilled, onRejected, undefined, index)
 	}
 }
 function ForEachProcess(source, dest, handler) {
 	function onFulfilled(value, original) {
 		if (source._state === $STREAM_CLOSED) {return}
 		dest._write(original.promise, original.index)
-		source._finishProcess()
+		--this._processing
+		this._flush()
 	}
 	function onRejected(reason) {source._error(reason)}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._then(onFulfilled, onRejected, {promise: promise, index: index})
+		promise._then(handler, undefined, index)._handleNew(onFulfilled, onRejected, undefined, {promise: promise, index: index})
 	}
 }
 function FilterProcess(source, dest, handler) {
 	function onFulfilled(value, original) {
 		if (source._state === $STREAM_CLOSED) {return}
 		value && dest._write(original.promise, original.index)
-		source._finishProcess()
+		--this._processing
+		this._flush()
 	}
 	function onRejected(reason) {source._error(reason)}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._then(onFulfilled, onRejected, {promise: promise, index: index})
+		promise._then(handler, undefined, index)._handleNew(onFulfilled, onRejected, undefined, {promise: promise, index: index})
 	}
 }
 function SortProcess(source, dest) {
 	function onFulfilled(promise, index) {
 		if (source._state === $STREAM_CLOSED) {return}
 		dest._write(promise, index)
-		source._finishProcess()
+		--this._processing
+		this._flush()
 	}
 	function onRejected(reason) {source._error(reason)}
 	var nextIndex = 0
-	var map = {}
+	var front
+	function flush() {
+		var previous
+		var node = front
+		do {
+			var index = node.index
+			if (index === nextIndex) {
+				onFulfilled(node.promise, nextIndex++)
+				if (previous) {
+					previous.next = node.next
+				} else {
+					front = node
+				}
+			}
+		} while (index < nextIndex && (previous = node, node = node.next))
+	}
 	function sort(value, original) {
-		if (original.index === nextIndex) {
+		var index = original.index
+		if (index === nextIndex) {
 			onFulfilled(original.promise, nextIndex++)
-			while (nextIndex in map) {
-				onFulfilled(map[nextIndex], nextIndex++)
-				map[nextIndex] = undefined
+			front && flush()
+		} else if (front) {
+			var beforePrevious
+			var previous
+			var previousDiff = Infinity
+			var node = front
+			do {
+				var diff = Math.abs(node.index - index)
+			} while (diff < previousDiff && (previousDiff = diff, beforePrevious = previous, previous = node, node = node.next))
+			if (index > previous.index) {
+				previous.next = original
+				original.next = node
+			} else {
+				original.next = previous
+				if (beforePrevious) {
+					beforePrevious.next = original
+				} else {
+					front = original
+				}
 			}
 		} else {
-			map[original.index] = original.promise
+			front = original
 		}
 	}
 	return function (promise, index) {
-		promise._then(sort, onRejected, {promise: promise, index: index})
+		promise._handleNew(sort, onRejected, undefined, {promise: promise, index: index, next: undefined})
+	}
+}
+function DrainProcess(source, handler) {
+	function onFulfilled(value) {
+		if (source._state === $STREAM_CLOSED) {return}
+		// With _handleNew, this function is not in a try-catch block.
+		// Because of this, normally, it should never be used for external code.
+		// However, since .drain() should relinquish control to the user,
+		// it turns out to be a convenient way of exiting the safety of
+		// our internal promises.
+		--this._processing
+		this._flush()
+		// Also, it's okay to invoke the handler after flushing, because
+		// we don't have to worry about the flush causing a piped stream
+		// to end. And when it comes to the user knowing about it ending,
+		// we're still safe because _closedPromise will always notify its
+		// handlers asynchronously.
+		handler(value)
+	}
+	function onRejected(reason) {source._error(reason)}
+	return function (promise) {
+		promise._handleNew(onFulfilled, onRejected)
 	}
 }
 
