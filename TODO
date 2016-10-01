@@ -1,3 +1,4 @@
+is _addStackTrace() really necessary anywhere but the Promise constructor?
 add tests for .become()
 
 

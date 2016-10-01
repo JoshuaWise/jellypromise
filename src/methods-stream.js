@@ -16,6 +16,7 @@ function PromiseStream(source) {
 	this._process = null
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
 	this._flush = _flushQueue
+	this._onerror = function (reason) {self._error(reason)}
 	// Implement sort()
 	// If desiredSize is available, some way of notifying backpressure change should also exist
 	// Test drain handler exceptions
@@ -30,7 +31,7 @@ function PromiseStream(source) {
 		var self = this, a, b, c
 		source.on('data', a = function (data) {self._write(Promise.resolve(data), self._nextIndex++)})
 		source.on('end', b = function () {self._end()})
-		source.on('error', c = function (reason) {self._error(reason)})
+		source.on('error', c = this._onerror)
 		this._removeListeners = function () {
 			source.removeListener('data', a)
 			source.removeListener('end', b)
@@ -170,6 +171,7 @@ PromiseStream.prototype._cleanup = function () {
 	this._queue = null
 	this._process = null
 	this._pipedStream = null
+	this._onerror = null
 	this._removeListeners()
 }
 
@@ -217,9 +219,8 @@ function MapProcess(source, dest, handler) {
 		--source._processing
 		source._flush()
 	}
-	function onRejected(reason) {source._error(reason)}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._handleNew(onFulfilled, onRejected, undefined, index)
+		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, index)
 	}
 }
 function ForEachProcess(source, dest, handler) {
@@ -229,9 +230,8 @@ function ForEachProcess(source, dest, handler) {
 		--source._processing
 		source._flush()
 	}
-	function onRejected(reason) {source._error(reason)}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._handleNew(onFulfilled, onRejected, undefined, {promise: promise, index: index})
+		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, {promise: promise, index: index})
 	}
 }
 function FilterProcess(source, dest, handler) {
@@ -241,9 +241,8 @@ function FilterProcess(source, dest, handler) {
 		--source._processing
 		source._flush()
 	}
-	function onRejected(reason) {source._error(reason)}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._handleNew(onFulfilled, onRejected, undefined, {promise: promise, index: index})
+		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, {promise: promise, index: index})
 	}
 }
 function DrainProcess(source, handler) {
@@ -263,9 +262,8 @@ function DrainProcess(source, handler) {
 		// always notify its handlers asynchronously.
 		handler(value)
 	}
-	function onRejected(reason) {source._error(reason)}
 	return function (promise) {
-		promise._handleNew(onFulfilled, onRejected)
+		promise._handleNew(onFulfilled, source._onerror)
 	}
 }
 
@@ -313,9 +311,7 @@ Promise.prototype.stream = function () {
 	var stream = new PromiseStream(INTERNAL)
 	this._then(function (iterable) {
 		stream._switchToIteratorMode(iterable)
-	}, function (reason) {
-		stream._error(reason)
-	})
+	}, stream._onerror)
 	return stream
 }
 
