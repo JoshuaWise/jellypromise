@@ -14,17 +14,14 @@ function PromiseStream(source) {
 	this._process = null
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
 	this._flush = _flushQueue
+	// See if improvements can be made with waiting on promises too late (i.e., it it's says processing but it isn't really; maybe always queue values that are unresolved promises)
+	// Come up with better sorting algorithm (maybe with hash maps)
 	// Could signal desiredSize as (highWaterMark - processing - queue._length)
-	// Should queued input promises get catchLater() invoked on them?
 	// Provide reading methods that don't pipe to a new stream; possibilities:
 	// - drain() -> emitter
 	// - merge() -> promise of array
 	// - reduce() -> promise of value
 	// - read() -> promise of {value, done}, for single-item pulling
-	// Don't forget other piping methods:
-	// - filter()
-	// - forEach()
-	// - sort()
 	
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
@@ -58,39 +55,77 @@ PromiseStream.prototype.cancel = function () {
 	return this._closedPromise
 }
 PromiseStream.prototype.map = function (concurrency, handler) {
-	if (this._state === $STREAM_CLOSED) {
-		throw TypeError('This stream is closed.')
-	}
-	if (this._process) {
-		throw TypeError('This stream already has a destination.')
-	}
-	if (typeof concurrency === 'number') {
-		this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
-	} else {
-		handler = concurrency
-	}
-	var self = this
-	var stream = new PromiseStream(INTERNAL)
+	if (this._state === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
+	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
+	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
+	var dest = new PromiseStream(INTERNAL)
 	this._closedPromise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
-	this._pipedStream = stream
-	this._process = MapProcess(this, stream, handler)
+	this._pipedStream = dest
+	this._process = MapProcess(this, dest, handler)
 	this._flush()
-	return stream
+	return dest
+}
+PromiseStream.prototype.forEach = function (concurrency, handler) {
+	if (this._state === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
+	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
+	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
+	var dest = new PromiseStream(INTERNAL)
+	this._closedPromise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._pipedStream = dest
+	this._process = ForEachProcess(this, dest, handler)
+	this._flush()
+	return dest
+}
+PromiseStream.prototype.filter = function (concurrency, handler) {
+	if (this._state === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
+	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
+	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
+	var dest = new PromiseStream(INTERNAL)
+	this._closedPromise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._pipedStream = dest
+	this._process = FilterProcess(this, dest, handler)
+	this._flush()
+	return dest
+}
+PromiseStream.prototype.sort = function () {
+	if (this._state === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	var dest = new PromiseStream(INTERNAL)
+	this._closedPromise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._pipedStream = dest
+	this._process = SortProcess(this, dest)
+	this._flush()
+	return dest
 }
 Object.defineProperty(PromiseStream.prototype, 'closed', {
 	enumerable: true, configurable: true,
 	get: function () {return this._closedPromise}
 })
+
+
+// ========== Private methods ==========
+
+
+// Used for pushing data into the stream (not used in iterable mode).
 PromiseStream.prototype._write = function (data, index) {
 	if (this._state !== $STREAM_OPEN) {return}
 	if (this._process && this._processing < this._concurrency) {
-		this._process(data, index)
+		this._process(Promise.resolve(data), index)
 		++this._processing
 	} else {
-		this._queue.push(data)
+		this._queue.push(Promise.resolve(data).catchLater())
 		this._queue.push(index)
 	}
 }
+
+
+// Used to indicate that there will be no more data added to the stream.
 PromiseStream.prototype._end = function () {
 	if (this._state !== $STREAM_OPEN) {return}
 	if (this._process && this._processing === 0) {
@@ -102,6 +137,9 @@ PromiseStream.prototype._end = function () {
 		this._state = $STREAM_CLOSING
 	}
 }
+
+
+// Used to indicate that an error has occured, and the stream should immediately close.
 PromiseStream.prototype._error = function (reason) {
 	if (this._state === $STREAM_CLOSED) {return}
 	this._pipedStream && this._pipedStream._error(reason)
@@ -110,6 +148,10 @@ PromiseStream.prototype._error = function (reason) {
 	this._processing = 0
 	this._cleanup()
 }
+
+
+// Switches the stream into iterable mode.
+// Data will be pulled from an iterable, instead of pushed by an outside source.
 PromiseStream.prototype._switchToIteratorMode = function (iterable) {
 	if (this._state !== $STREAM_OPEN) {return}
 	if (Array.isArray(iterable)) {
@@ -125,12 +167,35 @@ PromiseStream.prototype._switchToIteratorMode = function (iterable) {
 	this._flush = _flushIterator
 	this._process && this._flush()
 }
+
+
+// Releases internal resources. Should only be used after the stream is CLOSED.
 PromiseStream.prototype._cleanup = function () {
 	this._queue = null
 	this._process = null
 	this._pipedStream = null
 	this._removeListeners()
 }
+
+
+// Indicates that a single item is done processing.
+// If there are queued items (or items available in the iterable), they will be
+// flushed and processed until the concurrency limit is reached once again.
+// This method should not be invoked if the stream is CLOSED.
+PromiseStream.prototype._finishProcess = function () {
+	--this._processing
+	this._flush()
+	if (this._state === $STREAM_CLOSING && this._processing === 0) {
+		this._pipedStream && this._pipedStream._end()
+		this._state = $STREAM_CLOSED
+		this._closedPromise._resolve(false)
+		this._cleanup()
+	}
+}
+
+
+// Flushes and processes the iterable until the concurrency limit is reached,
+// or until the entire iterable has been flushed.
 function _flushIterator() {
 	if (this._state !== $STREAM_OPEN) {return}
 	for (; this._processing < this._concurrency; ++this._processing) {
@@ -143,9 +208,13 @@ function _flushIterator() {
 			this._end()
 			break
 		}
-		this._process(data, this._nextIndex++)
+		this._process(Promise.resolve(data), this._nextIndex++)
 	}
 }
+
+
+// Flushes and processes the queue until the concurrency limit is reached,
+// or until the entire queue has been flushed.
 function _flushQueue() {
 	if (this._state === $STREAM_CLOSED) {return}
 	for (; this._queue._length > 0 && this._processing < this._concurrency; ++this._processing) {
@@ -154,31 +223,66 @@ function _flushQueue() {
 }
 
 
+// ========== Pipe Processes ==========
+// It is important that no processes fulfill or reject synchronously
 function MapProcess(source, dest, handler) {
 	function onFulfilled(value, index) {
 		if (source._state === $STREAM_CLOSED) {return}
 		dest._write(value, index)
-		--source._processing
-		source._flush()
-		if (source._state === $STREAM_CLOSING && source._processing === 0) {
-			dest._end()
-			source._state = $STREAM_CLOSED
-			source._closedPromise._resolve(false)
-			source._cleanup()
+		source._finishProcess()
+	}
+	function onRejected(reason) {source._error(reason)}
+	return function (promise, index) {
+		promise._then(handler, undefined, index)._then(onFulfilled, onRejected, index)
+	}
+}
+function ForEachProcess(source, dest, handler) {
+	function onFulfilled(value, original) {
+		if (source._state === $STREAM_CLOSED) {return}
+		dest._write(original.value, original.index)
+		source._finishProcess()
+	}
+	function onRejected(reason) {source._error(reason)}
+	return function (promise, index) {
+		promise._then(handler, undefined, index)._then(onFulfilled, onRejected, {value: promise, index: index})
+	}
+}
+function FilterProcess(source, dest, handler) {
+	function onFulfilled(value, original) {
+		if (source._state === $STREAM_CLOSED) {return}
+		value && dest._write(original.value, original.index)
+		source._finishProcess()
+	}
+	function onRejected(reason) {source._error(reason)}
+	return function (promise, index) {
+		promise._then(handler, undefined, index)._then(onFulfilled, onRejected, {value: promise, index: index})
+	}
+}
+function SortProcess(source, dest) {
+	function onFulfilled(value, index) {
+		if (source._state === $STREAM_CLOSED) {return}
+		dest._write(value, index)
+		source._finishProcess()
+	}
+	function onRejected(reason) {source._error(reason)}
+	function sort(value, index) {
+		if (index === nextIndex) {
+			onFulfilled(value, nextIndex++)
+			queue._length > 0 && sort(queue.shift(), queue.shift())
+		} else {
+			queue.push(value)
+			queue.push(index)
 		}
 	}
-	function onRejected(reason) {
-		source._error(reason)
-	}
-	return function (data, index) {
-		// All processors must NOT decrement source._processing synchronously.
-		// All processors must NOT allow external code (handlers) to execute synchronously.
-		
-		Promise.resolve(data)._then(handler, undefined, index)._then(onFulfilled, onRejected, index)
+	var nextIndex = 0
+	var queue = new FastQueue
+	return function process(promise, index) {
+		promise._then(sort, onRejected, index)
 	}
 }
 
 
+// ========== Extracted try-catch methods ==========
 var LAST_ERROR = null
 var IS_ERROR = {}
 var IS_DONE = {}
@@ -203,6 +307,7 @@ function getIterator(iterable) {
 }
 
 
+// ========== ArrayIterator ==========
 function ArrayIterator(array) {
 	this._array = array
 	this._index = 0

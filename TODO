@@ -8,6 +8,8 @@ optimizations for index.js to import on the server only:
 - make sure to maintain the same long stack traces as with deoptimized versions.
 
 
+ensure long stack traces for every way PromiseStream.closed could get rejected
+
 add long stack trace tests
 
 
