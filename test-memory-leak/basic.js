@@ -17,10 +17,10 @@ module.exports = function (Promise, callback) {
 				sampleB = process.memoryUsage().heapUsed
 				console.log('Memory usage at start:\t', sampleA)
 				console.log('Memory usage at end:\t', sampleB)
-				if (sampleA * 1.01 > sampleB) {
+				if (sampleA * 1.03 > sampleB) {
 					callback()
 				} else {
-					callback(new Error('Memory usage should not grow by more than 1%'))
+					callback(new Error('Memory usage should not grow by more than 3%'))
 				}
 			} else {
 				setImmediate(resolve)
