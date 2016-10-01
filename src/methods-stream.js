@@ -21,7 +21,6 @@ function PromiseStream(source) {
 	// - drain() -> emitter
 	// - merge() -> promise of array
 	// - reduce() -> promise of value
-	// - read() -> promise of {value, done}, for single-item pulling
 	
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
