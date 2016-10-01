@@ -251,7 +251,19 @@ callbackAPI('foo', 'bar', function (err, result) {
 
 Some promise libraries have functions like `.map()` or `.filter()` which operate on arrays of promises. Unfortunately, this is a very inefficient way to do batch processing on promises. Large and unnecessary arrays are kept in memory, and usually thousands of closures are created when processing large datasets this way. Additionally, every promise must wait to finish one operation before the next operation can be started, which can cause serious bottlenecks.
 
-To solve these problems `jellypromise` provides the class `Promise.Stream`, which can asynchronously stream collections of promises through various processing methods. For usage and documentation, see the [Stream API](https://github.com/JoshuaWise/better-sqlite3/wiki/Stream-API).
+To solve these problems `jellypromise` provides the class `Promise.Stream`, which can asynchronously stream collections of promises through various processing methods.
+
+```js
+Promise.resolve(['a', 'b', 'c'])
+    .stream()
+    .map(function (value, index) {return value + value;})
+    .reduce(function (previous, current) {return previous + current})
+    .log()
+
+// => "aabbcc"
+```
+
+For detailed usage and documentation, see the [Stream API](https://github.com/JoshuaWise/jellypromise/wiki/Stream-API).
 
 ## License
 
