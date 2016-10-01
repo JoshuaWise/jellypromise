@@ -15,7 +15,6 @@ function PromiseStream(source) {
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
 	this._flush = _flushQueue
 	// See if improvements can be made with waiting on promises too late (i.e., it it's says processing but it isn't really; maybe always queue values that are unresolved promises)
-	// Come up with better sorting algorithm (maybe with hash maps)
 	// Could signal desiredSize as (highWaterMark - processing - queue._length)
 	// Provide reading methods that don't pipe to a new stream; possibilities:
 	// - drain() -> emitter
@@ -264,17 +263,18 @@ function SortProcess(source, dest) {
 		source._finishProcess()
 	}
 	function onRejected(reason) {source._error(reason)}
+	var nextIndex = 0
+	var map = {}
 	function sort(value, index) {
 		if (index === nextIndex) {
 			onFulfilled(value, nextIndex++)
-			queue._length > 0 && sort(queue.shift(), queue.shift())
+			while (nextIndex in map) {
+				onFulfilled(value, nextIndex++)
+			}
 		} else {
-			queue.push(value)
-			queue.push(index)
+			map[index] = value
 		}
 	}
-	var nextIndex = 0
-	var queue = new FastQueue
 	return function process(promise, index) {
 		promise._then(sort, onRejected, index)
 	}
