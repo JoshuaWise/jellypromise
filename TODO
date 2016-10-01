@@ -1,4 +1,4 @@
-High priority:
+High priority (for next release):
 - add tests for .become()
 - add tests for PromiseStream
 - is _addStackTrace() really necessary anywhere but the Promise constructor?
