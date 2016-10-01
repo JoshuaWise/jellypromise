@@ -78,6 +78,23 @@ PromiseStream.prototype.filter = function (concurrency, handler) {
 	this._flush()
 	return dest
 }
+PromiseStream.prototype.reduce = function (handler, seed) {
+	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
+	this._concurrency = 1
+	this._process = ReduceProcess(this, handler, arguments.length > 1, seed)
+	this._flush()
+	return this
+}
+PromiseStream.prototype.merge = function () {
+	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	this._concurrency = Infinity
+	this._process = MergeProcess(this)
+	this._flush()
+	return this
+}
 PromiseStream.prototype.drain = function (handler) {
 	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
@@ -91,31 +108,6 @@ PromiseStream.prototype.drain = function (handler) {
 	this._flush()
 	return this
 }
-PromiseStream.prototype.merge = function () {
-	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
-	if (this._process) {throw new TypeError('This stream already has a destination.')}
-	this._concurrency = Infinity
-	this._process = MergeProcess(this)
-	this._flush()
-	return this
-}
-PromiseStream.prototype.reduce = function (handler, seed) {
-	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
-	if (this._process) {throw new TypeError('This stream already has a destination.')}
-	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
-	this._concurrency = 1
-	this._process = ReduceProcess(this, handler, arguments.length > 1, seed)
-	this._flush()
-	return this
-}
-Object.defineProperty(PromiseStream.prototype, 'desiredSize', {
-	enumerable: true, configurable: true,
-	get: function () {
-		return this._state & $IS_REJECTED ? null :
-		       this._state & $IS_FULFILLED ? 0 :
-		       this._concurrency - this._processing - (this._flush === _flushIterator ? 0 : this._queue._length)
-	}
-})
 
 
 // ========== Private methods ==========
@@ -271,39 +263,6 @@ function FilterProcess(source, dest, handler) {
 		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, {promise: promise, index: index})
 	}
 }
-function DrainProcess(source, handler) {
-	function onFulfilled(value, index) {
-		if (source._streamState === $STREAM_CLOSED) {return}
-		// With _handleNew, this function is not in a try-catch block.
-		// Because of this, normally, it should never be used for external code.
-		// However, since .drain() should relinquish control to the user,
-		// it turns out to be a convenient way of exiting the safety of
-		// our internal promises.
-		--source._processing
-		source._flush()
-		// Also, it's okay to invoke the handler after flushing, because
-		// we don't have to worry about the flush causing a piped stream
-		// to end. And when it comes to the user knowing about it ending,
-		// we're still safe because the stream's promise interface will
-		// always notify its handlers asynchronously.
-		handler(value, index)
-	}
-	return function (promise, index) {
-		promise._handleNew(onFulfilled, source._onerror, undefined, index)
-	}
-}
-function MergeProcess(source) {
-	function onFulfilled(value, index) {
-		if (source._streamState === $STREAM_CLOSED) {return}
-		array[index] = value
-		--source._processing
-		source._flush()
-	}
-	var array = source._value = []
-	return function (promise, index) {
-		promise._handleNew(onFulfilled, source._onerror, undefined, index)
-	}
-}
 function ReduceProcess(source, handler, hasSeed, accumulator) {
 	function onFulfilled(value) {
 		if (source._streamState === $STREAM_CLOSED) {return}
@@ -327,6 +286,39 @@ function ReduceProcess(source, handler, hasSeed, accumulator) {
 	accumulator = hasSeed ? (source._value = accumulator) : reducer
 	return function (promise) {
 		promise._then(reducer, undefined, accumulator)._handleNew(onFulfilled, source._onerror)
+	}
+}
+function MergeProcess(source) {
+	function onFulfilled(value, index) {
+		if (source._streamState === $STREAM_CLOSED) {return}
+		array[index] = value
+		--source._processing
+		source._flush()
+	}
+	var array = source._value = []
+	return function (promise, index) {
+		promise._handleNew(onFulfilled, source._onerror, undefined, index)
+	}
+}
+function DrainProcess(source, handler) {
+	function onFulfilled(value, index) {
+		if (source._streamState === $STREAM_CLOSED) {return}
+		// With _handleNew, this function is not in a try-catch block.
+		// Because of this, normally, it should never be used for external code.
+		// However, since .drain() should relinquish control to the user,
+		// it turns out to be a convenient way of exiting the safety of
+		// our internal promises.
+		--source._processing
+		source._flush()
+		// Also, it's okay to invoke the handler after flushing, because
+		// we don't have to worry about the flush causing a piped stream
+		// to end. And when it comes to the user knowing about it ending,
+		// we're still safe because the stream's promise interface will
+		// always notify its handlers asynchronously.
+		handler(value, index)
+	}
+	return function (promise, index) {
+		promise._handleNew(onFulfilled, source._onerror, undefined, index)
 	}
 }
 

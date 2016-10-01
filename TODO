@@ -2,7 +2,7 @@ High priority (for next release):
 - add tests for .become()
 - add tests for PromiseStream
 - is _addStackTrace() really necessary anywhere but the Promise constructor?
-- add PromiseStream to README or wiki
+- add PromiseStream to README or wiki, and update library size in README
 
 
 Not as high priority:
