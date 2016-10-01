@@ -7,6 +7,7 @@ var NOOP = function () {}
 
 function PromiseStream(source) {
 	Promise.call(this, INTERNAL)
+	this._addStackTrace(1) // @[/development]
 	this._streamState = $STREAM_OPEN
 	this._queue = new FastQueue
 	this._nextIndex = 0
@@ -87,9 +88,13 @@ PromiseStream.prototype.filter = function (concurrency, handler) {
 PromiseStream.prototype.drain = function (handler) {
 	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
-	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
 	this._concurrency = Infinity
-	this._process = DrainProcess(this, handler)
+	// @[development]
+	if (typeof handler !== 'function' && handler != null) {
+		warn('The drain handler must be a function (' + typeof handler + 's will be ignored).', this._trace)
+	}
+	// @[/]
+	this._process = DrainProcess(this, typeof handler === 'function' ? handler : NOOP)
 	this._flush()
 	return this
 }
