@@ -214,8 +214,8 @@ function MapProcess(source, dest, handler) {
 	function onFulfilled(value, index) {
 		if (source._state === $STREAM_CLOSED) {return}
 		dest._write(Promise.resolve(value), index)
-		--this._processing
-		this._flush()
+		--source._processing
+		source._flush()
 	}
 	function onRejected(reason) {source._error(reason)}
 	return function (promise, index) {
@@ -226,8 +226,8 @@ function ForEachProcess(source, dest, handler) {
 	function onFulfilled(value, original) {
 		if (source._state === $STREAM_CLOSED) {return}
 		dest._write(original.promise, original.index)
-		--this._processing
-		this._flush()
+		--source._processing
+		source._flush()
 	}
 	function onRejected(reason) {source._error(reason)}
 	return function (promise, index) {
@@ -238,8 +238,8 @@ function FilterProcess(source, dest, handler) {
 	function onFulfilled(value, original) {
 		if (source._state === $STREAM_CLOSED) {return}
 		value && dest._write(original.promise, original.index)
-		--this._processing
-		this._flush()
+		--source._processing
+		source._flush()
 	}
 	function onRejected(reason) {source._error(reason)}
 	return function (promise, index) {
@@ -250,8 +250,8 @@ function SortProcess(source, dest) {
 	function onFulfilled(promise, index) {
 		if (source._state === $STREAM_CLOSED) {return}
 		dest._write(promise, index)
-		--this._processing
-		this._flush()
+		--source._processing
+		source._flush()
 	}
 	function onRejected(reason) {source._error(reason)}
 	var nextIndex = 0
@@ -311,8 +311,8 @@ function DrainProcess(source, handler) {
 		// However, since .drain() should relinquish control to the user,
 		// it turns out to be a convenient way of exiting the safety of
 		// our internal promises.
-		--this._processing
-		this._flush()
+		--source._processing
+		source._flush()
 		// Also, it's okay to invoke the handler after flushing, because
 		// we don't have to worry about the flush causing a piped stream
 		// to end. And when it comes to the user knowing about it ending,
