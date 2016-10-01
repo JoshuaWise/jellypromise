@@ -26,7 +26,7 @@ function PromiseStream(source) {
 		this._removeListeners = NOOP
 	} else {
 		var self = this, index = 0, a, b, c
-		source.on('data', a = function (data) {self._write(data, index++)})
+		source.on('data', a = function (data) {self._write(Promise.resolve(data), index++)})
 		source.on('end', b = function () {self._end()})
 		source.on('error', c = function (reason) {self._error(reason)})
 		this._removeListeners = function () {
@@ -112,13 +112,13 @@ Object.defineProperty(PromiseStream.prototype, 'closed', {
 
 
 // Used for pushing data into the stream (not used in iterable mode).
-PromiseStream.prototype._write = function (data, index) {
+PromiseStream.prototype._write = function (promise, index) {
 	if (this._state !== $STREAM_OPEN) {return}
 	if (this._process && this._processing < this._concurrency) {
-		this._process(Promise.resolve(data), index)
+		this._process(promise, index)
 		++this._processing
 	} else {
-		this._queue.push(Promise.resolve(data).catchLater())
+		this._queue.push(promise.catchLater())
 		this._queue.push(index)
 	}
 }
@@ -226,7 +226,7 @@ function _flushQueue() {
 function MapProcess(source, dest, handler) {
 	function onFulfilled(value, index) {
 		if (source._state === $STREAM_CLOSED) {return}
-		dest._write(value, index)
+		dest._write(Promise.resolve(value), index)
 		source._finishProcess()
 	}
 	function onRejected(reason) {source._error(reason)}
@@ -237,23 +237,23 @@ function MapProcess(source, dest, handler) {
 function ForEachProcess(source, dest, handler) {
 	function onFulfilled(value, original) {
 		if (source._state === $STREAM_CLOSED) {return}
-		dest._write(original.value, original.index)
+		dest._write(original.promise, original.index)
 		source._finishProcess()
 	}
 	function onRejected(reason) {source._error(reason)}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._then(onFulfilled, onRejected, {value: promise, index: index})
+		promise._then(handler, undefined, index)._then(onFulfilled, onRejected, {promise: promise, index: index})
 	}
 }
 function FilterProcess(source, dest, handler) {
 	function onFulfilled(value, original) {
 		if (source._state === $STREAM_CLOSED) {return}
-		value && dest._write(original.value, original.index)
+		value && dest._write(original.promise, original.index)
 		source._finishProcess()
 	}
 	function onRejected(reason) {source._error(reason)}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._then(onFulfilled, onRejected, {value: promise, index: index})
+		promise._then(handler, undefined, index)._then(onFulfilled, onRejected, {promise: promise, index: index})
 	}
 }
 function SortProcess(source, dest) {
@@ -269,13 +269,14 @@ function SortProcess(source, dest) {
 		if (index === nextIndex) {
 			onFulfilled(value, nextIndex++)
 			while (nextIndex in map) {
-				onFulfilled(value, nextIndex++)
+				onFulfilled(map[nextIndex], nextIndex++)
+				map[nextIndex] = undefined
 			}
 		} else {
 			map[index] = value
 		}
 	}
-	return function process(promise, index) {
+	return function (promise, index) {
 		promise._then(sort, onRejected, index)
 	}
 }
