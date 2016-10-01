@@ -6,18 +6,18 @@ var INTERNAL = require('./util').INTERNAL
 var NOOP = function () {}
 
 function PromiseStream(source) {
-	this._state = $STREAM_OPEN
+	Promise.call(this, INTERNAL)
+	this._streamState = $STREAM_OPEN
 	this._queue = new FastQueue
 	this._nextIndex = 0
-	this._concurrency = Infinity
+	this._concurrency = 0
 	this._processing = 0
-	this._closedPromise = new Promise(INTERNAL)
 	this._process = null
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
 	this._flush = _flushQueue
-	// Benchmark different sort methods (2 queues, hash map)
+	// Implement sort()
 	// See if improvements can be made with waiting on promises too late (i.e., it it's says processing but it isn't really; maybe always queue values that are unresolved promises)
-	// Could signal desiredSize as (highWaterMark - processing - queue._length)
+	// If desiredSize is available, some way of notifying backpressure change should also exist
 	// Test drain handler exceptions
 	// Flushing the iterable is probably slow
 	// ending processes:
@@ -45,65 +45,59 @@ PromiseStream.from = function (iterable) {
 	return stream
 }
 PromiseStream.prototype.map = function (concurrency, handler) {
-	if (this._state === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
 	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
 	var dest = new PromiseStream(INTERNAL)
-	this._closedPromise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._pipedStream = dest
 	this._process = MapProcess(this, dest, handler)
 	this._flush()
 	return dest
 }
 PromiseStream.prototype.forEach = function (concurrency, handler) {
-	if (this._state === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
 	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
 	var dest = new PromiseStream(INTERNAL)
-	this._closedPromise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._pipedStream = dest
 	this._process = ForEachProcess(this, dest, handler)
 	this._flush()
 	return dest
 }
 PromiseStream.prototype.filter = function (concurrency, handler) {
-	if (this._state === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
 	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
 	var dest = new PromiseStream(INTERNAL)
-	this._closedPromise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._pipedStream = dest
 	this._process = FilterProcess(this, dest, handler)
 	this._flush()
 	return dest
 }
-PromiseStream.prototype.sort = function () {
-	if (this._state === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
-	if (this._process) {throw new TypeError('This stream already has a destination.')}
-	var dest = new PromiseStream(INTERNAL)
-	this._closedPromise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
-	this._pipedStream = dest
-	this._process = SortProcess(this, dest)
-	this._flush()
-	return dest
-}
 PromiseStream.prototype.drain = function (handler) {
-	if (this._state === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
+	this._concurrency = Infinity
 	this._process = DrainProcess(this, handler)
 	this._flush()
-	return this._closedPromise
+	return this
 }
-Object.defineProperty(PromiseStream.prototype, 'closed', {
+Object.defineProperty(PromiseStream.prototype, 'desiredSize', {
 	enumerable: true, configurable: true,
-	get: function () {return this._closedPromise}
+	get: function () {
+		return this._state & IS_REJECTED ? null :
+		       this._concurrency - this._processing - (this._flush === _flushIterator ? 0 : this._queue._length)
+	}
 })
 
 
@@ -112,8 +106,8 @@ Object.defineProperty(PromiseStream.prototype, 'closed', {
 
 // Used for pushing data into the stream (not used in iterable mode).
 PromiseStream.prototype._write = function (promise, index) {
-	if (this._state !== $STREAM_OPEN) {return}
-	if (this._process && this._processing < this._concurrency) {
+	if (this._streamState !== $STREAM_OPEN) {return}
+	if (this._processing < this._concurrency) {
 		this._process(promise, index)
 		++this._processing
 	} else {
@@ -125,24 +119,24 @@ PromiseStream.prototype._write = function (promise, index) {
 
 // Used to indicate that there will be no more data added to the stream.
 PromiseStream.prototype._end = function () {
-	if (this._state === $STREAM_CLOSED) {return}
+	if (this._streamState === $STREAM_CLOSED) {return}
 	if (this._process && this._processing === 0) {
 		this._pipedStream && this._pipedStream._end()
-		this._state = $STREAM_CLOSED
-		this._closedPromise._resolve()
+		this._streamState = $STREAM_CLOSED
+		this._resolve()
 		this._cleanup()
 	} else {
-		this._state = $STREAM_CLOSING
+		this._streamState = $STREAM_CLOSING
 	}
 }
 
 
 // Used to indicate that an error has occured, and the stream should immediately close.
 PromiseStream.prototype._error = function (reason) {
-	if (this._state === $STREAM_CLOSED) {return}
+	if (this._streamState === $STREAM_CLOSED) {return}
 	this._pipedStream && this._pipedStream._error(reason)
-	this._state = $STREAM_CLOSED
-	this._closedPromise._reject(reason)
+	this._streamState = $STREAM_CLOSED
+	this._reject(reason)
 	this._processing = 0
 	this._cleanup()
 }
@@ -151,7 +145,7 @@ PromiseStream.prototype._error = function (reason) {
 // Switches the stream into iterable mode.
 // Data will be pulled from an iterable, instead of pushed by an outside source.
 PromiseStream.prototype._switchToIteratorMode = function (iterable) {
-	if (this._state !== $STREAM_OPEN) {return}
+	if (this._streamState !== $STREAM_OPEN) {return}
 	if (Array.isArray(iterable)) {
 		this._queue = new ArrayIterator(iterable)
 	} else {
@@ -162,7 +156,7 @@ PromiseStream.prototype._switchToIteratorMode = function (iterable) {
 		this._queue = it
 	}
 	this._flush = _flushIterator
-	this._process && this._flush()
+	this._flush()
 }
 
 
@@ -178,7 +172,7 @@ PromiseStream.prototype._cleanup = function () {
 // Flushes and processes the iterable until the concurrency limit is reached,
 // or until the entire iterable has been flushed.
 function _flushIterator() {
-	if (this._state === $STREAM_CLOSED) {return}
+	if (this._streamState === $STREAM_CLOSED) {return}
 	for (; this._processing < this._concurrency; ++this._processing) {
 		var data = getNext(this._queue)
 		if (data === IS_ERROR) {
@@ -197,11 +191,11 @@ function _flushIterator() {
 // Flushes and processes the queue until the concurrency limit is reached,
 // or until the entire queue has been flushed.
 function _flushQueue() {
-	if (this._state === $STREAM_CLOSED) {return}
+	if (this._streamState === $STREAM_CLOSED) {return}
 	for (; this._queue._length > 0 && this._processing < this._concurrency; ++this._processing) {
 		this._process(this._queue.shift(), this._queue.shift())
 	}
-	if (this._state === $STREAM_CLOSING && this._processing === 0) {
+	if (this._streamState === $STREAM_CLOSING && this._processing === 0) {
 		this._end()
 	}
 }
@@ -213,7 +207,7 @@ function _flushQueue() {
 
 function MapProcess(source, dest, handler) {
 	function onFulfilled(value, index) {
-		if (source._state === $STREAM_CLOSED) {return}
+		if (source._streamState === $STREAM_CLOSED) {return}
 		dest._write(Promise.resolve(value), index)
 		--source._processing
 		source._flush()
@@ -225,7 +219,7 @@ function MapProcess(source, dest, handler) {
 }
 function ForEachProcess(source, dest, handler) {
 	function onFulfilled(value, original) {
-		if (source._state === $STREAM_CLOSED) {return}
+		if (source._streamState === $STREAM_CLOSED) {return}
 		dest._write(original.promise, original.index)
 		--source._processing
 		source._flush()
@@ -237,7 +231,7 @@ function ForEachProcess(source, dest, handler) {
 }
 function FilterProcess(source, dest, handler) {
 	function onFulfilled(value, original) {
-		if (source._state === $STREAM_CLOSED) {return}
+		if (source._streamState === $STREAM_CLOSED) {return}
 		value && dest._write(original.promise, original.index)
 		--source._processing
 		source._flush()
@@ -247,66 +241,9 @@ function FilterProcess(source, dest, handler) {
 		promise._then(handler, undefined, index)._handleNew(onFulfilled, onRejected, undefined, {promise: promise, index: index})
 	}
 }
-function SortProcess(source, dest) {
-	function onFulfilled(promise, index) {
-		if (source._state === $STREAM_CLOSED) {return}
-		dest._write(promise, index)
-		--source._processing
-		source._flush()
-	}
-	function onRejected(reason) {source._error(reason)}
-	var nextIndex = 0
-	var front
-	function flush() {
-		var previous
-		var node = front
-		do {
-			var index = node.index
-			if (index === nextIndex) {
-				onFulfilled(node.promise, nextIndex++)
-				if (previous) {
-					previous.next = node.next
-				} else {
-					front = node
-				}
-			}
-		} while (index < nextIndex && (previous = node, node = node.next))
-	}
-	function sort(value, original) {
-		var index = original.index
-		if (index === nextIndex) {
-			onFulfilled(original.promise, nextIndex++)
-			front && flush()
-		} else if (front) {
-			var beforePrevious
-			var previous
-			var previousDiff = Infinity
-			var node = front
-			do {
-				var diff = Math.abs(node.index - index)
-			} while (diff < previousDiff && (previousDiff = diff, beforePrevious = previous, previous = node, node = node.next))
-			if (index > previous.index) {
-				previous.next = original
-				original.next = node
-			} else {
-				original.next = previous
-				if (beforePrevious) {
-					beforePrevious.next = original
-				} else {
-					front = original
-				}
-			}
-		} else {
-			front = original
-		}
-	}
-	return function (promise, index) {
-		promise._handleNew(sort, onRejected, undefined, {promise: promise, index: index, next: undefined})
-	}
-}
 function DrainProcess(source, handler) {
 	function onFulfilled(value) {
-		if (source._state === $STREAM_CLOSED) {return}
+		if (source._streamState === $STREAM_CLOSED) {return}
 		// With _handleNew, this function is not in a try-catch block.
 		// Because of this, normally, it should never be used for external code.
 		// However, since .drain() should relinquish control to the user,
@@ -317,8 +254,8 @@ function DrainProcess(source, handler) {
 		// Also, it's okay to invoke the handler after flushing, because
 		// we don't have to worry about the flush causing a piped stream
 		// to end. And when it comes to the user knowing about it ending,
-		// we're still safe because _closedPromise will always notify its
-		// handlers asynchronously.
+		// we're still safe because the stream's promise interface will
+		// always notify its handlers asynchronously.
 		handler(value)
 	}
 	function onRejected(reason) {source._error(reason)}
