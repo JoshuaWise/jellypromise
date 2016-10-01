@@ -1,22 +1,32 @@
-is _addStackTrace() really necessary anywhere but the Promise constructor?
-add tests for .become()
-add tests for PromiseStream
+High priority:
+- add tests for .become()
+- add tests for PromiseStream
+- is _addStackTrace() really necessary anywhere but the Promise constructor?
 
 
-optimizations for index.js to import on the server only:
+Not as high priority:
+- ensure long stack traces for every way PromiseStream.closed could get rejected
+- add long stack trace tests
+
+
+Server optimizations:
 - make use of private handleNew/resolve/reject functions, instead of using new Promise() with closures, to speed up methods and static functions.
 - add optimized case for .catch() with single predicate.
 - use fake promise class (e.g., PromiseArray) for Promise.all and similar functions.
 - make sure to maintain the same long stack traces as with deoptimized versions.
 
 
-ensure long stack traces for every way PromiseStream.closed could get rejected
-
-add long stack trace tests
 
 
+Double check:
+- that all prototype methods that generate a new, linked promise, use _handleNew, _handle, or _then, so that `this` promise sets SUPPRESS_UNHANDLED_REJECTIONS to 1
 
-make sure all prototype methods that generate a new, linked promise, use _handleNew, _handle, or _then, so that `this` promise sets SUPPRESS_UNHANDLED_REJECTIONS to 1
 
-promise stream (seperate module?)
-generator (seperate module)
+Stream considerations:
+- if desiredSize is available, some way of notifying backpressure change should also exist
+- is merge slow because of the array with holes?
+- implement sort()
+
+
+Related TODO:
+- Generator Runner (seperate module)

@@ -17,9 +17,6 @@ function PromiseStream(source) {
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
 	this._flush = _flushQueue
 	this._onerror = function (reason) {self._error(reason)}
-	// Implement sort()
-	// If desiredSize is available, some way of notifying backpressure change should also exist
-	// Is merge slow because of the array with holes?
 	
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
