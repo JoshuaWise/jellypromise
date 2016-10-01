@@ -2,7 +2,6 @@ High priority (for next release):
 - add tests for .become()
 - add tests for PromiseStream
 - is _addStackTrace() really necessary anywhere but the Promise constructor?
-- add PromiseStream to README or wiki, and update library size in README
 
 
 Not as high priority:
@@ -24,7 +23,13 @@ Double check:
 
 
 Stream considerations:
-- is merge slow because of the array with holes?
+- Map is really slow
+- Smuggling is really slow, and it's slower for integers than for objects
+- 4 deoptimizations:
+  - _handleNew
+  - _resolve
+  - finale (optimized when there's no smuggling)
+  - _end
 - implement sort()
 
 
