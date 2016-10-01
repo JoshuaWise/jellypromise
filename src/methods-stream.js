@@ -19,6 +19,7 @@ function PromiseStream(source) {
 	// See if improvements can be made with waiting on promises too late (i.e., it it's says processing but it isn't really; maybe always queue values that are unresolved promises)
 	// Could signal desiredSize as (highWaterMark - processing - queue._length)
 	// Test drain handler exceptions
+	// Flushing the iterable is probably slow
 	// ending processes:
 	// - merge() -> promise of array
 	// - reduce() -> promise of value
