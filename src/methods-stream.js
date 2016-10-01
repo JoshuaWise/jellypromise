@@ -17,7 +17,6 @@ function PromiseStream(source) {
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
 	this._flush = _flushQueue
 	// Implement sort()
-	// See if improvements can be made with waiting on promises too late (i.e., it it's says processing but it isn't really; maybe always queue values that are unresolved promises)
 	// If desiredSize is available, some way of notifying backpressure change should also exist
 	// Test drain handler exceptions
 	// Flushing the iterable is probably slow
