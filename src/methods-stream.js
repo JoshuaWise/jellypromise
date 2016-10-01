@@ -44,6 +44,7 @@ PromiseStream.from = function (iterable) {
 	stream._switchToIteratorMode(iterable)
 	return stream
 }
+PromiseStream.prototype.__proto__ = Promise.prototype
 PromiseStream.prototype.map = function (concurrency, handler) {
 	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
