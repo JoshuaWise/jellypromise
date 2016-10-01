@@ -19,7 +19,6 @@ function PromiseStream(source) {
 	this._onerror = function (reason) {self._error(reason)}
 	// Implement sort()
 	// If desiredSize is available, some way of notifying backpressure change should also exist
-	// Flushing the iterable is probably slow
 	// ending processes:
 	// - merge() -> promise of array
 	// - reduce() -> promise of value
