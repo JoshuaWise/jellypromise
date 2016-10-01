@@ -16,7 +16,10 @@ var constants = {
 	
 	STREAM_OPEN: 0,
 	STREAM_CLOSING: 1,
-	STREAM_CLOSED: 2
+	STREAM_CLOSED: 2,
+	
+	$DEAD_PROCESS: 1,
+	$READ_PROCESS: 2,
 }
 
 function Constants() {

@@ -40,75 +40,91 @@ PromiseStream.from = function (iterable) {
 }
 PromiseStream.prototype.__proto__ = Promise.prototype
 PromiseStream.prototype.map = function (concurrency, handler) {
-	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
-	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
 	var dest = new PromiseStream(INTERNAL)
 	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._pipedStream = dest
+	if (this._state & $IS_REJECTED) {
+		this._process = $DEAD_PROCESS
+		dest._error(this._value)
+		return dest
+	}
 	this._process = MapProcess(this, dest, handler)
 	this._flush()
 	return dest
 }
 PromiseStream.prototype.forEach = function (concurrency, handler) {
-	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
-	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
 	var dest = new PromiseStream(INTERNAL)
 	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._pipedStream = dest
+	if (this._state & $IS_REJECTED) {
+		this._process = $DEAD_PROCESS
+		dest._error(this._value)
+		return dest
+	}
 	this._process = ForEachProcess(this, dest, handler)
 	this._flush()
 	return dest
 }
 PromiseStream.prototype.filter = function (concurrency, handler) {
-	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
-	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
 	var dest = new PromiseStream(INTERNAL)
 	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._pipedStream = dest
+	if (this._state & $IS_REJECTED) {
+		this._process = $DEAD_PROCESS
+		dest._error(this._value)
+		return dest
+	}
 	this._process = FilterProcess(this, dest, handler)
 	this._flush()
 	return dest
 }
 PromiseStream.prototype.takeUntil = function (promise) {
-	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	this._concurrency = Infinity
 	var dest = new PromiseStream(INTERNAL)
 	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._pipedStream = dest
+	if (this._state & $IS_REJECTED) {
+		this._process = $DEAD_PROCESS
+		dest._error(this._value)
+		return dest
+	}
 	this._process = TakeUntilProcess(this, promise)
 	this._flush()
 	return dest
 }
 PromiseStream.prototype.reduce = function (handler, seed) {
-	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
-	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	if (this._state & $IS_REJECTED) {this._process = $DEAD_PROCESS; return this}
 	this._concurrency = 1
 	this._process = ReduceProcess(this, handler, arguments.length > 1, seed)
 	this._flush()
 	return this
 }
 PromiseStream.prototype.merge = function () {
-	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	if (this._state & $IS_REJECTED) {this._process = $DEAD_PROCESS; return this}
 	this._concurrency = Infinity
 	this._process = MergeProcess(this)
 	this._flush()
 	return this
 }
 PromiseStream.prototype.drain = function (handler) {
-	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	if (this._state & $IS_REJECTED) {this._process = $DEAD_PROCESS; return this}
 	this._concurrency = Infinity
 	// @[development]
 	if (typeof handler !== 'function' && handler != null) {
@@ -184,9 +200,9 @@ PromiseStream.prototype._switchToIteratorMode = function (iterable) {
 // Releases internal resources. Should only be used after the stream is CLOSED.
 PromiseStream.prototype._cleanup = function () {
 	this._queue = null
-	this._process = null
+	this._process = this._process ? $DEAD_PROCESS : null
 	this._pipedStream = null
-	this._onerror = null
+	this._onerror = NOOP
 	this._removeListeners()
 }
 
