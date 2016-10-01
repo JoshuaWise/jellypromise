@@ -24,7 +24,6 @@ Double check:
 
 
 Stream considerations:
-- if desiredSize is available, some way of notifying backpressure change should also exist
 - is merge slow because of the array with holes?
 - implement sort()
 
