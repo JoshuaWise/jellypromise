@@ -20,8 +20,6 @@ function PromiseStream(source) {
 	// Implement sort()
 	// If desiredSize is available, some way of notifying backpressure change should also exist
 	// Is merge slow because of the array with holes?
-	// ending processes:
-	// - reduce() -> promise of value
 	
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
@@ -104,10 +102,20 @@ PromiseStream.prototype.merge = function () {
 	this._flush()
 	return this
 }
+PromiseStream.prototype.reduce = function (handler, seed) {
+	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
+	this._concurrency = 1
+	this._process = ReduceProcess(this, handler, arguments.length > 1, seed)
+	this._flush()
+	return this
+}
 Object.defineProperty(PromiseStream.prototype, 'desiredSize', {
 	enumerable: true, configurable: true,
 	get: function () {
-		return this._state & IS_REJECTED ? null :
+		return this._state & $IS_REJECTED ? null :
+		       this._state & $IS_FULFILLED ? 0 :
 		       this._concurrency - this._processing - (this._flush === _flushIterator ? 0 : this._queue._length)
 	}
 })
@@ -297,6 +305,31 @@ function MergeProcess(source) {
 	var array = source._value = []
 	return function (promise, index) {
 		promise._handleNew(onFulfilled, source._onerror, undefined, index)
+	}
+}
+function ReduceProcess(source, handler, hasSeed, accumulator) {
+	function onFulfilled(value) {
+		if (source._streamState === $STREAM_CLOSED) {return}
+		accumulator = source._value = value
+		--source._processing
+		source._flush()
+	}
+	function reducer(value, smuggled) {
+		if (smuggled === reducer) {
+			return value
+		}
+		return handler.call(controller, smuggled, value)
+	}
+	var controller = {
+		shortcut: function (value) {
+			source._value = value
+			source._processing = 0
+			source._end()
+		}
+	}
+	accumulator = hasSeed ? (source._value = accumulator) : reducer
+	return function (promise) {
+		promise._then(reducer, undefined, accumulator)._handleNew(onFulfilled, source._onerror)
 	}
 }
 
