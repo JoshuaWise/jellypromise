@@ -1,5 +1,6 @@
 is _addStackTrace() really necessary anywhere but the Promise constructor?
 add tests for .become()
+add tests for PromiseStream
 
 
 optimizations for index.js to import on the server only:
