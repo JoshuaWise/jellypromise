@@ -251,7 +251,9 @@ callbackAPI('foo', 'bar', function (err, result) {
 
 Some promise libraries have functions like `.map()` or `.filter()` which operate on arrays of promises. Unfortunately, this is a very inefficient way to do batch processing on promises. Large and unnecessary arrays are kept in memory, and usually thousands of closures are created when processing large datasets this way. Additionally, every promise must wait to finish one operation before the next operation can be started, which can cause serious bottlenecks.
 
-To solve these problems `jellypromise` provides the class `Promise.Stream`, which can asynchronously stream collections of promises through various processing methods.
+To solve these problems in batch processing, we provide the class `Promise.Stream`. For detailed usage and documentation, see the [Stream API](https://github.com/JoshuaWise/jellypromise/wiki/Stream-API).
+
+Promises of iterables can be transformed into a stream by using the `Promise#stream` method:
 
 ```js
 Promise.resolve(['a', 'b', 'c'])
@@ -263,7 +265,7 @@ Promise.resolve(['a', 'b', 'c'])
 // => "aabbcc"
 ```
 
-For detailed usage and documentation, see the [Stream API](https://github.com/JoshuaWise/jellypromise/wiki/Stream-API).
+
 
 ## License
 
