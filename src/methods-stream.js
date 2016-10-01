@@ -78,6 +78,17 @@ PromiseStream.prototype.filter = function (concurrency, handler) {
 	this._flush()
 	return dest
 }
+PromiseStream.prototype.takeUntil = function (promise) {
+	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
+	if (this._process) {throw new TypeError('This stream already has a destination.')}
+	this._concurrency = Infinity
+	var dest = new PromiseStream(INTERNAL)
+	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._pipedStream = dest
+	this._process = TakeUntilProcess(this, promise)
+	this._flush()
+	return dest
+}
 PromiseStream.prototype.reduce = function (handler, seed) {
 	if (this._streamState === $STREAM_CLOSED) {throw new TypeError('This stream is closed.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
@@ -263,6 +274,21 @@ function FilterProcess(source, dest, handler) {
 		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, {promise: promise, index: index})
 	}
 }
+function TakeUntilProcess(source, donePromise) {
+	function onFulfilled(value, original) {
+		if (source._streamState === $STREAM_CLOSED) {return}
+		dest._write(original.promise, original.index)
+		--source._processing
+		source._flush()
+	}
+	Promise.resolve(donePromise)._handleNew(function () {
+		source._processing = 0
+		source._end()
+	}, source._onerror)
+	return function (promise, index) {
+		promise._handleNew(onFulfilled, source._onerror, undefined, {promise: promise, index: index})
+	}
+}
 function ReduceProcess(source, handler, hasSeed, accumulator) {
 	function onFulfilled(value) {
 		if (source._streamState === $STREAM_CLOSED) {return}
@@ -270,11 +296,8 @@ function ReduceProcess(source, handler, hasSeed, accumulator) {
 		--source._processing
 		source._flush()
 	}
-	function reducer(value, smuggled) {
-		if (smuggled === reducer) {
-			return value
-		}
-		return handler.call(controller, smuggled, value)
+	function reducer(value) {
+		return handler.call(controller, accumulator, value)
 	}
 	var controller = {
 		shortcut: function (value) {
@@ -285,7 +308,9 @@ function ReduceProcess(source, handler, hasSeed, accumulator) {
 	}
 	accumulator = hasSeed ? (source._value = accumulator) : reducer
 	return function (promise) {
-		promise._then(reducer, undefined, accumulator)._handleNew(onFulfilled, source._onerror)
+		accumulator === reducer
+			? promise._handleNew(onFulfilled, source._onerror)
+			: promise._then(reducer)._handleNew(onFulfilled, source._onerror)
 	}
 }
 function MergeProcess(source) {
@@ -353,7 +378,7 @@ function getIterator(iterable) {
 Promise.Stream = PromiseStream
 Promise.prototype.stream = function () {
 	var stream = new PromiseStream(INTERNAL)
-	this._then(function (iterable) {
+	this._handleNew(function (iterable) {
 		stream._switchToIteratorMode(iterable)
 	}, stream._onerror)
 	return stream
