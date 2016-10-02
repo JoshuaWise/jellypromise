@@ -48,7 +48,7 @@ exports.catchesError = function (predicate, reason) {
 }
 
 // @[browser]
-// A safe, cross-browser log function.
+// Safe, cross-browser log functions.
 exports.console = {
 	log: function () {
 		if (typeof console === 'object' && console) {
