@@ -284,14 +284,13 @@ function _ReduceProcess(source, handler, hasSeed, accumulator) {
 		source._flush()
 	}
 	function reducer(value) {
-		return handler.call(controller, accumulator, value)
+		return handler(accumulator, value, shortcut)
 	}
-	var controller = {
-		shortcut: function (value) {
-			source._value = value
-			source._processing = 0
-			source._end()
-		}
+	function shortcut(value) {
+		if (source._streamState === $STREAM_CLOSED) {return}
+		source._value = value
+		source._processing = 0
+		source._end()
 	}
 	accumulator = hasSeed ? (source._value = accumulator) : reducer
 	return function (promise) {

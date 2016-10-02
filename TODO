@@ -14,7 +14,7 @@ Not as high priority:
 Server optimizations:
 - make use of private handleNew/resolve/reject functions, instead of using new Promise() with closures, to speed up methods and static functions.
 - add optimized case for .catch() with single predicate.
-- use fake promise class (e.g., PromiseArray) for Promise.all and similar functions.
+- use fake promise class (e.g., PromiseArray) OR PromiseStream for Promise.all and similar functions.
 - make sure to maintain the same long stack traces as with deoptimized versions.
 
 
