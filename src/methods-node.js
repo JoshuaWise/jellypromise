@@ -40,7 +40,7 @@ Promise.promisify = function (fn, options) {
 			'return promise',
 		'}'
 	].join('\n')
-	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch', 'resolve', 'reject'], body)(Promise, fn, INTERNAL, tryApply, tryCatch, Promise.prototype._resolve, Promise.prototype._reject) // @[/production]
+	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch', 'resolve', 'reject'], body)(Promise, fn, INTERNAL, tryApply, tryCatch, Promise.prototype._resolve, Promise.prototype._reject)
 }
 function generateArgumentList(count) {
 	var args = new Array(count)
