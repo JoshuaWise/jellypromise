@@ -100,9 +100,9 @@ _Stack.prototype.getTrace = function () {
 	var point = this
 	var stacks = []
 	
-	var errorPoint
+	var errorStack
 	if (point.error) {
-		errorPoint = point
+		errorStack = formatStack.call({count: 0}, point)
 		point = point.parent
 	}
 	
@@ -112,8 +112,8 @@ _Stack.prototype.getTrace = function () {
 	}
 	
 	var formatedStacks = stacks.map(formatStack, {count: 0}).filter(function (str) {return !!str})
-	if (errorPoint) {
-		formatedStacks[0] = combineStackPoints(formatStack.call({count: 0}, errorPoint), formatedStacks[0])
+	if (errorStack) {
+		formatedStacks[0] = combineStackPoints(errorStack, formatedStacks[0])
 	}
 	
 	return formatedStacks.join('\nFrom previous event:\n') + '\n'
