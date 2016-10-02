@@ -3,7 +3,7 @@ var ErrorStackParser = require('error-stack-parser')
 var TRACE_SIZE = 7
 var rejectionStack = null
 var context = {stack: null, previousStack: null}
-var taskFile = require.resolve('./task')
+var taskFile = require.resolve('./task') // @[/node]
 
 exports.init = function () {
 	var Promise = require('./promise')
@@ -112,7 +112,9 @@ _Stack.prototype.getTrace = function () {
 	
 	var formatedStacks = stacks.map(formatStack, {count: 0}).filter(function (str) {return !!str})
 	if (errorStack) {
-		formatedStacks[0] = combineStackPoints(errorStack, formatedStacks[0])
+		formatedStacks[0] = formatedStacks[0]
+			? combineStackPoints(errorStack, formatedStacks[0])
+			: errorStack
 	}
 	
 	return formatedStacks.join('\nFrom previous event:\n') + '\n'
