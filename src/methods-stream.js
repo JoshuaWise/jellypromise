@@ -3,6 +3,7 @@ var Promise = require('./promise')
 var FastQueue = require('./fast-queue')
 var iterator = require('./util').iterator
 var INTERNAL = require('./util').INTERNAL
+var util = require('./util') // @[/development]
 var NOOP = function () {}
 
 function PromiseStream(source) {
@@ -16,11 +17,12 @@ function PromiseStream(source) {
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
 	this._flush = _flushQueue
 	this._onerror = function (reason) {self._error(reason)}
+	var self = this
 	
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
 	} else {
-		var self = this, a, b, c
+		var a, b, c
 		source.addListener('data', a = function (data) {self._write(Promise.resolve(data), self._nextIndex++)})
 		source.addListener('end', b = function () {self._end()})
 		source.addListener('error', c = this._onerror)
@@ -123,7 +125,9 @@ PromiseStream.prototype._error = function (reason) {
 	if (this._streamState === $STREAM_CLOSED) {return}
 	this._pipedStream && this._pipedStream._error(reason)
 	this._streamState = $STREAM_CLOSED
+	util.PASSTHROUGH_REJECTION = true // @[/development]
 	this._reject(reason)
+	util.PASSTHROUGH_REJECTION = false // @[/development]
 	this._processing = 0
 	this._cleanup()
 }

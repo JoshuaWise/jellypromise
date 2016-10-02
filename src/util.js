@@ -2,6 +2,7 @@
 var iterator = exports.iterator = typeof Symbol === 'function' && Symbol.iterator || undefined
 
 exports.INTERNAL = function () {}
+exports.PASSTHROUGH_REJECTION = false // @[/development]
 
 // Returns an array or throws. The returned object may or may not be a safe
 // copy. The only safe operations are to synchronously loop through the object.

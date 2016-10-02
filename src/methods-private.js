@@ -6,7 +6,7 @@ var console = require('./util').console // @[/browser]
 var INTERNAL = require('./util').INTERNAL
 var warn = require('./warn') // @[/development]
 var LST = require('./long-stack-traces') // @[/development]
-var PASSTHROUGH_REJECTION = false // @[/development]
+var util = require('./util') // @[/development]
 
 // This is the .then() method used by all internal functions.
 // It optionally allows a third parameter which must either be an integer or
@@ -72,7 +72,7 @@ Promise.prototype._reject = function (newValue) {
 	this._value = newValue
 	
 	// @[development]
-	if (!PASSTHROUGH_REJECTION && !(newValue instanceof Error)) {
+	if (!util.PASSTHROUGH_REJECTION && !(newValue instanceof Error)) {
 		var type = newValue === null ? 'null' :
 			typeof newValue === 'object' ? Object.prototype.toString.call(newValue) :
 			typeof newValue
@@ -167,9 +167,9 @@ function handleSettled(deferred) {
 			if (isFulfilled) {
 				deferred.promise._resolve(this._value)
 			} else {
-				PASSTHROUGH_REJECTION = true // @[/development]
+				util.PASSTHROUGH_REJECTION = true // @[/development]
 				deferred.promise._reject(this._value)
-				PASSTHROUGH_REJECTION = false // @[/development]
+				util.PASSTHROUGH_REJECTION = false // @[/development]
 			}
 		}
 	} else {
