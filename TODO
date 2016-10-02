@@ -5,7 +5,7 @@ High priority (for next release):
 
 
 Not as high priority:
-- ensure long stack traces for every way PromiseStream.closed could get rejected
+- ensure long stack traces for every way PromiseStream could get rejected
 - add long stack trace tests
 
 
