@@ -13,7 +13,7 @@ function PromiseStream(source) {
 	this._nextIndex = 0
 	this._concurrency = 0
 	this._processing = 0
-	this._process = 0
+	this._process = null
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
 	this._flush = _flushQueue
 	this._onerror = function (reason) {self._error(reason)}
@@ -35,7 +35,7 @@ function PromiseStream(source) {
 }
 PromiseStream.from = function (iterable) {
 	var stream = new PromiseStream(INTERNAL)
-	stream._switchToIteratorMode(iterable)
+	stream._switchToIterableMode(iterable)
 	return stream
 }
 PromiseStream.prototype.__proto__ = Promise.prototype
@@ -60,7 +60,7 @@ PromiseStream.prototype.takeUntil = function (promise) {
 PromiseStream.prototype.reduce = function (handler, seed) {
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
-	if (this._state & $IS_REJECTED) {this._process = $DEAD_PROCESS; return this}
+	if (this._state & $IS_REJECTED) {this._process = NOOP; return this}
 	this._concurrency = 1
 	this._process = _ReduceProcess(this, handler, arguments.length > 1, seed)
 	this._flush()
@@ -68,7 +68,7 @@ PromiseStream.prototype.reduce = function (handler, seed) {
 }
 PromiseStream.prototype.merge = function () {
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
-	if (this._state & $IS_REJECTED) {this._process = $DEAD_PROCESS; return this}
+	if (this._state & $IS_REJECTED) {this._process = NOOP; return this}
 	this._concurrency = Infinity
 	this._process = _MergeProcess(this)
 	this._flush()
@@ -76,7 +76,7 @@ PromiseStream.prototype.merge = function () {
 }
 PromiseStream.prototype.drain = function (handler) {
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
-	if (this._state & $IS_REJECTED) {this._process = $DEAD_PROCESS; return this}
+	if (this._state & $IS_REJECTED) {this._process = NOOP; return this}
 	this._concurrency = Infinity
 	// @[development]
 	if (typeof handler !== 'function' && handler != null) {
@@ -132,7 +132,7 @@ PromiseStream.prototype._error = function (reason) {
 
 // Switches the stream into iterable mode.
 // Data will be pulled from an iterable, instead of pushed by an outside source.
-PromiseStream.prototype._switchToIteratorMode = function (iterable) {
+PromiseStream.prototype._switchToIterableMode = function (iterable) {
 	if (this._streamState !== $STREAM_OPEN) {return}
 	if (Array.isArray(iterable)) {
 		this._queue = iterable
@@ -152,7 +152,7 @@ PromiseStream.prototype._switchToIteratorMode = function (iterable) {
 // Releases internal resources. Should only be used after the stream is CLOSED.
 PromiseStream.prototype._cleanup = function () {
 	this._queue = null
-	if (this._process) {this._process = $DEAD_PROCESS}
+	if (this._process) {this._process = NOOP}
 	this._pipedStream = null
 	this._onerror = NOOP
 	this._removeListeners()
@@ -167,7 +167,7 @@ PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._pipedStream = dest
 	if (this._state & $IS_REJECTED) {
-		this._process = $DEAD_PROCESS
+		this._process = NOOP
 		dest._error(this._value)
 		return dest
 	}
@@ -228,51 +228,52 @@ function _flushQueue() {
 
 
 function _MapProcess(source, dest, handler) {
-	function onFulfilled(value, index) {
+	function onFulfilled(value, index, mappedPromise) {
 		if (source._streamState === $STREAM_CLOSED) {return}
-		dest._write(Promise.resolve(value), index)
+		dest._write(mappedPromise, index)
 		--source._processing
 		source._flush()
 	}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, index)
+		var mappedPromise = promise._then(handler, undefined, index)
+		mappedPromise._handleNew(onFulfilled, source._onerror, undefined, index, mappedPromise)
 	}
 }
 function _ForEachProcess(source, dest, handler) {
-	function onFulfilled(value, original) {
+	function onFulfilled(value, index, originalPromise) {
 		if (source._streamState === $STREAM_CLOSED) {return}
-		dest._write(original.promise, original.index)
+		dest._write(originalPromise, index)
 		--source._processing
 		source._flush()
 	}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, {promise: promise, index: index})
+		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, index, promise)
 	}
 }
 function _FilterProcess(source, dest, handler) {
-	function onFulfilled(value, original) {
+	function onFulfilled(value, index, originalPromise) {
 		if (source._streamState === $STREAM_CLOSED) {return}
-		value && dest._write(original.promise, original.index)
+		value && dest._write(originalPromise, index)
 		--source._processing
 		source._flush()
 	}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, {promise: promise, index: index})
+		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, index, promise)
 	}
 }
 function _TakeUntilProcess(source, dest, donePromise) {
-	function onFulfilled(value, original) {
+	function onFulfilled(value, index, originalPromise) {
 		if (source._streamState === $STREAM_CLOSED) {return}
-		dest._write(original.promise, original.index)
+		dest._write(originalPromise, index)
 		--source._processing
 		source._flush()
 	}
 	Promise.resolve(donePromise)._handleNew(function () {
 		source._processing = 0
 		source._end()
-	}, source._onerror)
+	}, source._onerror, undefined, $NO_INTEGER)
 	return function (promise, index) {
-		promise._handleNew(onFulfilled, source._onerror, undefined, {promise: promise, index: index})
+		promise._handleNew(onFulfilled, source._onerror, undefined, index, promise)
 	}
 }
 function _ReduceProcess(source, handler, hasSeed, accumulator) {
@@ -295,8 +296,8 @@ function _ReduceProcess(source, handler, hasSeed, accumulator) {
 	accumulator = hasSeed ? (source._value = accumulator) : reducer
 	return function (promise) {
 		accumulator === reducer
-			? promise._handleNew(onFulfilled, source._onerror)
-			: promise._then(reducer)._handleNew(onFulfilled, source._onerror)
+			? promise._handleNew(onFulfilled, source._onerror, undefined, $NO_INTEGER)
+			: promise._then(reducer)._handleNew(onFulfilled, source._onerror, undefined, $NO_INTEGER)
 	}
 }
 function _MergeProcess(source) {
@@ -365,8 +366,8 @@ Promise.Stream = PromiseStream
 Promise.prototype.stream = function () {
 	var stream = new PromiseStream(INTERNAL)
 	this._handleNew(function (iterable) {
-		stream._switchToIteratorMode(iterable)
-	}, stream._onerror)
+		stream._switchToIterableMode(iterable)
+	}, stream._onerror, undefined, $NO_INTEGER)
 	return stream
 }
 

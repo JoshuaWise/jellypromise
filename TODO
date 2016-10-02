@@ -2,6 +2,8 @@ High priority (for next release):
 - add tests for .become()
 - add tests for PromiseStream
 - is _addStackTrace() really necessary anywhere but the Promise constructor?
+  if not, things like ._resolveFromHandler() can be changed to new Promise()
+  in utility methods and static methods
 
 
 Not as high priority:
@@ -23,13 +25,6 @@ Double check:
 
 
 Stream considerations:
-- Map is really slow
-- Smuggling is really slow, and it's slower for integers than for objects
-- 4 deoptimizations:
-  - _handleNew
-  - _resolve
-  - finale (optimized when there's no smuggling)
-  - _end
 - implement sort()
 
 

@@ -9,16 +9,17 @@ var LST = require('./long-stack-traces') // @[/development]
 var PASSTHROUGH_REJECTION = false // @[/development]
 
 // This is the .then() method used by all internal functions.
-// It automatically captures stack traces at the correct depth.
-Promise.prototype._then = function (onFulfilled, onRejected, smuggled) {
+// It optionally allows a third parameter which must either be an integer or
+// undefined. If provided, it will be passed as the second argument to the
+// handler (onFulfilled or onRejected).
+Promise.prototype._then = function (onFulfilled, onRejected, smuggledInteger) {
 	var promise = new Promise(INTERNAL)
 	promise._addStackTrace(2) // @[/development]
-	this._handleNew(onFulfilled, onRejected, promise, smuggled)
+	this._handleNew(onFulfilled, onRejected, promise, smuggledInteger === undefined ? $NO_INTEGER : smuggledInteger)
 	return promise
 }
 
-// This is used instead of new Promise(handler), for all internal functions.
-// It automatically captures stack traces at the correct depth.
+// This is used instead of new Promise(handler) for all internal functions.
 Promise.prototype._resolveFromHandler = function (handler) {
 	this._addStackTrace(2) // @[/development]
 	var ret = tryCallTwo(handler, this._resolver(), this._rejector())
@@ -89,7 +90,19 @@ Promise.prototype._reject = function (newValue) {
 	finale(this)
 }
 
-Promise.prototype._handleNew = function (onFulfilled, onRejected, promise, smuggled) {
+// This is the low-level functionality of Promise#_then.
+// It allows additional modification of behavior:
+// - promise can be undefined, in which case the handler is invoked with two
+//   extra arguments (smuggledInteger, smuggledObject) regardless of whether
+//   this promise was fulfilled or rejected.
+// - if promise is undefined, the handler is invoked without a try-catch
+//   statement.
+// This modified behavior must only be used when onFulfilled and onRejected
+// are both internal functions that will not throw errors.
+// Regardless of whether the modified behavior is used, smuggledInteger must
+// either be $NO_INTEGER or an unsigned integer, and smuggledObject must either
+// be an object or undefined.
+Promise.prototype._handleNew = function (onFulfilled, onRejected, promise, smuggledInteger, smuggledObject) {
 	// @[development]
 	if (typeof onFulfilled !== 'function' && onFulfilled != null) {
 		warn('Promise handlers must be functions (' + typeof onFulfilled + 's will be ignored).', promise._trace)
@@ -102,7 +115,8 @@ Promise.prototype._handleNew = function (onFulfilled, onRejected, promise, smugg
 		onFulfilled: typeof onFulfilled === 'function' ? onFulfilled : null,
 		onRejected: typeof onRejected === 'function' ? onRejected : null,
 		promise: promise,
-		smuggled: smuggled
+		smuggledInteger: smuggledInteger,
+		smuggledObject: smuggledObject
 	})
 }
 Promise.prototype._handle = function (deferred) {
@@ -163,9 +177,9 @@ function handleSettled(deferred) {
 	} else {
 		if (deferred.promise) {
 			LST.setContext(this, deferred) // @[/development]
-			var ret = deferred.smuggled === undefined
+			var ret = deferred.smuggledInteger === $NO_INTEGER
 				? tryCallOne(cb, this._value)
-				: tryCallTwo(cb, this._value, deferred.smuggled)
+				: tryCallTwo(cb, this._value, deferred.smuggledInteger)
 			LST.releaseContext() // @[/development]
 			if (ret === IS_ERROR) {
 				deferred.promise._reject(LAST_ERROR)
@@ -173,7 +187,7 @@ function handleSettled(deferred) {
 				deferred.promise._resolve(ret)
 			}
 		} else {
-			cb(this._value, deferred.smuggled)
+			cb(this._value, deferred.smuggledInteger, deferred.smuggledObject)
 		}
 	}
 }
