@@ -148,6 +148,12 @@ If the promise is:
 
 In Node.js, you'll always see this descriptor object when passing a `jellypromise` to `console.log()`.
 
+### .stream() -> *PromiseStream*
+
+Returns a new `PromiseStream` that will contain the data in this promise's fulfillment value. If the promise is not fulfilled with an iterable object, the returned stream is rejected with a `TypeError`.
+
+To learn about PromiseStreams, see this [Streaming API](#streaming-api) section.
+
 ### *static* Promise.resolve(*value*) -> *promise*
 
 Creates a promise that is resolved with the given `value`. If you pass a promise or promise-like object, the returned promise takes on the state of that promise-like object (fulfilled or rejected).
