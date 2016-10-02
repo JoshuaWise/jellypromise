@@ -255,7 +255,7 @@ callbackAPI('foo', 'bar', function (err, result) {
 
 # Streaming API
 
-Some promise libraries have functions like `.map()` or `.filter()` which operate on arrays of promises. Unfortunately, this is a very inefficient way to do batch processing on promises. Large and unnecessary arrays are kept in memory, and usually thousands of closures are created when processing large datasets this way. Additionally, every promise must wait to finish one operation before the next operation can be started, which can cause serious bottlenecks.
+Some promise libraries have functions like `.map()` or `.filter()` which operate on arrays of promises. Unfortunately, this is a very inefficient way to do batch processing on promises. Large and unnecessary arrays are kept in memory, and usually thousands of closures are created when processing large datasets this way. Additionally, each promise must wait for every other promise to finish one operation before the next operation can be started, which can cause serious bottlenecks.
 
 To solve these problems, we provide the class `Promise.Stream`. For detailed documentation, see the [Streaming API](https://github.com/JoshuaWise/jellypromise/wiki/Streaming-API).
 
