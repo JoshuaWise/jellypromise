@@ -7,7 +7,6 @@ var NOOP = function () {}
 
 function PromiseStream(source) {
 	Promise.call(this, INTERNAL)
-	this._addStackTrace(1) // @[/development]
 	this._streamState = $STREAM_OPEN
 	this._queue = new FastQueue
 	this._nextIndex = 0

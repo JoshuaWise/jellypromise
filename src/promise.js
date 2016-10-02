@@ -14,6 +14,7 @@ function Promise(fn) {
 	this._state = $NO_STATE
 	this._value = undefined
 	this._deferreds = undefined
+	this._addStackTrace(Promise) // @[/development]
 	if (fn !== INTERNAL) {
 		this._resolveFromHandler(fn)
 	}
@@ -52,18 +53,16 @@ Promise.resolve = function (value) {
 		return value
 	}
 	var promise = new Promise(INTERNAL)
-	promise._addStackTrace(1) // @[/development]
 	promise._resolve(value)
 	return promise
 }
 Promise.reject = function (reason) {
 	var promise = new Promise(INTERNAL)
-	promise._addStackTrace(1) // @[/development]
 	promise._reject(reason)
 	return promise
 }
 Promise.race = function (iterable) {
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
+	return new Promise(function (res, rej) {
 		var input = asArray(iterable)
 		rej = LST.upgradeRejector(rej) // @[/development]
 		for (var i=0, len=input.length; i<len; i++) {
@@ -72,7 +71,7 @@ Promise.race = function (iterable) {
 	})
 }
 Promise.all = function (iterable) {
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
+	return new Promise(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		var result = new Array(pendings)

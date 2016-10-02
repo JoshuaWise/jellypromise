@@ -14,19 +14,17 @@ var PASSTHROUGH_REJECTION = false // @[/development]
 // handler (onFulfilled or onRejected).
 Promise.prototype._then = function (onFulfilled, onRejected, smuggledInteger) {
 	var promise = new Promise(INTERNAL)
-	promise._addStackTrace(2) // @[/development]
 	this._handleNew(onFulfilled, onRejected, promise, smuggledInteger === undefined ? $NO_INTEGER : smuggledInteger)
 	return promise
 }
 
-// This is used instead of new Promise(handler) for all internal functions.
+// This is used by the Promise constructor to invoke the handler that was
+// provided to it.
 Promise.prototype._resolveFromHandler = function (handler) {
-	this._addStackTrace(2) // @[/development]
 	var ret = tryCallTwo(handler, this._resolver(), this._rejector())
 	if (ret === IS_ERROR) {
 		this._reject(LAST_ERROR)
 	}
-	return this
 }
 
 Promise.prototype._resolver = function () {

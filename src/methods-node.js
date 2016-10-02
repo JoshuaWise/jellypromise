@@ -29,7 +29,6 @@ Promise.promisify = function (fn, options) {
 			'var len = arguments.length',
 			'var promise = new Promise(INTERNAL)',
 			'var cb = ' + callback,
-			'addStackTrace.call(promise, 1)', // @[/development]
 			'switch (len) {',
 				argGuesses.map(generateSwitchCasePromisify).join('\n'),
 				'default:',
@@ -42,7 +41,6 @@ Promise.promisify = function (fn, options) {
 		'}'
 	].join('\n')
 	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch', 'resolve', 'reject'], body)(Promise, fn, INTERNAL, tryApply, tryCatch, Promise.prototype._resolve, Promise.prototype._reject) // @[/production]
-	return new Function(['Promise', 'fn', 'INTERNAL', 'tryApply', 'tryCatch', 'resolve', 'reject', 'addStackTrace'], body)(Promise, fn, INTERNAL, tryApply, tryCatch, Promise.prototype._resolve, Promise.prototype._reject, Promise.prototype._addStackTrace) // @[/development]
 }
 function generateArgumentList(count) {
 	var args = new Array(count)

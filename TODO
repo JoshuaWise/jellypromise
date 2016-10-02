@@ -1,14 +1,12 @@
 High priority (for next release):
 - add tests for .become()
 - add tests for PromiseStream
-- is _addStackTrace() really necessary anywhere but the Promise constructor?
-  if not, things like ._resolveFromHandler() can be changed to new Promise()
-  in utility methods and static methods
 
 
 Not as high priority:
 - ensure long stack traces for every way PromiseStream could get rejected
 - add long stack trace tests
+- get zuul tests working
 
 
 Server optimizations:

@@ -67,9 +67,9 @@ exports.useRejectionStack = function () {
 }
 
 
-function _addStackTrace(trim) {
-	var stackPoint = captureStackPoint(_addStackTrace)
-	this._trace = new _Stack(stackPoint, this._trace, trim, null)
+function _addStackTrace(caller) {
+	var stackPoint = captureStackPoint(caller)
+	this._trace = new _Stack(stackPoint, this._trace, null)
 	if (context.stack) {
 		var end = this._trace
 		while (end.parent) {end = end.parent}
@@ -85,15 +85,14 @@ function _addStackTraceFromError(err) {
 			&& err.stack
 			&& typeof err.stack === 'string'
 			&& this._trace.error !== err) {
-		this._trace = new _Stack(stackPointFromError(err), this._trace, 0, err)
+		this._trace = new _Stack(stackPointFromError(err), this._trace, err)
 		cleanStackTrace(this._trace)
 	}
 }
 
-function _Stack(stackPoint, parent, trim, error) {
+function _Stack(stackPoint, parent, error) {
 	setNonEnumerable(this, 'stackPoint', stackPoint)
 	setNonEnumerable(this, 'parent', parent)
-	setNonEnumerable(this, 'trim', trim >>> 0)
 	setNonEnumerable(this, 'error', error)
 }
 _Stack.prototype.getTrace = function () {
@@ -185,7 +184,7 @@ function formatStack(stack) {
 		return '    [Failed to parse stack trace]'
 	}
 	
-	for (var i=stack.trim; i<lineCount; ++i) {
+	for (var i=0; i<lineCount; ++i) {
 		var fullPath = parsedLines[i].fileName || ''
 		if (fullPath === taskFile) {
 			break
@@ -194,16 +193,16 @@ function formatStack(stack) {
 			processed.push(shrinkPath(lines[i], fullPath))
 		}
 	}
-	// @[/]
-	// @[browser]
-	var processed = stack.stackPoint.split('\n').slice(stack.trim)
-	// @[/]
-	
 	if (processed.length) {
 		this.count += 1
 		return processed.join('\n')
 	}
 	return ''
+	// @[/]
+	// @[browser]
+	this.count += 1
+	return stack.stackPoint
+	// @[/]
 }
 
 // @[node]

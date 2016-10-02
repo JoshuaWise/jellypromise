@@ -60,7 +60,7 @@ Promise.prototype.delay = function (ms) {
 }
 Promise.prototype.timeout = function (ms, reason) {
 	var self = this
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
+	return new Promise(function (res, rej) {
 		var timer = setTimeout(function () {
 			rej(
 				reason == null ? new TimeoutError('The operation timed out after ' + (~~ms > 0 ? ~~ms : 0) + 'ms.')
@@ -83,7 +83,7 @@ Promise.prototype.inspect = function () {
 	return new PromiseDescriptor(this)
 }
 Promise.any = function (iterable) {
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
+	return new Promise(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		var firstException = INTERNAL
@@ -101,7 +101,7 @@ Promise.any = function (iterable) {
 	})
 }
 Promise.props = function (obj) {
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
+	return new Promise(function (res, rej) {
 		if (obj === null || (typeof obj !== 'object' && typeof obj !== 'function')) {
 			throw new TypeError('Expected argument to be an object.')
 		}
@@ -125,7 +125,7 @@ Promise.props = function (obj) {
 	})
 }
 Promise.settle = function (iterable) {
-	return new Promise(INTERNAL)._resolveFromHandler(function (res, rej) {
+	return new Promise(function (res, rej) {
 		var input = asArray(iterable)
 		var pendings = input.length
 		var result = new Array(pendings)
