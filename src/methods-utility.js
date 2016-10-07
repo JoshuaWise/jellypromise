@@ -35,8 +35,11 @@ Promise.prototype.tap = function (fn) {
 		})
 	})
 }
-Promise.prototype.become = function (value) {
-	return this._then(function () {return value})
+Promise.prototype.become = function (fulfilledValue, rejectedValue) {
+	return this._then(
+		function () {return fulfilledValue},
+		arguments.length > 1 ? function () {return rejectedValue} : undefined
+	)
 }
 Promise.prototype.else = function (value) {
 	if (arguments.length > 1) {

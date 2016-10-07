@@ -105,9 +105,11 @@ Like [`.finally`](#finallyhandler---promise), but the `handler` will not be call
 
 This method is primarily used for side-effects.
 
-### .become(*value*) -> *promise*
+### .become(*fulfilledValue*, [*rejectedValue*]) -> *promise*
 
-Sugar for `.then(function () {return value})`.
+Sugar for `.then(function () {return fulfilledValue})`.
+
+If a second argument is passed, it is equivilent to `.then(function () {return fulfilledValue}, function () {return rejectedValue})`.
 
 ### .else([*...predicates*], *value*) -> *promise*
 
