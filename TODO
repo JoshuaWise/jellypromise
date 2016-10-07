@@ -7,7 +7,6 @@ High priority (for next release):
 - add to README that reduce's shortcut() accepts promises
 - errors(), which returns this, and provided a loop-back mechanism for handling
   data errors that enter pass through the stream
-- make become() have the ability to also act like else(), via a second handler
 
 
 Not as high priority:
