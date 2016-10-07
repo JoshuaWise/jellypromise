@@ -41,18 +41,10 @@ Promise.prototype.become = function (fulfilledValue, rejectedValue) {
 		arguments.length > 1 ? function () {return rejectedValue} : undefined
 	)
 }
-Promise.prototype.else = function (value) {
-	if (arguments.length > 1) {
-		var len = arguments.length - 1
-		var args = new Array(len + 1)
-		for (var i=0; i<len; i++) {
-			args[i] = arguments[i]
-		}
-		value = arguments[i]
-		args[i] = function () {return value}
-		return this.catch.apply(this, args)
-	}
-	return this._then(undefined, function () {return value})
+Promise.prototype.else = function (value, valueWhenTheresAPredicate) {
+	return arguments.length > 1
+		? this._conditionalCatch(value, function () {return valueWhenTheresAPredicate})
+		: this._then(undefined, function () {return value})
 }
 Promise.prototype.delay = function (ms) {
 	return this._then(function (value) {

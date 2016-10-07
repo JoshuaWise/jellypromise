@@ -27,6 +27,50 @@ Promise.prototype._resolveFromHandler = function (handler) {
 	}
 }
 
+// An abstraction for .catch() and .else().
+Promise.prototype._conditionalCatch = function (predicate, onRejected) {
+	if (Array.isArray(predicate)) {
+		return this._conditionalCatchArray(predicate, onRejected)
+	}
+	// @[development]
+	var self = this
+	var newPromise
+	return newPromise = this._then(undefined, function (reason) {
+		if (catchesError(predicate, reason, newPromise)) {return onRejected(reason)}
+		LST.setRejectionStack(self._getFollowee()._trace)
+		throw reason
+	})
+	// @[/]
+	// @[production]
+	return this._then(undefined, function (reason) {
+		if (catchesError(predicate, reason)) {return onRejected(reason)}
+		throw reason
+	})
+	// @[/]
+}
+
+Promise.prototype._conditionalCatchArray = function (predicates, onRejected) {
+	// @[development]
+	var self = this
+	var newPromise
+	return newPromise = this._then(undefined, function (reason) {
+		for (var i=0, len=predicates.length; i<len; i++) {
+			if (catchesError(predicates[i], reason, newPromise)) {return onRejected(reason)}
+		}
+		LST.setRejectionStack(self._getFollowee()._trace)
+		throw reason
+	})
+	// @[/]
+	// @[production]
+	return this._then(undefined, function (reason) {
+		for (var i=0, len=predicates.length; i<len; i++) {
+			if (catchesError(predicates[i], reason)) {return onRejected(reason)}
+		}
+		throw reason
+	})
+	// @[/]
+}
+
 Promise.prototype._resolver = function () {
 	var self = this
 	return function (value) {self._resolve(value)}
@@ -239,4 +283,16 @@ function tryCallTwo(fn, a, b) {
 		LAST_ERROR = ex
 		return IS_ERROR
 	}
+}
+
+// Returns whether the given catch predicate should catch the exception reason.
+function catchesError(predicate, reason) {
+	if (predicate === Error || (predicate && predicate.prototype instanceof Error)) {
+		return reason instanceof predicate
+	}
+	if (typeof predicate === 'function') {
+		return !!predicate(reason)
+	}
+	warn('The predicate passed to .catch() is invalid, and will be ignored.', arguments[2]._trace) // @[/development]
+	return false
 }

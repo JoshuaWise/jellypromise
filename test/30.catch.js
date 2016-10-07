@@ -3,9 +3,8 @@ require('../tools/test/describe')('.catch', function (Promise, expect) {
 	function shouldNotFulfill() {
 		throw new Error('This promise should not have been fulfilled.')
 	}
-	
+	function alwaysTrue() {return true}
 	describe('should return a new promise', function () {
-		function alwaysTrue() {return true}
 		specify('when 0 arguments are supplied', function () {
 			var p = Promise.resolve(5)
 			return expect(p.catch()).to.be.an.instanceof(Promise).and.not.equal(p)
@@ -18,29 +17,14 @@ require('../tools/test/describe')('.catch', function (Promise, expect) {
 			var p = Promise.resolve(5)
 			return expect(p.catch(alwaysTrue, function () {})).to.be.an.instanceof(Promise).and.not.equal(p)
 		})
-		specify('when 3 arguments are supplied', function () {
-			var p = Promise.resolve(5)
-			return expect(p.catch(Error, alwaysTrue, function () {})).to.be.an.instanceof(Promise).and.not.equal(p)
-		})
-	})
-	describe('should ignore non-function arguments', function () {
-		specify('when 1 argument is supplied', function () {
-			return Promise.reject(3).catch('foo').then(shouldNotFulfill, function (reason) {
-				expect(reason).to.equal(3)
-			})
-		})
-		specify('when 2 arguments are supplied', function () {
-			return Promise.reject(3).catch('foo', 10).then(shouldNotFulfill, function (reason) {
-				expect(reason).to.equal(3)
-			})
-		})
-		specify('when 3 arguments are supplied', function () {
-			return Promise.reject(3).catch('foo', 10, {}).then(shouldNotFulfill, function (reason) {
-				expect(reason).to.equal(3)
-			})
-		})
 	})
 	describe('should not catch fulfilled promises', function () {
+		specify('when 0 arguments are supplied', function () {
+			var err = new Error('foo')
+			return expect(
+				Promise.resolve(err).catch()
+			).to.eventually.equal(err)
+		})
 		specify('when 1 argument is supplied', function () {
 			var err = new Error('foo')
 			return expect(
@@ -53,12 +37,28 @@ require('../tools/test/describe')('.catch', function (Promise, expect) {
 				Promise.resolve(err).catch(Error, function () {return 'bar'})
 			).to.eventually.equal(err)
 		})
-		specify('when 3 arguments are supplied', function () {
-			function alwaysTrue() {return true}
+		specify('when an array of predicates are supplied', function () {
 			var err = new Error('foo')
 			return expect(
-				Promise.resolve(err).catch(alwaysTrue, {message: 'baz'}, function () {return 'bar'})
+				Promise.resolve(err).catch([alwaysTrue, Error], function () {return 'bar'})
 			).to.eventually.equal(err)
+		})
+	})
+	describe('should ignore non-function handlers', function () {
+		specify('when 0 predicates are supplied', function () {
+			return Promise.reject(3).catch(10).then(shouldNotFulfill, function (reason) {
+				expect(reason).to.equal(3)
+			})
+		})
+		specify('when 1 predicate is supplied', function () {
+			return Promise.reject(3).catch(alwaysTrue, 10).then(shouldNotFulfill, function (reason) {
+				expect(reason).to.equal(3)
+			})
+		})
+		specify('when an array of predicates are supplied', function () {
+			return Promise.reject(3).catch([alwaysTrue], 10).then(shouldNotFulfill, function (reason) {
+				expect(reason).to.equal(3)
+			})
 		})
 	})
 	it('should catch rejected promises', function () {
@@ -71,22 +71,12 @@ require('../tools/test/describe')('.catch', function (Promise, expect) {
 	it('should accept class pedicates for conditional catching', function () {
 		return expect(
 			Promise.reject(new SyntaxError('foo'))
-				.catch(TypeError, RangeError, function () {})
-				.catch(URIError, SyntaxError, function (reason) {
+				.catch([TypeError, RangeError], function () {})
+				.catch([URIError, SyntaxError], function (reason) {
 					return reason.message + 'z'
 				})
+				.catch([TypeError, RangeError], function () {})
 		).to.become('fooz')
-	})
-	it('should accept object pedicates for conditional catching', function () {
-		var err = new SyntaxError()
-		err.foo = 9
-		return expect(
-			Promise.reject(err)
-				.catch({bar: 9}, {foo: 5}, function () {})
-				.catch({baz: 4}, {foo: 9}, function (reason) {
-					return reason.foo + 1
-				})
-		).to.become(10)
 	})
 	it('should accept function pedicates for conditional catching', function () {
 		function isBar(err) {return err.message === 'bar'}
@@ -95,10 +85,12 @@ require('../tools/test/describe')('.catch', function (Promise, expect) {
 		function is3(err) {return err.message.length === 3}
 		return expect(
 			Promise.reject(new Error('foo'))
-				.catch(isBar, is5, function () {})
-				.catch(is3, isBaz, function (reason) {
+				.catch(isBaz, function () {})
+				.catch([isBar, is5], function () {})
+				.catch(is3, function (reason) {
 					return reason.message + 'd'
 				})
+				.catch(isBaz, function () {})
 		).to.become('food')
 	})
 	it('should ignore non-matching pedicates', function () {
@@ -106,7 +98,6 @@ require('../tools/test/describe')('.catch', function (Promise, expect) {
 		var err = new Error('foo')
 		return Promise.reject(err)
 			.catch(SyntaxError, function () {})
-			.catch({message: 'bar'}, function () {})
 			.catch(isBar, function () {})
 			.catch(123, function () {})
 			.catch(null, function () {})
@@ -115,6 +106,8 @@ require('../tools/test/describe')('.catch', function (Promise, expect) {
 			.catch(function () {}, function () {})
 			.catch('foo', function () {})
 			.catch(/foo/, function () {})
+			.catch([SyntaxError, isBar], function () {})
+			.catch([], function () {})
 			.then(shouldNotFulfill, function (reason) {
 				expect(reason).to.equal(err)
 			})
@@ -123,9 +116,10 @@ require('../tools/test/describe')('.catch', function (Promise, expect) {
 		return expect(
 			Promise.reject(new Error('foo'))
 				.catch(null, function () {})
-				.catch(null, {message: 'foo'}, function () {
+				.catch([null, function (err) {return err.message === 'foo'}], function () {
 					return 'bar'
 				})
+				.catch(null, function () {})
 		).to.become('bar')
 	})
 	it('should catch instances of class predicates', function () {

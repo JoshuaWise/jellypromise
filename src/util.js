@@ -24,30 +24,6 @@ exports.asArray = function (iterable) {
 	throw new TypeError('Expected value to be an iterable object.')
 }
 
-// Returns whether the given catch predicate should catch the exception reason.
-exports.catchesError = function (predicate, reason) {
-	if (predicate === Error || (predicate && predicate.prototype instanceof Error)) {
-		return reason instanceof predicate
-	}
-	if (typeof predicate === 'function') {
-		return !!predicate(reason)
-	}
-	if (predicate && typeof predicate === 'object') {
-		var keys = Object.keys(predicate)
-		for (var i=0, len=keys.length; i<len; i++) {
-			var key = keys[i]
-			if (reason[key] != predicate[key]) {
-				return false
-			}
-		}
-		if (len > 0) {
-			return true
-		}
-	}
-	warn('The predicate passed to .catch() is invalid, and will be ignored.', arguments[2]._trace) // @[/development]
-	return false
-}
-
 // @[browser]
 // Safe, cross-browser log functions.
 exports.console = {
@@ -69,10 +45,4 @@ exports.console = {
 		}
 	}
 }
-// @[/]
-
-// @[development]
-// This must be at the bottom of the page so that warn.js doesn't load an
-// uninitialized util.js.
-var warn = require('./warn')
 // @[/]

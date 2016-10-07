@@ -1,6 +1,5 @@
 'use strict'
 var asArray = require('./util').asArray
-var catchesError = require('./util').catchesError
 var INTERNAL = require('./util').INTERNAL
 var LST = require('./long-stack-traces') // @[/development]
 
@@ -22,26 +21,12 @@ function Promise(fn) {
 Promise.prototype.then = function (onFulfilled, onRejected) {
 	return this._then(onFulfilled, onRejected)
 }
-Promise.prototype.catch = function (onRejected) {
-	if (arguments.length > 1) {
-		var len = arguments.length - 1
-		var args = new Array(len)
-		for (var i=0; i<len; i++) {
-			args[i] = arguments[i]
-		}
-		onRejected = arguments[i]
-		var self = this // @[/development]
-		var newPromise
-		return newPromise = this._then(undefined, function (reason) {
-			for (var i=0; i<len; i++) {
-				if (catchesError(args[i], reason, newPromise)) {return onRejected(reason)} // @[/development]
-				if (catchesError(args[i], reason)) {return onRejected(reason)} // @[/production]
-			}
-			LST.setRejectionStack(self._getFollowee()._trace) // @[/development]
-			throw reason
-		})
-	}
-	return this._then(undefined, onRejected)
+Promise.prototype.catch = function (onRejected, onRejectedWhenTheresAPredicate) {
+	return arguments.length > 1
+		? typeof onRejectedWhenTheresAPredicate === 'function'
+			? this._conditionalCatch(onRejected, onRejectedWhenTheresAPredicate)
+			: this._then(undefined, onRejectedWhenTheresAPredicate)
+		: this._then(undefined, onRejected)
 }
 Promise.prototype.catchLater = function () {
 	this._getFollowee()._state |= $SUPPRESS_UNHANDLED_REJECTIONS

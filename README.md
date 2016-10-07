@@ -75,19 +75,19 @@ If you are new to promises, the following resources are available:
 
 If they are provided, `onFulfilled` and `onRejected` should be functions.
 
-### .catch([*...predicates*], *onRejected*) -> *promise*
+### .catch([*predicate*], *onRejected*) -> *promise*
 
 Sugar for `.then(null, onRejected)`, to mirror `catch` in synchronous code.
 
-If any `predicates` are specified, the `onRejected` handler will only catch exceptions that match one of the `predicates`.
+If a `predicate` is specified, the `onRejected` handler will only catch exceptions that match the `predicate`.
 
-A `predicate` can be:
+The `predicate` can be:
 - an `Error` class
- - example: `.catch(TypeError, SyntaxError, func)`
-- an object defining required property values
- - example: `.catch({code: 'ENOENT'}, func)`
+ - example: `.catch(TypeError, func)`
 - a filter function
  - example: `.catch(function (err) {return err.statusCode === 404}, func)`
+- an array of accepted `predicates`
+ - example: `.catch([TypeError, SyntaxError, is404], func)`
 
 ### .catchLater() -> *this*
 
