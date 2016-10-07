@@ -243,8 +243,12 @@ function _MapProcess(source, dest, handler) {
 		--source._processing
 		source._flush()
 	}
+	function handle(value, index) {
+		if (source._streamState === $STREAM_CLOSED) {return}
+		return handler(value, index)
+	}
 	return function (promise, index) {
-		var mappedPromise = promise._then(handler, undefined, index)
+		var mappedPromise = promise._then(handle, undefined, index)
 		mappedPromise._handleNew(onFulfilled, source._onerror, undefined, index, mappedPromise)
 	}
 }
@@ -255,8 +259,12 @@ function _ForEachProcess(source, dest, handler) {
 		--source._processing
 		source._flush()
 	}
+	function handle(value, index) {
+		if (source._streamState === $STREAM_CLOSED) {return}
+		return handler(value, index)
+	}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, index, promise)
+		promise._then(handle, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, index, promise)
 	}
 }
 function _FilterProcess(source, dest, handler) {
@@ -266,8 +274,12 @@ function _FilterProcess(source, dest, handler) {
 		--source._processing
 		source._flush()
 	}
+	function handle(value, index) {
+		if (source._streamState === $STREAM_CLOSED) {return}
+		return handler(value, index)
+	}
 	return function (promise, index) {
-		promise._then(handler, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, index, promise)
+		promise._then(handle, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, index, promise)
 	}
 }
 function _TakeUntilProcess(source, dest, donePromise) {
@@ -292,7 +304,8 @@ function _ReduceProcess(source, handler, hasSeed, accumulator) {
 		--source._processing
 		source._flush()
 	}
-	function reducer(value) {
+	function handle(value) {
+		if (source._streamState === $STREAM_CLOSED) {return}
 		return handler(accumulator, value, shortcut)
 	}
 	function shortcut(value) {
@@ -301,11 +314,11 @@ function _ReduceProcess(source, handler, hasSeed, accumulator) {
 		source._processing = 0
 		source._end()
 	}
-	accumulator = hasSeed ? (source._value = accumulator) : reducer
+	accumulator = hasSeed ? (source._value = accumulator) : handle
 	return function (promise) {
-		accumulator === reducer
+		accumulator === handle
 			? promise._handleNew(onFulfilled, source._onerror, undefined, $NO_INTEGER)
-			: promise._then(reducer)._handleNew(onFulfilled, source._onerror, undefined, $NO_INTEGER)
+			: promise._then(handle)._handleNew(onFulfilled, source._onerror, undefined, $NO_INTEGER)
 	}
 }
 function _MergeProcess(source) {
