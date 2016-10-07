@@ -109,7 +109,9 @@ This method is primarily used for side-effects.
 
 Sugar for `.then(function () {return fulfilledValue})`.
 
-If a second argument is passed, it is equivilent to `.then(function () {return fulfilledValue}, function () {return rejectedValue})`.
+If a second argument is passed, it is equivilent to:
+
+`.then(function () {return fulfilledValue}, function () {return rejectedValue})`.
 
 ### .else([*...predicates*], *value*) -> *promise*
 
