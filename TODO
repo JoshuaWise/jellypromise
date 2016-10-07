@@ -1,8 +1,4 @@
 High priority (for next release):
-- it's possible for stream to leave unhandled rejected promises if:
-  - takeUntil is used, or shortcut() in reduce is used, and they end the stream
-    before all items were processed
-  - an error occurs, which ends the stream before all items are processed
 - add tests for PromiseStream
 - errors(), which returns this, and provided a loop-back mechanism for handling
   data errors that enter pass through the stream
