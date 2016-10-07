@@ -101,8 +101,8 @@ PromiseStream.prototype._write = function (promise, index) {
 		return
 	}
 	if (this._processing < this._concurrency) {
-		this._process(promise, index)
 		++this._processing
+		this._process(promise, index)
 	} else {
 		this._queue.push(promise.catchLater())
 		this._queue.push(index)
@@ -189,7 +189,7 @@ PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 function _flushIterator() {
 	// This first line can be omitted because it is coincidentally never true.
 	// if (this._streamState === $STREAM_CLOSED) {return}
-	for (; this._processing < this._concurrency; ++this._processing) {
+	while (this._processing < this._concurrency) {
 		var data = getNext(this._queue)
 		if (data === IS_ERROR) {
 			this._error(LAST_ERROR)
@@ -199,6 +199,7 @@ function _flushIterator() {
 			this._end()
 			break
 		}
+		++this._processing
 		this._process(Promise.resolve(data), this._nextIndex++)
 	}
 }
@@ -208,12 +209,13 @@ function _flushIterator() {
 function _flushArray() {
 	// This first line can be omitted because it is coincidentally never true.
 	// if (this._streamState === $STREAM_CLOSED) {return}
-	for (; this._processing < this._concurrency; ++this._processing) {
+	while (this._processing < this._concurrency) {
 		if (!(this._nextIndex < this._queue.length)) {
 			this._nextIndex = NaN
 			this._end()
 			break
 		}
+		++this._processing
 		this._process(Promise.resolve(this._queue[this._nextIndex]), this._nextIndex++)
 	}
 }
@@ -224,7 +226,8 @@ function _flushArray() {
 function _flushQueue() {
 	// This first line can be omitted because it is coincidentally never true.
 	// if (this._streamState === $STREAM_CLOSED) {return}
-	for (; this._queue._length > 0 && this._processing < this._concurrency; ++this._processing) {
+	while (this._queue._length > 0 && this._processing < this._concurrency) {
+		++this._processing
 		this._process(this._queue.shift(), this._queue.shift())
 	}
 	if (this._streamState === $STREAM_CLOSING && this._processing === 0) {
@@ -234,7 +237,7 @@ function _flushQueue() {
 
 
 // ========== Pipe Processes ==========
-// It is important that no processes fulfill or reject synchronously
+// It is important that no processes flush synchronously
 
 
 function _MapProcess(source, dest, handler) {
