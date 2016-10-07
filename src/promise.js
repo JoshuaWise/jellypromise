@@ -49,7 +49,6 @@ Promise.reject = function (reason) {
 Promise.race = function (iterable) {
 	return new Promise(function (res, rej) {
 		var input = asArray(iterable)
-		rej = LST.upgradeRejector(rej) // @[/development]
 		for (var i=0, len=input.length; i<len; i++) {
 			Promise.resolve(input[i])._then(res, rej)
 		}
@@ -63,7 +62,6 @@ Promise.all = function (iterable) {
 		if (pendings === 0) {
 			return res(result)
 		}
-		rej = LST.upgradeRejector(rej) // @[/development]
 		var resolveItem = function (i) {
 			return function (value) {
 				result[i] = value

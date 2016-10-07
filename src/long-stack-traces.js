@@ -28,27 +28,6 @@ exports.releaseContext = function () {
 	context.previousStack = null
 }
 
-// Upgrades a function returned by Promise#_rejector(), so that the rejected
-// promise receives the stack trace of the promise that handled its rejection.
-// Rejector functions are not allowed to throw, so if something goes wrong, we
-// reject the promise with a FatalError.
-exports.upgradeRejector = function (rej) {
-	return function (err) {
-		if (!context.previousStack) {
-			err = new SyntaxError('This rejector can only be used within an asynchronous callback.')
-			err.name = 'FatalError'
-		} else {
-			try {
-				exports.setRejectionStack(context.previousStack)
-			} catch (e) {
-				err = e
-				err.name = 'FatalError'
-			}
-		}
-		return rej(err)
-	}
-}
-
 // By setting this, the next promise that is rejected will have this stack.
 exports.setRejectionStack = function (stack) {
 	if (!(stack instanceof _Stack)) {

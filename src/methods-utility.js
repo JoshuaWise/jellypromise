@@ -85,7 +85,6 @@ Promise.any = function (iterable) {
 		if (pendings === 0) {
 			return rej(new Error('The iterable argument contained no items.'))
 		}
-		rej = LST.upgradeRejector(rej) // @[/development]
 		var fail = function (reason) {
 			if (firstException === INTERNAL) {firstException = reason}
 			if (--pendings === 0) {rej(firstException)}
@@ -106,7 +105,6 @@ Promise.props = function (obj) {
 		if (pendings === 0) {
 			return res(result)
 		}
-		rej = LST.upgradeRejector(rej) // @[/development]
 		var resolveItem = function (key) {
 			return function (value) {
 				result[key] = value
