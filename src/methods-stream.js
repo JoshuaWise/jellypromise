@@ -56,6 +56,7 @@ PromiseStream.prototype.filter = function (concurrency, handler) {
 	return this._pipe(_FilterProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
 }
 PromiseStream.prototype.takeUntil = function (promise) {
+	if (!Promise.isPromise(promise)) {throw new TypeError('Expected argument to a promise-like object.')}
 	return this._pipe(_TakeUntilProcess, Infinity, promise)
 }
 PromiseStream.prototype.reduce = function (handler, seed) {
