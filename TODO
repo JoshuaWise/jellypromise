@@ -1,7 +1,5 @@
 High priority (for next release):
 - add tests for PromiseStream
-- errors(), which returns this, and provided a loop-back mechanism for handling
-  data errors that enter pass through the stream
 
 
 Not as high priority:
