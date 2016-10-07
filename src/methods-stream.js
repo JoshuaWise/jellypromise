@@ -187,7 +187,7 @@ PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 // Flushes and processes the iterable until the concurrency limit is reached,
 // or until the entire iterable has been flushed.
 function _flushIterator() {
-	// This first line can be omitted because it coincidentally never true.
+	// This first line can be omitted because it is coincidentally never true.
 	// if (this._streamState === $STREAM_CLOSED) {return}
 	for (; this._processing < this._concurrency; ++this._processing) {
 		var data = getNext(this._queue)
@@ -206,7 +206,7 @@ function _flushIterator() {
 
 // Same as _flushIterator, but optimized for arrays.
 function _flushArray() {
-	// This first line can be omitted because it coincidentally never true.
+	// This first line can be omitted because it is coincidentally never true.
 	// if (this._streamState === $STREAM_CLOSED) {return}
 	for (; this._processing < this._concurrency; ++this._processing) {
 		if (!(this._nextIndex < this._queue.length)) {
@@ -222,7 +222,7 @@ function _flushArray() {
 // Flushes and processes the queue until the concurrency limit is reached,
 // or until the entire queue has been flushed.
 function _flushQueue() {
-	// This first line can be omitted because it coincidentally never true.
+	// This first line can be omitted because it is coincidentally never true.
 	// if (this._streamState === $STREAM_CLOSED) {return}
 	for (; this._queue._length > 0 && this._processing < this._concurrency; ++this._processing) {
 		this._process(this._queue.shift(), this._queue.shift())
