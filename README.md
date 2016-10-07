@@ -113,9 +113,9 @@ If a second argument is passed, it is equivilent to:
 
 `.then(function () {return fulfilledValue}, function () {return rejectedValue})`.
 
-### .else([*...predicates*], *value*) -> *promise*
+### .else([*predicate*], *value*) -> *promise*
 
-Sugar for `.catch(function () {return value})`. This method is used for providing default values on a rejected promise chain. Predicates are supported, just like with the [`.catch`](#catchpredicates-onrejected---promise) method.
+Sugar for `.catch(function () {return value})`. This method is used for providing default values on a rejected promise chain. Predicates are supported, just like with the [`.catch`](#catchpredicate-onrejected---promise) method.
 
 ### .delay(*milliseconds*) -> *promise*
 
