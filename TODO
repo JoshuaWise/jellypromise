@@ -4,7 +4,6 @@ High priority (for next release):
     before all items were processed
   - an error occurs, which ends the stream before all items are processed
 - add tests for PromiseStream
-- add to README that reduce's shortcut() accepts promises
 - errors(), which returns this, and provided a loop-back mechanism for handling
   data errors that enter pass through the stream
 
