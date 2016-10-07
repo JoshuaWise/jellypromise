@@ -15,13 +15,9 @@ Server optimizations:
 
 
 
-
 Double check:
 - that all prototype methods that generate a new, linked promise, use _handleNew, _handle, or _then, so that `this` promise sets SUPPRESS_UNHANDLED_REJECTIONS to 1
 
-
-Stream considerations:
-- implement sort()
 
 
 Related TODO:
