@@ -1,7 +1,6 @@
 'use strict'
 var asArray = require('./util').asArray
 var INTERNAL = require('./util').INTERNAL
-var LST = require('./long-stack-traces') // @[/development]
 
 function Promise(fn) {
 	if (!(this instanceof Promise) || this._state !== undefined) {
