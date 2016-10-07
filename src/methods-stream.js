@@ -315,7 +315,12 @@ function _ReduceProcess(source, handler, hasSeed, accumulator) {
 		source._processing = 0
 		source._end()
 	}
-	accumulator = hasSeed ? (source._value = accumulator) : handle
+	if (hasSeed) {
+		++source._processing
+		Promise.resolve(accumulator)._handleNew(onFulfilled, source._onerror, undefined, $NO_INTEGER)
+	} else {
+		accumulator = handle
+	}
 	return function (promise) {
 		accumulator === handle
 			? promise._handleNew(onFulfilled, source._onerror, undefined, $NO_INTEGER)
