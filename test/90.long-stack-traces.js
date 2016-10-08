@@ -56,7 +56,11 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 					if (i > 0 && i + 1 < trace.length && !/\w/.test(desired)) {
 						switch (desired) {
 							case '->':
-								expect(lines[i]).equal('Used to reject promise:')
+								expect(lines[i]).equal(
+									process.version >= 'v4.0.0'
+										? 'Used to reject promise:'
+										: 'From previous event:'
+								)
 								break
 							case '|':
 								expect(lines[i]).equal('From previous event:')
