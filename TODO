@@ -3,8 +3,8 @@ High priority (for next release):
 
 
 Not as high priority:
-- add long stack trace tests
 - get zuul tests working
+- add long stack trace tests
 
 
 Server optimizations:
