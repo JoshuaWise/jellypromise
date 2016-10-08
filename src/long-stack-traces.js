@@ -98,6 +98,7 @@ _Stack.prototype.getTrace = function () {
 	
 	return formatedStacks.join('\nFrom previous event:\n') + '\n'
 }
+exports.Stack = _Stack
 
 function setNonEnumerable(obj, prop, value) {
 	Object.defineProperty(obj, prop, {

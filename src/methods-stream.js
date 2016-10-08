@@ -4,6 +4,7 @@ var FastQueue = require('./fast-queue')
 var iterator = require('./util').iterator
 var INTERNAL = require('./util').INTERNAL
 var util = require('./util') // @[/development]
+var LST = require('./long-stack-traces') // @[/development]
 var NOOP = function () {}
 
 function PromiseStream(source) {
@@ -127,11 +128,19 @@ PromiseStream.prototype._end = function () {
 // Used to indicate that an error has occured, and the stream should immediately close.
 PromiseStream.prototype._error = function (reason) {
 	if (this._streamState === $STREAM_CLOSED) {return}
+	// @[development]
+	this._pipedStream && this._pipedStream._error(reason, arguments[1])
+	this._streamState = $STREAM_CLOSED
+	util.PASSTHROUGH_REJECTION = true
+	arguments[1] instanceof LST.Stack && LST.setRejectionStack(arguments[1])
+	this._reject(reason)
+	util.PASSTHROUGH_REJECTION = false
+	// @[/]
+	// @[production]
 	this._pipedStream && this._pipedStream._error(reason)
 	this._streamState = $STREAM_CLOSED
-	util.PASSTHROUGH_REJECTION = true // @[/development]
 	this._reject(reason)
-	util.PASSTHROUGH_REJECTION = false // @[/development]
+	// @[/]
 	this._processing = 0
 	this._cleanup()
 }
@@ -394,10 +403,21 @@ function getIterator(iterable) {
 // ========== Extend Promise API ==========
 Promise.Stream = PromiseStream
 Promise.prototype.stream = function () {
+	var self = this // @[/development]
 	var stream = new PromiseStream(INTERNAL)
-	this._handleNew(function (iterable) {
-		stream._switchToIterableMode(iterable)
-	}, stream._onerror, undefined, $NO_INTEGER)
+	this._handleNew(
+		function (iterable) {
+			stream._switchToIterableMode(iterable)
+		},
+		// @[development]
+		function (reason) {
+			stream._error(reason, self._getFollowee()._trace)
+		},
+		// @[/]
+		stream._onerror, // @[/production]
+		undefined,
+		$NO_INTEGER
+	)
 	return stream
 }
 
