@@ -78,10 +78,17 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 		}
 	}
 	
-	it('foo bar', testTrace(['c', '->', 'b', '|', 'a'], function a(throws) {
+	it('Normal callbacks with throw', testTrace(['c', '->', 'b', '|', 'a'], function a(throws) {
 		Promise.resolve().then(function b() {
 			return Promise.resolve().then(function c() {
 				throw throws(new Error('foo'))
+			})
+		})
+	}))
+	it('Normal callbacks with rejected promise', testTrace(['c', '|', 'b', '|', 'a'], function a(throws) {
+		Promise.resolve().then(function b() {
+			return Promise.resolve().then(function c() {
+				return Promise.reject(throws(new Error('foo')))
 			})
 		})
 	}))

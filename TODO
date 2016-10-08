@@ -5,6 +5,7 @@ High priority (for next release):
 Not as high priority:
 - get zuul tests working
 - add long stack trace tests
+- add more extensive memory leaks tests
 
 
 Server optimizations:
