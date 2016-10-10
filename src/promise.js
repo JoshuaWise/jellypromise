@@ -1,5 +1,5 @@
 'use strict'
-var asArray = require('./util').asArray
+var iterate = require('./util').iterate
 var INTERNAL = require('./util').INTERNAL
 
 function Promise(fn) {
@@ -47,28 +47,13 @@ Promise.reject = function (reason) {
 }
 Promise.race = function (iterable) {
 	return new Promise(function (res, rej) {
-		var input = asArray(iterable)
-		for (var i=0, len=input.length; i<len; i++) {
-			Promise.resolve(input[i])._then(res, rej)
-		}
+		iterate(iterable, function (value) {
+			Promise.resolve(value)._handleNew(res, rej, undefined, $NO_INTEGER)
+		})
 	})
 }
 Promise.all = function (iterable) {
-	return new Promise(function (res, rej) {
-		var input = asArray(iterable)
-		var pendings = input.length
-		var result = new Array(pendings)
-		if (pendings === 0) {
-			return res(result)
-		}
-		var resolveItem = function (i) {
-			return function (value) {
-				result[i] = value
-				if (--pendings === 0) {res(result)}
-			}
-		}
-		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i])._then(resolveItem(i), rej)
-		}
-	})
+	var promise = new Promise(INTERNAL)
+	promise._resolve(Promise.Stream.from(iterable).merge())
+	return promise
 }

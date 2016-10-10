@@ -1,10 +1,8 @@
 'use strict'
 var Promise = require('./promise')
 var console = require('./util').console // @[/browser]
-var asArray = require('./util').asArray
-var iterator = require('./util').iterator
+var iterate = require('./util').iterate
 var INTERNAL = require('./util').INTERNAL
-var warn = require('./warn') // @[/development]
 var LST = require('./long-stack-traces') // @[/development]
 
 Promise.prototype.finally = function (fn) {
@@ -79,19 +77,17 @@ Promise.prototype.inspect = function () {
 }
 Promise.any = function (iterable) {
 	return new Promise(function (res, rej) {
-		var input = asArray(iterable)
-		var pendings = input.length
 		var firstException = INTERNAL
-		if (pendings === 0) {
-			return rej(new Error('The iterable argument contained no items.'))
-		}
+		var pendings = 0
 		var fail = function (reason) {
 			if (firstException === INTERNAL) {firstException = reason}
 			if (--pendings === 0) {rej(firstException)}
 		}
-		for (var i=0; i<pendings; i++) {
-			Promise.resolve(input[i])._then(res, fail)
-		}
+		iterate(iterable, function (value) {
+			++pendings
+			Promise.resolve(value)._handleNew(res, fail, undefined, $NO_INTEGER)
+		})
+		pendings || rej(new RangeError('The iterable argument contained no items.'))
 	})
 }
 Promise.props = function (obj) {
@@ -113,29 +109,26 @@ Promise.props = function (obj) {
 		}
 		for (var i=0; i<pendings; i++) {
 			var key = keys[i]
-			Promise.resolve(obj[key])._then(resolveItem(key), rej)
+			Promise.resolve(obj[key])._handleNew(resolveItem(key), rej, undefined, $NO_INTEGER)
 		}
 	})
 }
 Promise.settle = function (iterable) {
-	return new Promise(function (res, rej) {
-		var input = asArray(iterable)
-		var pendings = input.length
-		var result = new Array(pendings)
-		if (pendings === 0) {
-			return res(result)
-		}
+	return new Promise(function (res) {
+		var pendings = 0
 		var resolveItem = function (promise, i) {
-			return function (value) {
+			return function () {
 				result[i] = new PromiseDescriptor(promise)
 				if (--pendings === 0) {res(result)}
 			}
 		}
-		for (var i=0; i<pendings; i++) {
-			var promise = Promise.resolve(input[i])
-			var handler = resolveItem(promise, i)
-			promise._then(handler, handler)
-		}
+		iterate(iterable, function (value) {
+			var promise = Promise.resolve(value)
+			var handler = resolveItem(promise, pendings++)
+			promise._handleNew(handler, handler, undefined, $NO_INTEGER)
+		})
+		var result = new Array(pendings)
+		pendings || res(result)
 	})
 }
 Promise.isPromise = function (value) {
