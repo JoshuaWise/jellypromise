@@ -116,6 +116,7 @@ Promise.props = function (obj) {
 Promise.settle = function (iterable) {
 	return new Promise(function (res) {
 		var pendings = 0
+		var result = []
 		var resolveItem = function (promise, i) {
 			return function () {
 				result[i] = new PromiseDescriptor(promise)
@@ -127,8 +128,7 @@ Promise.settle = function (iterable) {
 			var handler = resolveItem(promise, pendings++)
 			promise._handleNew(handler, handler, undefined, $NO_INTEGER)
 		})
-		var result = new Array(pendings)
-		pendings || res(result)
+		pendings ? (result.length = pendings) : res(result)
 	})
 }
 Promise.isPromise = function (value) {
