@@ -1,6 +1,6 @@
 'use strict'
 var Promise = require('./promise')
-var task = require('./task').init(handleSettled, onUnhandledRejection)
+var task = require('./task')
 var clc = require('cli-color') // @[/node]
 var console = require('./util').console // @[/browser]
 var INTERNAL = require('./util').INTERNAL
@@ -271,3 +271,8 @@ var catchesError = function (predicate, reason) {
 	warn('The predicate passed to .catch() is invalid, and will be ignored.', arguments[2]._trace) // @[/development]
 	return false
 }
+
+// The first function here is invoked in the normal queue, while the second
+// function is invoked in the late queue.
+task.init(handleSettled, onUnhandledRejection)
+

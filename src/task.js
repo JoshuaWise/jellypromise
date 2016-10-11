@@ -29,7 +29,6 @@ module.exports = function (late, receiver, arg) {
 module.exports.init = function (handlerFunction, lateHandlerFunction) {
 	handler = handlerFunction
 	lateHandler = lateHandlerFunction
-	return this
 }
 
 var flush = function () {
