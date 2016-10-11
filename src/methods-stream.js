@@ -6,6 +6,7 @@ var INTERNAL = require('./util').INTERNAL
 var util = require('./util') // @[/development]
 var LST = require('./long-stack-traces') // @[/development]
 var NOOP = function () {}
+var isPromise = Promise.isPromise
 
 function PromiseStream(source) {
 	Promise.call(this, INTERNAL)
@@ -57,7 +58,7 @@ PromiseStream.prototype.filter = function (concurrency, handler) {
 	return this._pipe(FilterProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
 }
 PromiseStream.prototype.takeUntil = function (promise) {
-	if (!Promise.isPromise(promise)) {throw new TypeError('Expected argument to a promise-like object.')}
+	if (!isPromise(promise)) {throw new TypeError('Expected argument to a promise-like object.')}
 	return this._pipe(TakeUntilProcess, Infinity, promise)
 }
 PromiseStream.prototype.reduce = function (handler, seed) {

@@ -6,8 +6,6 @@ Not as high priority:
 - get zuul tests working
 - add long stack trace tests
 - add more extensive memory leaks tests
-- maybe move references from the Promise constructor to scoped variables for
-  internal use (Promise.resolve, Promise.after, Promise.isPromise, Promise.Stream.from)
 
 
 

@@ -12,7 +12,7 @@ Promise.prototype.finally = function (fn) {
 	}
 	var handler = function () {
 		var ret = fn()
-		return Promise.isPromise(ret)
+		return isPromise(ret)
 			? (promise = Promise.resolve(ret)._then(originalState))
 			: originalState()
 	}
@@ -35,7 +35,7 @@ Promise.prototype.tap = function (fn) {
 	}
 	return this._then(function (value) {
 		var ret = fn(value)
-		return Promise.isPromise(ret)
+		return isPromise(ret)
 			? Promise.resolve(ret)._then(function () {return value})
 			: value
 	})
@@ -53,7 +53,7 @@ Promise.prototype.else = function (value, valueWhenTheresAPredicate) {
 }
 Promise.prototype.delay = function (ms) {
 	return this._then(function (value) {
-		return Promise.after(ms, value)
+		return PromiseAfter(ms, value)
 	})
 }
 Promise.prototype.timeout = function (ms, reason) {
@@ -112,7 +112,7 @@ Promise.props = function (obj) {
 		for (var i=0, len=pendings; i<len; i++) {
 			var key = keys[i]
 			var value = obj[key]
-			Promise.isPromise(value)
+			isPromise(value)
 				? Promise.resolve(value)._handleNew(resolveItem(key), rej, undefined, $NO_INTEGER)
 				: (--pendings, result[key] = value)
 		}
@@ -139,13 +139,13 @@ Promise.settle = function (iterable) {
 		pendings ? (result.length = pendings) : res(result)
 	})
 }
-Promise.after = function (ms, value) {
+var PromiseAfter = Promise.after = function (ms, value) {
 	value instanceof Promise && value.catchLater()
 	var promise = new Promise(INTERNAL)
 	setTimeout(function () {promise._resolve(value)}, ~~ms)
 	return promise
 }
-Promise.isPromise = function (value) {
+var isPromise = Promise.isPromise = function (value) {
 	return !!value
 		&& (typeof value === 'object' || typeof value === 'function')
 		&& typeof value.then === 'function'
