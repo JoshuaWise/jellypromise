@@ -10,7 +10,6 @@ Promise.prototype.finally = function (fn) {
 		// Will be bypassed, but produces a warning in development mode.
 		return this._then(fn)
 	}
-	
 	var handler = function () {
 		var ret = fn()
 		return Promise.isPromise(ret)
@@ -35,9 +34,10 @@ Promise.prototype.tap = function (fn) {
 		return this._then(fn)
 	}
 	return this._then(function (value) {
-		return Promise.resolve(fn(value))._then(function () {
-			return value
-		})
+		var ret = fn(value)
+		return Promise.isPromise(ret)
+			? Promise.resolve(ret)._then(function () {return value})
+			: value
 	})
 }
 Promise.prototype.become = function (fulfilledValue, rejectedValue) {

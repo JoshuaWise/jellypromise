@@ -11,13 +11,6 @@ Not as high priority:
 - add more extensive memory leaks tests
 
 
-Server optimizations:
-- #finally()
-- #tap()
-- make use of private handleNew/resolve/reject functions, instead of using new Promise() with closures, to speed up methods and static functions.
-- make sure to maintain the same long stack traces as with deoptimized versions.
-
-
 
 Double check:
 - that all prototype methods that generate a new, linked promise, use _handleNew, _handle, or _then, so that `this` promise sets SUPPRESS_UNHANDLED_REJECTIONS to 1
