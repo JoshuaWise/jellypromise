@@ -164,7 +164,7 @@ Promise.prototype._getFollowee = function () {
 	return self
 }
 
-function finale(self) {
+var finale = function (self) {
 	if (self._state & $SINGLE_HANDLER) {
 		self._handle(self._deferreds)
 		self._deferreds = undefined
@@ -177,7 +177,7 @@ function finale(self) {
 	}
 }
 
-function handleSettled(deferred) {
+var handleSettled = function (deferred) {
 	var isFulfilled = this._state & $IS_FULFILLED
 	var cb = isFulfilled ? deferred.onFulfilled : deferred.onRejected
 	if (cb === null) {
@@ -209,7 +209,7 @@ function handleSettled(deferred) {
 	}
 }
 
-function onUnhandledRejection(reason) {
+var onUnhandledRejection = function (reason) {
 	if (!(this._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
 		// @[development]
 		if (Promise.suppressUnhandledRejections) {
@@ -228,7 +228,7 @@ function onUnhandledRejection(reason) {
 	}
 }
 
-function foreignPromise(promise, then) {
+var foreignPromise = function (promise, then) {
 	return new Promise(function (res, rej) {return then.call(promise, res, rej)})
 }
 
@@ -261,7 +261,7 @@ function tryCallTwo(fn, a, b) {
 }
 
 // Returns whether the given catch predicate should catch the exception reason.
-function catchesError(predicate, reason) {
+var catchesError = function (predicate, reason) {
 	if (predicate === Error || (predicate && predicate.prototype instanceof Error)) {
 		return reason instanceof predicate
 	}

@@ -1,13 +1,12 @@
 'use strict'
-module.exports = _FastQueue
 
-function _FastQueue() {
+var FastQueue = module.exports = function () {
 	this._capacity = 16 // Must be a multiple of 2
 	this._length = 0
 	this._front = 0
 }
 
-_FastQueue.prototype.push = function (value) {
+FastQueue.prototype.push = function (value) {
 	if (this._capacity === this._length) {
 		arrayMove(this, this._capacity, this._front)
 		this._capacity <<= 1
@@ -15,7 +14,7 @@ _FastQueue.prototype.push = function (value) {
 	this[(this._front + this._length++) & (this._capacity - 1)] = value
 }
 
-_FastQueue.prototype.shift = function () {
+FastQueue.prototype.shift = function () {
 	var front = this._front
 	var ret = this[front]
 	this[front] = undefined
@@ -24,7 +23,7 @@ _FastQueue.prototype.shift = function () {
 	return ret
 }
 
-function arrayMove(array, moveAmount, len) {
+var arrayMove = function (array, moveAmount, len) {
 	for (var i=0; i<len; ++i) {
 		array[i + moveAmount] = array[i]
 		array[i] = undefined

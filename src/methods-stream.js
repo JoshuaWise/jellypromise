@@ -16,7 +16,7 @@ function PromiseStream(source) {
 	this._processing = 0
 	this._process = null
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
-	this._flush = _flushQueue
+	this._flush = flushQueue
 	this._onerror = function (reason) {self._error(reason)}
 	var self = this
 	
@@ -44,28 +44,28 @@ PromiseStream.prototype.__proto__ = Promise.prototype
 PromiseStream.prototype.map = function (concurrency, handler) {
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
-	return this._pipe(_MapProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
+	return this._pipe(MapProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
 }
 PromiseStream.prototype.forEach = function (concurrency, handler) {
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
-	return this._pipe(_ForEachProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
+	return this._pipe(ForEachProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
 }
 PromiseStream.prototype.filter = function (concurrency, handler) {
 	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
-	return this._pipe(_FilterProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
+	return this._pipe(FilterProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
 }
 PromiseStream.prototype.takeUntil = function (promise) {
 	if (!Promise.isPromise(promise)) {throw new TypeError('Expected argument to a promise-like object.')}
-	return this._pipe(_TakeUntilProcess, Infinity, promise)
+	return this._pipe(TakeUntilProcess, Infinity, promise)
 }
 PromiseStream.prototype.reduce = function (handler, seed) {
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	if (this._state & $IS_REJECTED) {this._process = NOOP; return this}
 	this._concurrency = 1
-	this._process = _ReduceProcess(this, handler, arguments.length > 1, seed)
+	this._process = ReduceProcess(this, handler, arguments.length > 1, seed)
 	this._flush()
 	return this
 }
@@ -73,7 +73,7 @@ PromiseStream.prototype.merge = function () {
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	if (this._state & $IS_REJECTED) {this._process = NOOP; return this}
 	this._concurrency = Infinity
-	this._process = _MergeProcess(this)
+	this._process = MergeProcess(this)
 	this._flush()
 	return this
 }
@@ -86,7 +86,7 @@ PromiseStream.prototype.drain = function (handler) {
 		warn('The drain handler must be a function (' + typeof handler + 's will be ignored).', this._trace)
 	}
 	// @[/]
-	this._process = _DrainProcess(this, typeof handler === 'function' ? handler : NOOP)
+	this._process = DrainProcess(this, typeof handler === 'function' ? handler : NOOP)
 	this._flush()
 	return this
 }
@@ -152,14 +152,14 @@ PromiseStream.prototype._switchToIterableMode = function (iterable) {
 	if (this._streamState !== $STREAM_OPEN) {return}
 	if (Array.isArray(iterable)) {
 		this._queue = iterable
-		this._flush = _flushArray
+		this._flush = flushArray
 	} else {
 		var it = getIterator(iterable)
 		if (it === IS_ERROR) {
 			return this._error(LAST_ERROR)
 		}
 		this._queue = it
-		this._flush = _flushIterator
+		this._flush = flushIterator
 	}
 	this._flush()
 }
@@ -195,7 +195,7 @@ PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 
 // Flushes and processes the iterable until the concurrency limit is reached,
 // or until the entire iterable has been flushed.
-function _flushIterator() {
+var flushIterator = function () {
 	// This first line can be omitted because it is coincidentally never true.
 	// if (this._streamState === $STREAM_CLOSED) {return}
 	while (this._processing < this._concurrency) {
@@ -214,8 +214,8 @@ function _flushIterator() {
 }
 
 
-// Same as _flushIterator, but optimized for arrays.
-function _flushArray() {
+// Same as flushIterator, but optimized for arrays.
+var flushArray = function () {
 	// This first line can be omitted because it is coincidentally never true.
 	// if (this._streamState === $STREAM_CLOSED) {return}
 	while (this._processing < this._concurrency) {
@@ -232,7 +232,7 @@ function _flushArray() {
 
 // Flushes and processes the queue until the concurrency limit is reached,
 // or until the entire queue has been flushed.
-function _flushQueue() {
+var flushQueue = function () {
 	// This first line can be omitted because it is coincidentally never true.
 	// if (this._streamState === $STREAM_CLOSED) {return}
 	while (this._queue._length > 0 && this._processing < this._concurrency) {
@@ -249,7 +249,7 @@ function _flushQueue() {
 // It is important that no processes flush synchronously
 
 
-function _MapProcess(source, dest, handler) {
+var MapProcess = function (source, dest, handler) {
 	function onFulfilled(value, index, mappedPromise) {
 		if (source._streamState === $STREAM_CLOSED) {return}
 		dest._write(mappedPromise, index)
@@ -265,7 +265,7 @@ function _MapProcess(source, dest, handler) {
 		mappedPromise._handleNew(onFulfilled, source._onerror, undefined, index, mappedPromise)
 	}
 }
-function _ForEachProcess(source, dest, handler) {
+var ForEachProcess = function (source, dest, handler) {
 	function onFulfilled(value, index, originalPromise) {
 		if (source._streamState === $STREAM_CLOSED) {return}
 		dest._write(originalPromise, index)
@@ -280,7 +280,7 @@ function _ForEachProcess(source, dest, handler) {
 		promise._then(handle, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, index, promise)
 	}
 }
-function _FilterProcess(source, dest, handler) {
+var FilterProcess = function (source, dest, handler) {
 	function onFulfilled(value, index, originalPromise) {
 		if (source._streamState === $STREAM_CLOSED) {return}
 		value && dest._write(originalPromise, index)
@@ -295,7 +295,7 @@ function _FilterProcess(source, dest, handler) {
 		promise._then(handle, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, index, promise)
 	}
 }
-function _TakeUntilProcess(source, dest, donePromise) {
+var TakeUntilProcess = function (source, dest, donePromise) {
 	function onFulfilled(value, index, originalPromise) {
 		if (source._streamState === $STREAM_CLOSED) {return}
 		dest._write(originalPromise, index)
@@ -310,7 +310,7 @@ function _TakeUntilProcess(source, dest, donePromise) {
 		promise._handleNew(onFulfilled, source._onerror, undefined, index, promise)
 	}
 }
-function _ReduceProcess(source, handler, hasSeed, accumulator) {
+var ReduceProcess = function (source, handler, hasSeed, accumulator) {
 	function onFulfilled(value) {
 		if (source._streamState === $STREAM_CLOSED) {return}
 		accumulator = source._value = value
@@ -339,7 +339,7 @@ function _ReduceProcess(source, handler, hasSeed, accumulator) {
 			: promise._then(handle)._handleNew(onFulfilled, source._onerror, undefined, $NO_INTEGER)
 	}
 }
-function _MergeProcess(source) {
+var MergeProcess = function (source) {
 	function onFulfilled(value, index) {
 		if (source._streamState === $STREAM_CLOSED) {return}
 		array[index] = value
@@ -351,7 +351,7 @@ function _MergeProcess(source) {
 		promise._handleNew(onFulfilled, source._onerror, undefined, index)
 	}
 }
-function _DrainProcess(source, handler) {
+var DrainProcess = function (source, handler) {
 	function onFulfilled(value, index) {
 		if (source._streamState === $STREAM_CLOSED) {return}
 		// With _handleNew, this function is not in a try-catch block.

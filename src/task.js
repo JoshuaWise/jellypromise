@@ -32,13 +32,13 @@ module.exports.init = function (handlerFunction, lateHandlerFunction) {
 	return this
 }
 
-function flush() {
+var flush = function () {
 	flushQueue(queue, handler)
 	flushQueue(lateQueue, lateHandler)
 	pendingFlush = false
 }
 
-function flushQueue(queue, fn) {
+var flushQueue = function (queue, fn) {
 	while (queue._length > 0) {
 		fn.call(queue.shift(), queue.shift())
 	}
