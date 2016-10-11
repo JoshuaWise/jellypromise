@@ -29,46 +29,21 @@ Promise.prototype._resolveFromHandler = function (handler) {
 
 // An abstraction for .catch() and .else().
 Promise.prototype._conditionalCatch = function (predicate, onRejected) {
-	if (Array.isArray(predicate)) {
-		return this._conditionalCatchArray(predicate, onRejected)
-	}
-	// @[development]
-	var self = this
+	var self = this // @[/development]
 	var newPromise
 	return newPromise = this._then(undefined, function (reason) {
-		if (catchesError(predicate, reason, newPromise)) {return onRejected(reason)}
-		LST.setRejectionStack(self._getFollowee()._trace)
-		throw reason
-	})
-	// @[/]
-	// @[production]
-	return this._then(undefined, function (reason) {
-		if (catchesError(predicate, reason)) {return onRejected(reason)}
-		throw reason
-	})
-	// @[/]
-}
-
-Promise.prototype._conditionalCatchArray = function (predicates, onRejected) {
-	// @[development]
-	var self = this
-	var newPromise
-	return newPromise = this._then(undefined, function (reason) {
-		for (var i=0, len=predicates.length; i<len; i++) {
-			if (catchesError(predicates[i], reason, newPromise)) {return onRejected(reason)}
+		if (Array.isArray(predicate)) {
+			for (var i=0, len=predicate.length; i<len; i++) {
+				if (catchesError(predicate[i], reason)) {return onRejected(reason)} // @[/production]
+				if (catchesError(predicate[i], reason, newPromise)) {return onRejected(reason)} // @[/development]
+			}
+		} else {
+			if (catchesError(predicate, reason)) {return onRejected(reason)} // @[/production]
+			if (catchesError(predicate, reason, newPromise)) {return onRejected(reason)} // @[/development]
 		}
-		LST.setRejectionStack(self._getFollowee()._trace)
-		throw reason
+		LST.setRejectionStack(self._getFollowee()._trace) // @[/development]
+		newPromise._reject(reason)
 	})
-	// @[/]
-	// @[production]
-	return this._then(undefined, function (reason) {
-		for (var i=0, len=predicates.length; i<len; i++) {
-			if (catchesError(predicates[i], reason)) {return onRejected(reason)}
-		}
-		throw reason
-	})
-	// @[/]
 }
 
 Promise.prototype._resolver = function () {
