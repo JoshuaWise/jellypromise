@@ -10,17 +10,24 @@ Promise.prototype.finally = function (fn) {
 		// Will be bypassed, but produces a warning in development mode.
 		return this._then(fn)
 	}
-	var self = this // @[/development]
-	return this._then(function (value) {
-		return Promise.resolve(fn())._then(function () {
-			return value
-		})
-	}, function (reason) {
-		return Promise.resolve(fn())._then(function () {
-			LST.setRejectionStack(self._getFollowee()._trace) // @[/development]
-			throw reason
-		})
-	})
+	
+	var handler = function () {
+		var ret = fn()
+		return Promise.isPromise(ret)
+			? (promise = Promise.resolve(ret)._then(originalState))
+			: originalState()
+	}
+	var originalState = function () {
+		var originalPromise = self._getFollowee()
+		if (originalPromise._state & $IS_FULFILLED) {
+			return originalPromise._value
+		}
+		LST.setRejectionStack(originalPromise._trace) // @[/development]
+		promise._reject(originalPromise._value)
+	}
+	var self = this
+	var promise = this._then(handler, handler)
+	return promise
 }
 Promise.prototype.tap = function (fn) {
 	if (typeof fn !== 'function') {
