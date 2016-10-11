@@ -1,5 +1,4 @@
 High priority:
-- add tests for Promise.after
 - add tests for PromiseStream
 
 
@@ -7,16 +6,8 @@ Not as high priority:
 - get zuul tests working
 - add long stack trace tests
 - add more extensive memory leaks tests
-- maybe move references from the Promise constructor to scoped variables for internal use
-  - Promise.resolve
-  - Promise.after
-  - Promise.isPromise
-  - Promise.Stream.from
-
-
-
-Double check:
-- that all prototype methods that generate a new, linked promise, use _handleNew, _handle, or _then, so that `this` promise sets SUPPRESS_UNHANDLED_REJECTIONS to 1
+- maybe move references from the Promise constructor to scoped variables for
+  internal use (Promise.resolve, Promise.after, Promise.isPromise, Promise.Stream.from)
 
 
 

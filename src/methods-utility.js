@@ -140,6 +140,7 @@ Promise.settle = function (iterable) {
 	})
 }
 Promise.after = function (ms, value) {
+	value instanceof Promise && value.catchLater()
 	var promise = new Promise(INTERNAL)
 	setTimeout(function () {promise._resolve(value)}, ~~ms)
 	return promise
