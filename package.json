@@ -1,6 +1,6 @@
 {
   "name": "jellypromise",
-  "version": "9.1.1",
+  "version": "10.0.0",
   "description": "A tiny and fast Promises/A+ library, with thoughtful error handling.",
   "main": "./lib-node/index.js",
   "browser": {
