@@ -103,18 +103,21 @@ Promise.props = function (obj) {
 		var keys = Object.keys(obj)
 		var pendings = keys.length
 		var result = {}
-		if (pendings === 0) {
-			return res(result)
-		}
 		var resolveItem = function (key) {
 			return function (value) {
 				result[key] = value
 				if (--pendings === 0) {res(result)}
 			}
 		}
-		for (var i=0; i<pendings; i++) {
+		for (var i=0, len=pendings; i<len; i++) {
 			var key = keys[i]
-			Promise.resolve(obj[key])._handleNew(resolveItem(key), rej, undefined, $NO_INTEGER)
+			var value = obj[key]
+			Promise.isPromise(value)
+				? Promise.resolve(value)._handleNew(resolveItem(key), rej, undefined, $NO_INTEGER)
+				: (--pendings, result[key] = value)
+		}
+		if (pendings === 0) {
+			return res(result)
 		}
 	})
 }
