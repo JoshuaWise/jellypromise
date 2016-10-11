@@ -52,18 +52,19 @@ Promise.prototype.delay = function (ms) {
 	})
 }
 Promise.prototype.timeout = function (ms, reason) {
-	var self = this
-	return new Promise(function (res, rej) {
-		var timer = setTimeout(function () {
-			rej(
-				reason == null ? new TimeoutError('The operation timed out after ' + (~~ms > 0 ? ~~ms : 0) + 'ms.')
-			  : reason instanceof Error ? reason : new TimeoutError(String(reason))
-			)
-		}, ~~ms)
-		var cancel = function () {clearTimeout(timer)}
-		self._then(cancel, cancel)
-		self._then(res, rej)
-	})
+	var promise = new Promise(INTERNAL)
+	var cancel = function () {clearTimeout(timer)}
+	this._handleNew(cancel, cancel, undefined, $NO_INTEGER)
+	this._handleNew(undefined, undefined, promise, $NO_INTEGER)
+	
+	var timer = setTimeout(function () {
+		promise._reject(
+			reason == null ? new TimeoutError('The operation timed out after ' + (~~ms > 0 ? ~~ms : 0) + 'ms.')
+		  : reason instanceof Error ? reason : new TimeoutError(String(reason))
+		)
+	}, ~~ms)
+	
+	return promise
 }
 Promise.prototype.log = function (prefix) {
 	var usePrefix = arguments.length > 0

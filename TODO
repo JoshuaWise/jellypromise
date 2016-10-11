@@ -9,7 +9,6 @@ Not as high priority:
 
 
 Server optimizations:
-- #timeout()
 - #delay()
 - #finally()
 - #tap()
