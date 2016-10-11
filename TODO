@@ -1,4 +1,5 @@
 High priority:
+- add tests for Promise.after
 - add tests for PromiseStream
 
 
@@ -9,7 +10,6 @@ Not as high priority:
 
 
 Server optimizations:
-- #delay()
 - #finally()
 - #tap()
 - #become()

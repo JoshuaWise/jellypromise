@@ -217,6 +217,12 @@ If the corresponding input promise is:
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
+### *static* Promise.after(*milliseconds*, *value*) -> *promise*
+
+Returns a promise that will be resolved with `value` after the specified number of milliseconds. By default, `value` is `undefined`.
+
+If `value` is a promise itself, the returned promise will adopt the state of `value` after the specified number of milliseconds.
+
 ### *static* Promise.isPromise(*value*) -> *boolean*
 
 Returns either `true` or `false`, whether `value` is a promise-like object (i.e., it has a `.then` method).

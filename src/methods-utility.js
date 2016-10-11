@@ -46,16 +46,13 @@ Promise.prototype.else = function (value, valueWhenTheresAPredicate) {
 }
 Promise.prototype.delay = function (ms) {
 	return this._then(function (value) {
-		return new Promise(function (res, rej) {
-			setTimeout(function () {res(value)}, ~~ms)
-		})
+		return Promise.after(ms, value)
 	})
 }
 Promise.prototype.timeout = function (ms, reason) {
-	var promise = new Promise(INTERNAL)
 	var cancel = function () {clearTimeout(timer)}
 	this._handleNew(cancel, cancel, undefined, $NO_INTEGER)
-	this._handleNew(undefined, undefined, promise, $NO_INTEGER)
+	var promise = this._then()
 	
 	var timer = setTimeout(function () {
 		promise._reject(
@@ -131,6 +128,11 @@ Promise.settle = function (iterable) {
 		})
 		pendings ? (result.length = pendings) : res(result)
 	})
+}
+Promise.after = function (ms, value) {
+	var promise = new Promise(INTERNAL)
+	setTimeout(function () {promise._resolve(value)}, ~~ms)
+	return promise
 }
 Promise.isPromise = function (value) {
 	return !!value
