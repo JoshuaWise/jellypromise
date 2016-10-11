@@ -12,8 +12,6 @@ Not as high priority:
 Server optimizations:
 - #finally()
 - #tap()
-- #become()
-- #else()
 - make use of private handleNew/resolve/reject functions, instead of using new Promise() with closures, to speed up methods and static functions.
 - make sure to maintain the same long stack traces as with deoptimized versions.
 
