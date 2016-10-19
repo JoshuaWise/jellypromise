@@ -97,4 +97,25 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 			})
 		})
 	}))
+	it('Constructed promise with throw', testTrace(['c', 'b', '|', 'a'], function a(throws) {
+		Promise.resolve().then(function b() {
+			return new Promise(function c(resolve, reject) {
+				throw throws(new Error('foo'))
+			})
+		})
+	}))
+	it('Constructed promise with rejector', testTrace(['c', 'b', '|', 'a'], function a(throws) {
+		Promise.resolve().then(function b() {
+			return new Promise(function c(resolve, reject) {
+				reject(throws(new Error('foo')))
+			})
+		})
+	}))
+	it('Constructed promise with resolver', testTrace(['c', 'b', '|', 'a'], function a(throws) {
+		Promise.resolve().then(function b() {
+			return new Promise(function c(resolve, reject) {
+				resolve(Promise.reject(throws(new Error('foo'))))
+			})
+		})
+	}))
 })
