@@ -11,10 +11,10 @@ var isPromise = Promise.isPromise
 function PromiseStream(source) {
 	Promise.call(this, INTERNAL)
 	this._streamState = $STREAM_OPEN
-	this._queue = new FastQueue
 	this._nextIndex = 0
 	this._concurrency = 0
 	this._processing = 0
+	this._queue = new FastQueue
 	this._process = null
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
 	this._flush = flushQueue
@@ -24,16 +24,18 @@ function PromiseStream(source) {
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
 	} else {
-		var a, b, c
-		source.addListener('data', a = function (data) {self._write(Promise.resolve(data), self._nextIndex++)})
-		source.addListener('end', b = function () {self._end()})
-		source.addListener('error', c = this._onerror)
+		var onError = this._onerror
+		var onEnd = function () {self._end()}
+		var onData = function (data) {self._write(Promise.resolve(data), self._nextIndex++)}
 		this._removeListeners = function () {
-			source.removeListener('data', a)
-			source.removeListener('end', b)
-			source.removeListener('error', c)
+			source.removeListener('error', onError)
+			source.removeListener('end', onEnd)
+			source.removeListener('data', onData)
 			self._removeListeners = NOOP
 		}
+		source.addListener('error', onError)
+		this._streamState === $STREAM_CLOSED || source.addListener('end', onEnd)
+		this._streamState === $STREAM_CLOSED || source.addListener('data', onData)
 	}
 }
 PromiseStream.from = function (iterable) {
