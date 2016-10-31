@@ -1,13 +1,9 @@
 High priority:
 - add tests for PromiseStream
+- generator runner
 
 
 Not as high priority:
 - get zuul tests working
 - add long stack trace tests
 - add more extensive memory leaks tests
-
-
-
-Related TODO:
-- Generator Runner (seperate module)
