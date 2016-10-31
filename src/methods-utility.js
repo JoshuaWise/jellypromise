@@ -116,7 +116,7 @@ Promise.props = function (obj) {
 				? Promise.resolve(value)._handleNew(resolveItem(key), rej, undefined, $NO_INTEGER)
 				: (--pendings, result[key] = value)
 		}
-		pendings === 0 && res(result)
+		pendings || res(result)
 	})
 }
 Promise.settle = function (iterable) {
