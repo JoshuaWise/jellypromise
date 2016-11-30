@@ -40,6 +40,26 @@ Promise.prototype.tap = function (fn) {
 			: value
 	})
 }
+Promise.prototype.rollback = function (fn) {
+	if (typeof fn !== 'function') {
+		// Will be bypassed, but produces a warning in development mode.
+		return this._then(fn)
+	}
+	var handler = function (reason) {
+		var ret = fn(reason)
+		return isPromise(ret)
+			? (promise = Promise.resolve(ret)._then(originalState))
+			: originalState()
+	}
+	var originalState = function () {
+		var originalPromise = self._getFollowee()
+		LST.setRejectionStack(originalPromise._trace) // @[/development]
+		promise._reject(originalPromise._value)
+	}
+	var self = this
+	var promise = this._then(undefined, handler)
+	return promise
+}
 Promise.prototype.become = function (fulfilledValue, rejectedValue) {
 	return this._then(
 		function () {return fulfilledValue},

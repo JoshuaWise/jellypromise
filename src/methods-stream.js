@@ -381,7 +381,7 @@ var DrainProcess = function (source, handler) {
 var LAST_ERROR = null
 var IS_ERROR = {}
 var IS_DONE = {}
-function getNext(iterator) {
+var getNext = function (iterator) {
 	try {
 		var next = iterator.next()
 		return next.done ? IS_DONE : next.value
@@ -390,7 +390,7 @@ function getNext(iterator) {
 		return IS_ERROR
 	}
 }
-function getIterator(iterable) {
+var getIterator = function (iterable) {
 	try {
 		if (iterator && iterable != null && typeof iterable[iterator] === 'function') {
 			return iterable[iterator]()

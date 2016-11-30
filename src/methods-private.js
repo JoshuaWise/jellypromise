@@ -235,7 +235,7 @@ var foreignPromise = function (promise, then) {
 // To avoid using try/catch inside critical functions, we extract them to here.
 var LAST_ERROR = null
 var IS_ERROR = {}
-function getThen(obj) {
+var getThen = function (obj) {
 	try {
 		return obj.then
 	} catch (ex) {
@@ -243,7 +243,7 @@ function getThen(obj) {
 		return IS_ERROR
 	}
 }
-function tryCallOne(fn, a) {
+var tryCallOne = function (fn, a) {
 	try {
 		return fn(a)
 	} catch (ex) {
@@ -251,7 +251,7 @@ function tryCallOne(fn, a) {
 		return IS_ERROR
 	}
 }
-function tryCallTwo(fn, a, b) {
+var tryCallTwo = function (fn, a, b) {
 	try {
 		return fn(a, b)
 	} catch (ex) {

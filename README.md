@@ -105,6 +105,12 @@ Like [`.finally`](#finallyhandler---promise), but the `handler` will not be call
 
 This method is primarily used for side-effects.
 
+### .rollback(*handler*) -> *promise*
+
+The opposite of [`.tap`](#taphandler---promise). The given `handler` will only be invoked if this promise is rejected. Unlike [`.catch`](#catchpredicate-onrejected---promise), however, the returned promise will still be rejected with the original rejection reason. Just like [`.tap`](#taphandler---promise) and [`.finally`](#finallyhandler---promise), the handler can delay chained promises by returning an unsettled promise. The handler is invoked with a single argument: the rejection reason of the previous promise.
+
+This method is primarily used for rollback operations.
+
 ### .become(*fulfilledValue*, [*rejectedValue*]) -> *promise*
 
 Sugar for `.then(function () {return fulfilledValue})`.
