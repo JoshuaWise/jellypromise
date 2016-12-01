@@ -3,7 +3,7 @@
 
 This is an implementation of Promises that achieves the following design goals:
 - Tiny size (3.71 kB minified and gzipped)
-- Fast performance (sometimes faster than [bluebird](https://github.com/petkaantonov/bluebird/))
+- Fast performance (often faster than [bluebird](https://github.com/petkaantonov/bluebird/))
 - Very low memory overhead
 - A superset of the [ES6 Promise](http://www.ecma-international.org/ecma-262/6.0/#sec-promise-objects)
 - Has a useful, carefully-selected set of utilities, without bloat

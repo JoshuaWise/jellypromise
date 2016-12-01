@@ -68,14 +68,7 @@ Promise.prototype._resolve = function (newValue) {
 			return this._reject(LAST_ERROR)
 		}
 		if (typeof then === 'function') {
-			this._state |= $IS_FOLLOWING
-			this._value = newValue instanceof Promise ? newValue : foreignPromise(newValue, then)
-			if (this._state & $HAS_SOME_HANDLER) {
-				finale(this)
-			} else if (this._state & $SUPPRESS_UNHANDLED_REJECTIONS) {
-				this._getFollowee()._state |= $SUPPRESS_UNHANDLED_REJECTIONS
-			}
-			return
+			return follow(this, newValue instanceof Promise ? newValue : foreignPromise(newValue, then))
 		}
 	}
 	this._state |= $IS_FULFILLED
@@ -164,6 +157,16 @@ Promise.prototype._getFollowee = function () {
 	return self
 }
 
+var follow = function (self, newValue) {
+	self._state |= $IS_FOLLOWING
+	self._value = newValue
+	if (self._state & $HAS_SOME_HANDLER) {
+		finale(self)
+	} else if (self._state & $SUPPRESS_UNHANDLED_REJECTIONS) {
+		newValue._getFollowee()._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	}
+}
+
 var finale = function (self) {
 	if (self._state & $SINGLE_HANDLER) {
 		self._handle(self._deferreds)
@@ -192,20 +195,24 @@ var handleSettled = function (deferred) {
 			}
 		}
 	} else {
-		if (deferred.promise) {
-			LST.setContext(this, deferred) // @[/development]
-			var ret = deferred.smuggledInteger === $NO_INTEGER
-				? tryCallOne(cb, this._value)
-				: tryCallTwo(cb, this._value, deferred.smuggledInteger)
-			LST.releaseContext() // @[/development]
-			if (ret === IS_ERROR) {
-				deferred.promise._reject(LAST_ERROR)
-			} else {
-				deferred.promise._resolve(ret)
-			}
+		handleSettledWithCallback.call(this, deferred, cb);
+	}
+}
+
+var handleSettledWithCallback = function (deferred, cb) {
+	if (deferred.promise) {
+		LST.setContext(this, deferred) // @[/development]
+		var ret = deferred.smuggledInteger === $NO_INTEGER
+			? tryCallOne(cb, this._value)
+			: tryCallTwo(cb, this._value, deferred.smuggledInteger)
+		LST.releaseContext() // @[/development]
+		if (ret === IS_ERROR) {
+			deferred.promise._reject(LAST_ERROR)
 		} else {
-			cb(this._value, deferred.smuggledInteger, deferred.smuggledObject)
+			deferred.promise._resolve(ret)
 		}
+	} else {
+		cb(this._value, deferred.smuggledInteger, deferred.smuggledObject)
 	}
 }
 
