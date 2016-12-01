@@ -28,8 +28,9 @@
     "promise",
     "async",
     "A+",
-    "modern",
-    "long stack traces"
+    "long stack traces",
+    "stream",
+    "observable"
   ],
   "license": "MIT",
   "devDependencies": {
