@@ -81,15 +81,34 @@ PromiseStream.prototype.merge = function () {
 	return this
 }
 PromiseStream.prototype.drain = function (handler) {
+	if (typeof handler !== 'function') {
+		if (handler == null) {
+			handler = NOOP
+		} else if (typeof handler.emit === 'function') {
+			var emitter = handler
+		} else {
+			throw new TypeError('Expected argument to be a function or an event emitter.')
+		}
+	}
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	if (this._state & $IS_REJECTED) {this._process = NOOP; return this}
-	this._concurrency = Infinity
-	// @[development]
-	if (typeof handler !== 'function' && handler != null) {
-		warn('The drain handler must be a function (' + typeof handler + 's will be ignored).', this._trace)
+	if (emitter) {
+		handler = function (item) {
+			emitter.emit('data', item)
+		}
+		this._handleNew(
+			function () {
+				emitter.emit('end')
+			},
+			function (reason) {
+				emitter.emit('error', reason)
+			},
+			undefined,
+			$NO_INTEGER
+		)
 	}
-	// @[/]
-	this._process = DrainProcess(this, typeof handler === 'function' ? handler : NOOP)
+	this._concurrency = Infinity
+	this._process = DrainProcess(this, handler)
 	this._flush()
 	return this
 }
@@ -357,8 +376,8 @@ var MergeProcess = function (source) {
 var DrainProcess = function (source, handler) {
 	function onFulfilled(value, index) {
 		if (source._streamState === $STREAM_CLOSED) {return}
-		// With _handleNew, this function is not in a try-catch block.
-		// Because of this, normally, it should never be used for external code.
+		// With _handleNew, this function is not in a try-catch block,
+		// so normally, it should never be used for external code.
 		// However, since .drain() should relinquish control to the user,
 		// it turns out to be a convenient way of exiting the safety of
 		// our internal promises.
@@ -366,9 +385,7 @@ var DrainProcess = function (source, handler) {
 		source._flush()
 		// Also, it's okay to invoke the handler after flushing, because
 		// we don't have to worry about the flush causing a piped stream
-		// to end. And when it comes to the user knowing about it ending,
-		// we're still safe because the stream's promise interface will
-		// always notify its handlers asynchronously.
+		// to end.
 		handler(value, index)
 	}
 	return function (promise, index) {

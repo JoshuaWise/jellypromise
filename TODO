@@ -1,7 +1,6 @@
 High priority:
 - add tests for PromiseStream
 - reduce below 600 source characters for v8 inlining:
-  - PromiseStream.drain -> onFulfilled
   - Promise.props
   - Promise.promisify
   - Promise.nodeify

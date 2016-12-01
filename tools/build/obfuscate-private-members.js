@@ -4,10 +4,16 @@ var walk = require('acorn/dist/walk')
 module.exports = function () {
 	var ids = []
 	var names = Object.create(null)
+	var current10sDigit = 0;
 	function getIdFor(name) {
 		if (name in names) {return names[name]}
+		var tries = 0
 		do {
-			var id = '_' + Math.floor(Math.random() * 100)
+			if (++tries >= 500) {
+				tries = 0
+				current10sDigit += 1
+			}
+			var id = '_' + (current10sDigit || '') + Math.floor(Math.random() * 10)
 		} while (ids.indexOf(id) !== -1)
 		ids.push(id)
 		names[name] = id
