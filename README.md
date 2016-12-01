@@ -224,7 +224,7 @@ If the corresponding input promise is:
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
 
-### *static* Promise.after(*milliseconds*, *value*) -> *promise*
+### *static* Promise.after(*milliseconds*, [*value*]) -> *promise*
 
 Returns a promise that will be resolved with `value` after the specified number of milliseconds. By default, `value` is `undefined`.
 
