@@ -2,7 +2,6 @@
 var iterator = exports.iterator = typeof Symbol === 'function' && Symbol.iterator || undefined
 
 exports.INTERNAL = function () {}
-exports.PASSTHROUGH_REJECTION = false // @[/development]
 
 // Invokes the given function for each item in the given iterable object.
 // An exceptions may be thrown if iteration fails.

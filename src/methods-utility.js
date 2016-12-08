@@ -3,7 +3,6 @@ var Promise = require('./promise')
 var console = require('./util').console // @[/browser]
 var iterate = require('./util').iterate
 var INTERNAL = require('./util').INTERNAL
-var LST = require('./long-stack-traces') // @[/development]
 
 Promise.prototype.finally = function (fn) {
 	if (typeof fn !== 'function') {
@@ -21,8 +20,8 @@ Promise.prototype.finally = function (fn) {
 		if (originalPromise._state & $IS_FULFILLED) {
 			return originalPromise._value
 		}
-		LST.setRejectionStack(originalPromise._trace) // @[/development]
-		promise._reject(originalPromise._value)
+		promise._reject(originalPromise._value) // @[/production]
+		promise._passthroughReject(originalPromise._value, originalPromise._trace) // @[/development]
 	}
 	var self = this
 	var promise = this._then(handler, handler)
@@ -53,8 +52,8 @@ Promise.prototype.rollback = function (fn) {
 	}
 	var originalState = function () {
 		var originalPromise = self._getFollowee()
-		LST.setRejectionStack(originalPromise._trace) // @[/development]
-		promise._reject(originalPromise._value)
+		promise._reject(originalPromise._value) // @[/production]
+		promise._passthroughReject(originalPromise._value, originalPromise._trace) // @[/development]
 	}
 	var self = this
 	var promise = this._then(undefined, handler)
@@ -80,14 +79,14 @@ Promise.prototype.timeout = function (ms, reason) {
 	var cancel = function () {clearTimeout(timer)}
 	this._handleNew(cancel, cancel, undefined, $NO_INTEGER)
 	var promise = this._then()
-	
+
 	var timer = setTimeout(function () {
 		promise._reject(
 			reason == null ? new TimeoutError('The operation timed out after ' + (~~ms > 0 ? ~~ms : 0) + 'ms.')
 		  : reason instanceof Error ? reason : new TimeoutError(String(reason))
 		)
 	}, ~~ms)
-	
+
 	return promise
 }
 Promise.prototype.log = function (prefix) {

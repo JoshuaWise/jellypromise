@@ -6,7 +6,7 @@ var console = require('./util').console // @[/browser]
 var INTERNAL = require('./util').INTERNAL
 var warn = require('./warn') // @[/development]
 var LST = require('./long-stack-traces') // @[/development]
-var util = require('./util') // @[/development]
+var PASSTHROUGH_REJECTION = false // @[/development]
 
 // This is the .then() method used by all internal functions.
 // It optionally allows a third parameter which must either be an integer or
@@ -41,8 +41,8 @@ Promise.prototype._conditionalCatch = function (predicate, onRejected) {
 			if (catchesError(predicate, reason)) {return onRejected(reason)} // @[/production]
 			if (catchesError(predicate, reason, newPromise)) {return onRejected(reason)} // @[/development]
 		}
-		LST.setRejectionStack(self._getFollowee()._trace) // @[/development]
-		newPromise._reject(reason)
+		newPromise._reject(reason) // @[/production]
+		newPromise._passthroughReject(reason, self._getFollowee()._trace) // @[/development]
 	})
 }
 
@@ -82,9 +82,9 @@ Promise.prototype._reject = function (newValue) {
 	}
 	this._state |= $IS_REJECTED
 	this._value = newValue
-	
+
 	// @[development]
-	if (!util.PASSTHROUGH_REJECTION && !(newValue instanceof Error)) {
+	if (!PASSTHROUGH_REJECTION && !(newValue instanceof Error)) {
 		var type = newValue === null ? 'null' :
 			typeof newValue === 'object' ? Object.prototype.toString.call(newValue) :
 			typeof newValue
@@ -93,12 +93,20 @@ Promise.prototype._reject = function (newValue) {
 	this._trace = LST.useRejectionStack() || this._trace
 	this._addStackTraceFromError(newValue)
 	// @[/]
-	
+
 	if (!(this._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
 		task(true, this, newValue)
 	}
 	finale(this)
 }
+// @[development]
+Promise.prototype._passthroughReject = function (newValue, trace) {
+	trace !== null && LST.setRejectionStack(trace)
+	PASSTHROUGH_REJECTION = true
+	this._reject(newValue)
+	PASSTHROUGH_REJECTION = false
+}
+// @[/]
 
 // This is the low-level functionality of Promise#_then.
 // It allows additional modification of behavior:
@@ -185,17 +193,16 @@ var handleSettled = function (deferred) {
 	var cb = isFulfilled ? deferred.onFulfilled : deferred.onRejected
 	if (cb === null) {
 		if (deferred.promise) {
-			deferred.promise._trace = this._trace // @[/development]
 			if (isFulfilled) {
+				deferred.promise._trace = this._trace // @[/development]
 				deferred.promise._resolve(this._value)
 			} else {
-				util.PASSTHROUGH_REJECTION = true // @[/development]
-				deferred.promise._reject(this._value)
-				util.PASSTHROUGH_REJECTION = false // @[/development]
+				deferred.promise._reject(this._value) // @[/production]
+				deferred.promise._passthroughReject(this._value, this._trace) // @[/development]
 			}
 		}
 	} else {
-		handleSettledWithCallback.call(this, deferred, cb);
+		handleSettledWithCallback.call(this, deferred, cb)
 	}
 }
 

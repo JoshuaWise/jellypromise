@@ -3,8 +3,6 @@ var Promise = require('./promise')
 var FastQueue = require('./fast-queue')
 var iterator = require('./util').iterator
 var INTERNAL = require('./util').INTERNAL
-var util = require('./util') // @[/development]
-var LST = require('./long-stack-traces') // @[/development]
 var NOOP = function () {}
 var isPromise = Promise.isPromise
 
@@ -20,7 +18,7 @@ function PromiseStream(source) {
 	this._flush = flushQueue
 	this._onerror = function (reason) {self._error(reason)}
 	var self = this
-	
+
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
 	} else {
@@ -153,10 +151,7 @@ PromiseStream.prototype._error = function (reason) {
 	// @[development]
 	this._pipedStream && this._pipedStream._error(reason, arguments[1])
 	this._streamState = $STREAM_CLOSED
-	util.PASSTHROUGH_REJECTION = true
-	arguments[1] instanceof LST.Stack && LST.setRejectionStack(arguments[1])
-	this._reject(reason)
-	util.PASSTHROUGH_REJECTION = false
+	this._passthroughReject(reason, arguments[1] ? arguments[1] : null)
 	// @[/]
 	// @[production]
 	this._pipedStream && this._pipedStream._error(reason)
