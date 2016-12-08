@@ -80,7 +80,8 @@ PromiseStream.prototype.merge = function () {
 	this._flush()
 	return this
 }
-PromiseStream.prototype.drain = function (handler) {
+PromiseStream.prototype.drain = function (concurrency, handler) {
+	if (arguments.length < 2) {handler = concurrency; concurrency = Infinity}
 	if (typeof handler !== 'function') {
 		if (handler == null) {
 			handler = NOOP
@@ -107,7 +108,7 @@ PromiseStream.prototype.drain = function (handler) {
 			$NO_INTEGER
 		)
 	}
-	this._concurrency = Infinity
+	this._concurrency = Math.max(1, Math.floor(concurrency)) || Infinity
 	this._process = DrainProcess(this, handler)
 	this._flush()
 	return this
@@ -390,8 +391,10 @@ var DrainProcess = function (source, handler) {
 		// to end.
 		handler(value, index)
 	}
-	return function (promise, index) {
+	return source._isSource ? function (promise, index) {
 		promise._handleNew(onFulfilled, source._onerror, undefined, index)
+	} : function (promise, index) {
+		onFulfilled(promise._getFollowee()._value, index)
 	}
 }
 
