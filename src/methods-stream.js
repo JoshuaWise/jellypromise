@@ -12,6 +12,7 @@ function PromiseStream(source) {
 	this._nextIndex = 0
 	this._concurrency = 0
 	this._processing = 0
+	this._isSource = true
 	this._queue = new FastQueue
 	this._process = null
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
@@ -57,9 +58,10 @@ PromiseStream.prototype.filter = function (concurrency, handler) {
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
 	return this._pipe(FilterProcess, Math.max(1, Math.floor(concurrency)) || Infinity, handler)
 }
-PromiseStream.prototype.takeUntil = function (promise) {
+PromiseStream.prototype.takeUntil = function (concurrency, promise) {
+	if (arguments.length < 2) {promise = concurrency; concurrency = Infinity}
 	if (!isPromise(promise)) {throw new TypeError('Expected argument to a promise-like object.')}
-	return this._pipe(TakeUntilProcess, Infinity, promise)
+	return this._pipe(TakeUntilProcess, Math.max(1, Math.floor(concurrency)) || Infinity, promise)
 }
 PromiseStream.prototype.reduce = function (handler, seed) {
 	if (typeof handler !== 'function') {throw new TypeError('Expected argument to be a function.')}
@@ -197,6 +199,7 @@ PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	this._concurrency = concurrency
 	var dest = new PromiseStream(INTERNAL)
+	dest._isSource = false;
 	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._pipedStream = dest
 	if (this._state & $IS_REJECTED) {
@@ -323,8 +326,10 @@ var TakeUntilProcess = function (source, dest, donePromise) {
 		source._processing = 0
 		source._end()
 	}, source._onerror, undefined, $NO_INTEGER)
-	return function (promise, index) {
+	return source._isSource ? function (promise, index) {
 		promise._handleNew(onFulfilled, source._onerror, undefined, index, promise)
+	} : function (promise, index) {
+		onFulfilled(undefined, index, promise)
 	}
 }
 var ReduceProcess = function (source, handler, hasSeed, accumulator) {
@@ -364,8 +369,10 @@ var MergeProcess = function (source) {
 		source._flush()
 	}
 	var array = source._value = []
-	return function (promise, index) {
+	return source._isSource ? function (promise, index) {
 		promise._handleNew(onFulfilled, source._onerror, undefined, index)
+	} : function (promise, index) {
+		onFulfilled(promise._getFollowee()._value, index)
 	}
 }
 var DrainProcess = function (source, handler) {

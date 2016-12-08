@@ -1,4 +1,5 @@
 High priority:
+- reimagine drain()
 - do concurrency === 1 tests, trying to create ordered pipelines. see how
   the behavior differs when the source provides unsettled promises, and the
   first stream processor is something like takeUntil, which can't have
