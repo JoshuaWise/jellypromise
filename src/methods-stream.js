@@ -343,9 +343,9 @@ var ReduceProcess = function (source, handler, hasSeed, accumulator) {
 		--source._processing
 		source._flush()
 	}
-	function handle(value) {
+	function handle(value, index) {
 		if (source._streamState === $STREAM_CLOSED) {return}
-		return handler(accumulator, value, shortcut)
+		return handler(accumulator, value, index, shortcut)
 	}
 	function shortcut(value) {
 		if (source._streamState === $STREAM_CLOSED) {return}
@@ -362,10 +362,10 @@ var ReduceProcess = function (source, handler, hasSeed, accumulator) {
 	} else {
 		accumulator = handle
 	}
-	return function (promise) {
+	return function (promise, index) {
 		accumulator === handle
 			? promise._handleNew(onFulfilled, source._onerror, undefined, $NO_INTEGER)
-			: promise._then(handle)._handleNew(onFulfilled, source._onerror, undefined, $NO_INTEGER)
+			: promise._then(handle, undefined, index)._handleNew(onFulfilled, source._onerror, undefined, $NO_INTEGER)
 	}
 }
 var MergeProcess = function (source) {

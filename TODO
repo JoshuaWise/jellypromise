@@ -3,7 +3,9 @@ High priority:
 - figure out how to give warnings when a PromiseStream is rejected with a
   non-error originating from flushIterator(), _switchToIterableMode(), or the
   source's "error" event
-- update PromiseStream docs after merging better-streams branch
+- update PromiseStream docs after merging better-streams branch:
+  - concurrency control for .takeUntil() and .drain()
+  - added index parameter to .reduce()'s callback
 - figure out how to not supress unhandled rejected promises that are passed to
   the Promise.after() function
 - add tests for PromiseStream
