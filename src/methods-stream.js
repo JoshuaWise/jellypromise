@@ -18,6 +18,7 @@ function PromiseStream(source) {
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
 	this._flush = flushQueue
 	this._onerror = function (reason) {self._error(reason)}
+	this._onend = NOOP
 	var self = this
 
 	if (source === INTERNAL) {
@@ -140,6 +141,7 @@ PromiseStream.prototype._end = function () {
 	if (this._process && this._processing === 0) {
 		this._pipedStream && this._pipedStream._end()
 		this._streamState = $STREAM_CLOSED
+		this._onend()
 		this._resolve(this._value)
 		this._cleanup()
 	} else {
@@ -191,6 +193,7 @@ PromiseStream.prototype._cleanup = function () {
 	if (this._process) {this._process = NOOP}
 	this._pipedStream = null
 	this._onerror = NOOP
+	this._onend = NOOP
 	this._removeListeners()
 }
 
@@ -200,7 +203,7 @@ PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	this._concurrency = concurrency
 	var dest = new PromiseStream(INTERNAL)
-	dest._isSource = false;
+	dest._isSource = false
 	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._pipedStream = dest
 	if (this._state & $IS_REJECTED) {
@@ -336,7 +339,7 @@ var TakeUntilProcess = function (source, dest, donePromise) {
 var ReduceProcess = function (source, handler, hasSeed, accumulator) {
 	function onFulfilled(value) {
 		if (source._streamState === $STREAM_CLOSED) {return}
-		accumulator = source._value = value
+		accumulator = value
 		--source._processing
 		source._flush()
 	}
@@ -346,9 +349,12 @@ var ReduceProcess = function (source, handler, hasSeed, accumulator) {
 	}
 	function shortcut(value) {
 		if (source._streamState === $STREAM_CLOSED) {return}
-		source._value = value
+		accumulator = value
 		source._processing = 0
 		source._end()
+	}
+	source._onend = function () {
+		source._value = accumulator === handle ? undefined : accumulator
 	}
 	if (hasSeed) {
 		++source._processing
@@ -369,7 +375,10 @@ var MergeProcess = function (source) {
 		--source._processing
 		source._flush()
 	}
-	var array = source._value = []
+	var array = []
+	source._onend = function () {
+		source._value = removeHoles(array)
+	}
 	return source._isSource ? function (promise, index) {
 		promise._handleNew(onFulfilled, source._onerror, undefined, index)
 	} : function (promise, index) {
@@ -396,6 +405,17 @@ var DrainProcess = function (source, handler) {
 	} : function (promise, index) {
 		onFulfilled(promise._getFollowee()._value, index)
 	}
+}
+
+var removeHoles = function (array) {
+	for (var i=0, len=array.length; i<len; ++i) {
+		if (array.hasOwnProperty(i)) {
+			result && result.push(array[i])
+		} else if (!result) {
+			var result = array.slice(0, i)
+		}
+	}
+	source._value = result || array
 }
 
 
