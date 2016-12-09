@@ -3,9 +3,9 @@ High priority:
 - figure out how to give warnings when a PromiseStream is rejected with a
   non-error originating from flushIterator(), _switchToIterableMode(), or the
   source's "error" event
+- update PromiseStream docs after merging better-streams branch
 - figure out how to not supress unhandled rejected promises that are passed to
   the Promise.after() function
-- update PromiseStream docs after merging better-streams branch
 - add tests for PromiseStream
 - reduce below 600 source characters for v8 inlining:
   - Promise.props

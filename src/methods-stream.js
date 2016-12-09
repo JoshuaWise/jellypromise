@@ -415,7 +415,7 @@ var removeHoles = function (array) {
 			var result = array.slice(0, i)
 		}
 	}
-	source._value = result || array
+	return result || array
 }
 
 
