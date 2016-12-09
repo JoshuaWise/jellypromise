@@ -1,6 +1,6 @@
 High priority:
 - merge() doesn't really work for cases where filtering occurs
-- maybe implement dart's Stream#asBroadcastStream and Stream#expand
+- maybe implement dart's Stream#expand
 - figure out how to give warnings when a PromiseStream is rejected with a
   non-error originating from flushIterator(), _switchToIterableMode(), or the
   source's "error" event
