@@ -1,4 +1,5 @@
 High priority:
+- merge() doesn't really work for cases where filtering occurs
 - maybe implement dart's Stream#asBroadcastStream and Stream#expand
 - think of a way to handle drain() throws in the browser
 - do concurrency === 1 tests, trying to create ordered pipelines. see how
