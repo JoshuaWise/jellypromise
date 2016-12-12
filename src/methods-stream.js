@@ -12,7 +12,6 @@ function PromiseStream(source) {
 	this._nextIndex = 0
 	this._concurrency = 0
 	this._processing = 0
-	this._isSource = true
 	this._queue = new FastQueue
 	this._process = null
 	this._pipedStream = null // Streams with _pipedStream have _process, but not necessarily the reverse.
@@ -35,8 +34,8 @@ function PromiseStream(source) {
 			self._removeListeners = NOOP
 		}
 		source.addListener('error', onError)
-		this._streamState === $STREAM_CLOSED || source.addListener('end', onEnd)
-		this._streamState === $STREAM_CLOSED || source.addListener('data', onData)
+		this._streamState & $STREAM_CLOSED || source.addListener('end', onEnd)
+		this._streamState & $STREAM_CLOSED || source.addListener('data', onData)
 	}
 }
 PromiseStream.from = function (iterable) {
@@ -122,7 +121,7 @@ PromiseStream.prototype.drain = function (concurrency, handler) {
 
 // Used for pushing data into the stream (not used in iterable mode).
 PromiseStream.prototype._write = function (promise, index) {
-	if (this._streamState !== $STREAM_OPEN) {
+	if (this._streamState & $STREAM_NOT_OPEN) {
 		promise.catchLater()
 		return
 	}
@@ -138,25 +137,25 @@ PromiseStream.prototype._write = function (promise, index) {
 
 // Used to indicate that there will be no more data added to the stream.
 PromiseStream.prototype._end = function () {
-	if (this._streamState === $STREAM_CLOSED) {return}
+	if (this._streamState & $STREAM_CLOSED) {return}
 	if (this._process && this._processing === 0) {
 		this._pipedStream && this._pipedStream._end()
-		this._streamState = $STREAM_CLOSED
+		this._streamState = this._streamState & ~$STREAM_CLOSING | $STREAM_CLOSED
 		this._onend()
 		this._resolve(this._value)
 		this._cleanup()
 	} else {
-		this._streamState = $STREAM_CLOSING
+		this._streamState |= $STREAM_CLOSING
 	}
 }
 
 
 // Used to indicate that an error has occured, and the stream should immediately close.
 PromiseStream.prototype._error = function (reason/*, dontPassthrough, stackTrace */) {
-	if (this._streamState === $STREAM_CLOSED) {return}
+	if (this._streamState & $STREAM_CLOSED) {return}
 	// @[development]
 	this._pipedStream && this._pipedStream._error(reason, arguments[1], arguments[2])
-	this._streamState = $STREAM_CLOSED
+	this._streamState = this._streamState & ~$STREAM_CLOSING | $STREAM_CLOSED
 	if (arguments[1]) {
 		this._reject(reason)
 	} else {
@@ -165,7 +164,7 @@ PromiseStream.prototype._error = function (reason/*, dontPassthrough, stackTrace
 	// @[/]
 	// @[production]
 	this._pipedStream && this._pipedStream._error(reason)
-	this._streamState = $STREAM_CLOSED
+	this._streamState = this._streamState & ~$STREAM_CLOSING | $STREAM_CLOSED
 	this._reject(reason)
 	// @[/]
 	this._processing = 0
@@ -176,7 +175,7 @@ PromiseStream.prototype._error = function (reason/*, dontPassthrough, stackTrace
 // Switches the stream into iterable mode.
 // Data will be pulled from an iterable, instead of pushed by an outside source.
 PromiseStream.prototype._switchToIterableMode = function (iterable) {
-	if (this._streamState !== $STREAM_OPEN) {return}
+	if (this._streamState & $STREAM_NOT_OPEN) {return}
 	if (Array.isArray(iterable)) {
 		this._queue = iterable
 		this._flush = flushArray
@@ -209,7 +208,7 @@ PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 	if (this._process) {throw new TypeError('This stream already has a destination.')}
 	this._concurrency = concurrency
 	var dest = new PromiseStream(INTERNAL)
-	dest._isSource = false
+	dest._streamState |= $STREAM_IS_FROM_PIPE
 	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	this._pipedStream = dest
 	if (this._state & $IS_REJECTED) {
@@ -227,7 +226,7 @@ PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 // or until the entire iterable has been flushed.
 var flushIterator = function () {
 	// This first line can be omitted because it is coincidentally never true.
-	// if (this._streamState === $STREAM_CLOSED) {return}
+	// if (this._streamState & $STREAM_CLOSED) {return}
 	while (this._processing < this._concurrency) {
 		var data = getNext(this._queue)
 		if (data === IS_ERROR) {
@@ -248,7 +247,7 @@ var flushIterator = function () {
 // Same as flushIterator, but optimized for arrays.
 var flushArray = function () {
 	// This first line can be omitted because it is coincidentally never true.
-	// if (this._streamState === $STREAM_CLOSED) {return}
+	// if (this._streamState & $STREAM_CLOSED) {return}
 	while (this._processing < this._concurrency) {
 		if (!(this._nextIndex < this._queue.length)) {
 			this._nextIndex = NaN
@@ -265,12 +264,12 @@ var flushArray = function () {
 // or until the entire queue has been flushed.
 var flushQueue = function () {
 	// This first line can be omitted because it is coincidentally never true.
-	// if (this._streamState === $STREAM_CLOSED) {return}
+	// if (this._streamState & $STREAM_CLOSED) {return}
 	while (this._queue._length > 0 && this._processing < this._concurrency) {
 		++this._processing
 		this._process(this._queue.shift(), this._queue.shift())
 	}
-	if (this._streamState === $STREAM_CLOSING && this._processing === 0) {
+	if (this._streamState & $STREAM_CLOSING && this._processing === 0) {
 		this._end()
 	}
 }
@@ -282,13 +281,13 @@ var flushQueue = function () {
 
 var MapProcess = function (source, dest, handler) {
 	function onFulfilled(value, index, mappedPromise) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		dest._write(mappedPromise, index)
 		--source._processing
 		source._flush()
 	}
 	function handle(value, index) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		return handler(value, index)
 	}
 	return function (promise, index) {
@@ -298,13 +297,13 @@ var MapProcess = function (source, dest, handler) {
 }
 var ForEachProcess = function (source, dest, handler) {
 	function onFulfilled(value, index, originalPromise) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		dest._write(originalPromise, index)
 		--source._processing
 		source._flush()
 	}
 	function handle(value, index) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		return handler(value, index)
 	}
 	return function (promise, index) {
@@ -313,13 +312,13 @@ var ForEachProcess = function (source, dest, handler) {
 }
 var FilterProcess = function (source, dest, handler) {
 	function onFulfilled(value, index, originalPromise) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		value && dest._write(originalPromise, index)
 		--source._processing
 		source._flush()
 	}
 	function handle(value, index) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		return handler(value, index)
 	}
 	return function (promise, index) {
@@ -328,7 +327,7 @@ var FilterProcess = function (source, dest, handler) {
 }
 var TakeUntilProcess = function (source, dest, donePromise) {
 	function onFulfilled(value, index, originalPromise) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		dest._write(originalPromise, index)
 		--source._processing
 		source._flush()
@@ -337,25 +336,25 @@ var TakeUntilProcess = function (source, dest, donePromise) {
 		source._processing = 0
 		source._end()
 	}, source._onerror, undefined, $NO_INTEGER)
-	return source._isSource ? function (promise, index) {
-		promise._handleNew(onFulfilled, source._onerror, undefined, index, promise)
-	} : function (promise, index) {
+	return source._streamState & $STREAM_IS_FROM_PIPE ? function (promise, index) {
 		onFulfilled(undefined, index, promise)
+	} : function (promise, index) {
+		promise._handleNew(onFulfilled, source._onerror, undefined, index, promise)
 	}
 }
 var ReduceProcess = function (source, handler, hasSeed, accumulator) {
 	function onFulfilled(value) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		accumulator = value
 		--source._processing
 		source._flush()
 	}
 	function handle(value, index) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		return handler(accumulator, value, index, shortcut)
 	}
 	function shortcut(value) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		accumulator = value
 		source._processing = 0
 		source._end()
@@ -377,7 +376,7 @@ var ReduceProcess = function (source, handler, hasSeed, accumulator) {
 }
 var MergeProcess = function (source) {
 	function onFulfilled(value, index) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		array[index] = value
 		--source._processing
 		source._flush()
@@ -386,15 +385,15 @@ var MergeProcess = function (source) {
 	source._onend = function () {
 		source._value = removeHoles(array)
 	}
-	return source._isSource ? function (promise, index) {
-		promise._handleNew(onFulfilled, source._onerror, undefined, index)
-	} : function (promise, index) {
+	return source._streamState & $STREAM_IS_FROM_PIPE ? function (promise, index) {
 		onFulfilled(promise._getFollowee()._value, index)
+	} : function (promise, index) {
+		promise._handleNew(onFulfilled, source._onerror, undefined, index)
 	}
 }
 var DrainProcess = function (source, handler) {
 	function onFulfilled(value, index) {
-		if (source._streamState === $STREAM_CLOSED) {return}
+		if (source._streamState & $STREAM_CLOSED) {return}
 		// With _handleNew, this function is not in a try-catch block,
 		// so normally, it should never be used for external code.
 		// However, since .drain() should relinquish control to the user,
@@ -407,10 +406,10 @@ var DrainProcess = function (source, handler) {
 		// to end.
 		handler(value, index)
 	}
-	return source._isSource ? function (promise, index) {
-		promise._handleNew(onFulfilled, source._onerror, undefined, index)
-	} : function (promise, index) {
+	return source._streamState & $STREAM_IS_FROM_PIPE ? function (promise, index) {
 		onFulfilled(promise._getFollowee()._value, index)
+	} : function (promise, index) {
+		promise._handleNew(onFulfilled, source._onerror, undefined, index)
 	}
 }
 
