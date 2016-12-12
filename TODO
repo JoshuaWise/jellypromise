@@ -1,8 +1,4 @@
 High priority:
-- maybe implement dart's Stream#expand
-- figure out how to give warnings when a PromiseStream is rejected with a
-  non-error originating from flushIterator(), _switchToIterableMode(), or the
-  source's "error" event
 - update PromiseStream docs after merging better-streams branch:
   - concurrency control for .takeUntil() and .drain()
   - added index parameter to .reduce()'s callback

@@ -24,7 +24,8 @@ function PromiseStream(source) {
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
 	} else {
-		var onError = this._onerror
+		var onError = this._onerror // @[/production]
+		var onError = function (reason) {self._error(reason, true)} // @[/development]
 		var onEnd = function () {self._end()}
 		var onData = function (data) {self._write(Promise.resolve(data), self._nextIndex++)}
 		this._removeListeners = function () {
@@ -151,12 +152,16 @@ PromiseStream.prototype._end = function () {
 
 
 // Used to indicate that an error has occured, and the stream should immediately close.
-PromiseStream.prototype._error = function (reason) {
+PromiseStream.prototype._error = function (reason/*, dontPassthrough, stackTrace */) {
 	if (this._streamState === $STREAM_CLOSED) {return}
 	// @[development]
-	this._pipedStream && this._pipedStream._error(reason, arguments[1])
+	this._pipedStream && this._pipedStream._error(reason, arguments[1], arguments[2])
 	this._streamState = $STREAM_CLOSED
-	this._passthroughReject(reason, arguments[1] ? arguments[1] : null)
+	if (arguments[1]) {
+		this._reject(reason)
+	} else {
+		this._passthroughReject(reason, arguments[2] || null)
+	}
 	// @[/]
 	// @[production]
 	this._pipedStream && this._pipedStream._error(reason)
@@ -178,7 +183,8 @@ PromiseStream.prototype._switchToIterableMode = function (iterable) {
 	} else {
 		var it = getIterator(iterable)
 		if (it === IS_ERROR) {
-			return this._error(LAST_ERROR)
+			return this._error(LAST_ERROR) // @[/production]
+			return this._error(LAST_ERROR, true) // @[/development]
 		}
 		this._queue = it
 		this._flush = flushIterator
@@ -225,7 +231,8 @@ var flushIterator = function () {
 	while (this._processing < this._concurrency) {
 		var data = getNext(this._queue)
 		if (data === IS_ERROR) {
-			this._error(LAST_ERROR)
+			this._error(LAST_ERROR) // @[/production]
+			this._error(LAST_ERROR, true) // @[/development]
 			break
 		}
 		if (data === IS_DONE) {
@@ -456,7 +463,7 @@ Promise.prototype.stream = function () {
 		},
 		// @[development]
 		function (reason) {
-			stream._error(reason, self._getFollowee()._trace)
+			stream._error(reason, undefined, self._getFollowee()._trace)
 		},
 		// @[/]
 		stream._onerror, // @[/production]
