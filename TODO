@@ -1,13 +1,5 @@
 High priority:
-- do concurrency === 1 tests, trying to create ordered pipelines. see how
-  the behavior differs when the source provides unsettled promises, and the
-  first stream processor is something like takeUntil, which can't have
-  concurrency control, verses having takeUntil later in the chain, etc.
-- figure out how to give warnings when a PromiseStream is rejected with a
-  non-error originating from flushIterator(), _switchToIterableMode(), or the
-  source's "error" event
-- figure out how to not supress unhandled rejected promises that are passed to
-  the Promise.after() function
+- merge with better-streams and better-after branches
 - add tests for PromiseStream
 - reduce below 600 source characters for v8 inlining:
   - Promise.props
