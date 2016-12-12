@@ -154,7 +154,7 @@ PromiseStream.prototype._end = function () {
 PromiseStream.prototype._error = function (reason/*, dontPassthrough, stackTrace */) {
 	if (this._streamState & $STREAM_CLOSED) {return}
 	// @[development]
-	this._pipedStream && this._pipedStream._error(reason, arguments[1], arguments[2])
+	this._pipedStream && this._pipedStream._error(reason, undefined, arguments[2])
 	this._streamState = this._streamState & ~$STREAM_CLOSING | $STREAM_CLOSED
 	if (arguments[1]) {
 		this._reject(reason)
@@ -213,7 +213,8 @@ PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 	this._pipedStream = dest
 	if (this._state & $IS_REJECTED) {
 		this._process = NOOP
-		dest._error(this._value)
+		dest._error(this._value) // @[/production]
+		dest._error(this._value, undefined, this._getFollowee()._trace) // @[/development]
 		return dest
 	}
 	this._process = Process(this, dest, arg)
