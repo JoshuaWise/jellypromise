@@ -12,7 +12,6 @@ function Promise(fn) {
 	this._state = $NO_STATE
 	this._value = undefined
 	this._deferreds = undefined
-	this._unhandledEndpoints = 1
 	this._addStackTrace(Promise) // @[/development]
 	if (fn !== INTERNAL) {
 		this._resolveFromHandler(fn)

@@ -94,7 +94,7 @@ Promise.prototype._reject = function (newValue) {
 	this._addStackTraceFromError(newValue)
 	// @[/]
 	
-	this._unhandledEndpoints && task(true, this, newValue)
+	this._state >>> $UNHANDLED_ENDPOINTS && task(true, this, newValue)
 	finale(this, this)
 }
 // @[development]
@@ -115,14 +115,18 @@ Promise.prototype._follow = function (promise) {
 			return this._reject(new TypeError('Circular promise resolution chain.'))
 		}
 	}
+	promise._setHandled()
+	var count = (promise._state >>> $UNHANDLED_ENDPOINTS) + (this._state >>> $UNHANDLED_ENDPOINTS)
+	if (count > MAX_UNHANDLED_ENDPOINTS) {
+		return this._reject(new RangeError('Maximum depth of promise resolution chain exceeded.'))
+	}
+	promise._state = (count << $UNHANDLED_ENDPOINTS) | (promise._state & $FLAGS)
+	
 	this._state |= $IS_FOLLOWING
 	this._value = promise
 	
-	promise._setHandled()
-	promise._unhandledEndpoints += this._unhandledEndpoints
-	
 	if (promise._state & $IS_REJECTED) {
-		promise._unhandledEndpoints && task(true, promise, promise._value)
+		count && task(true, promise, promise._value)
 	}
 	finale(this, promise)
 }
@@ -160,7 +164,8 @@ Promise.prototype._handleNew = function (onFulfilled, onRejected, promise, smugg
 Promise.prototype._setHandled = function () {
 	if (!(this._state & $IS_HANDLED)) {
 		this._state |= $IS_HANDLED
-		this._getFollowee()._unhandledEndpoints -= 1
+		var target = this._getFollowee()
+		target._state = ((target._state >>> $UNHANDLED_ENDPOINTS) - 1 << $UNHANDLED_ENDPOINTS) | (target._state & $FLAGS)
 	}
 }
 Promise.prototype._getFollowee = function () {
@@ -236,7 +241,7 @@ var handleSettledWithCallback = function (deferred, cb) {
 }
 
 var onUnhandledRejection = function (reason) {
-	if (this._unhandledEndpoints) {
+	if (this._state >>> $UNHANDLED_ENDPOINTS) {
 		// @[development]
 		if (Promise.suppressUnhandledRejections) {
 			var originalError = console.error
