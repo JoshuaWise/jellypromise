@@ -117,7 +117,7 @@ Promise.prototype._follow = function (promise) {
 	}
 	promise._setHandled()
 	var count = (promise._state >>> $UNHANDLED_ENDPOINTS) + (this._state >>> $UNHANDLED_ENDPOINTS)
-	if (count > MAX_UNHANDLED_ENDPOINTS) {
+	if (count > $MAX_UNHANDLED_ENDPOINTS) {
 		return this._reject(new RangeError('Maximum depth of promise resolution chain exceeded.'))
 	}
 	promise._state = (count << $UNHANDLED_ENDPOINTS) | (promise._state & $FLAGS)
