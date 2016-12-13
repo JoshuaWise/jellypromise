@@ -278,7 +278,7 @@ var onUnhandledRejection = function (reason) {
 		console.error(
 			clc.red( // @[/node]
 				'Unhandled rejection'
-				+ ' ' + String(reason) + '\n' + this._trace.getTrace() // @[/development]
+				+ ' ' + String(reason) + '\n' + this._getFollowee()._trace.getTrace() // @[/development]
 				+ ' ' + String(reason instanceof Error && reason.stack || reason) // @[/production node]
 				, reason // @[/production browser]
 			) // @[/node]
