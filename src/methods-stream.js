@@ -19,7 +19,7 @@ function PromiseStream(source) {
 	this._onerror = function (reason) {self._error(reason)}
 	this._onend = NOOP
 	var self = this
-
+	
 	if (source === INTERNAL) {
 		this._removeListeners = NOOP
 	} else {
@@ -209,7 +209,7 @@ PromiseStream.prototype._pipe = function (Process, concurrency, arg) {
 	this._concurrency = concurrency
 	var dest = new PromiseStream(INTERNAL)
 	dest._streamState |= $STREAM_IS_FROM_PIPE
-	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._setHandled()
 	this._pipedStream = dest
 	if (this._state & $IS_REJECTED) {
 		this._process = NOOP

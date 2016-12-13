@@ -82,7 +82,7 @@ Promise.prototype._reject = function (newValue) {
 	}
 	this._state |= $IS_REJECTED
 	this._value = newValue
-
+	
 	// @[development]
 	if (!PASSTHROUGH_REJECTION && !(newValue instanceof Error)) {
 		var type = newValue === null ? 'null' :
@@ -93,7 +93,11 @@ Promise.prototype._reject = function (newValue) {
 	this._trace = LST.useRejectionStack() || this._trace
 	this._addStackTraceFromError(newValue)
 	// @[/]
-
+	
+	if (!(this._state & $IS_HANDLED) || this._unhandledFollowers) {
+		task(true, this, newValue)
+	}
+	
 	finale(this, this)
 }
 // @[development]
@@ -105,30 +109,24 @@ Promise.prototype._passthroughReject = function (newValue, trace) {
 }
 // @[/]
 
-// Following a promise is like handling it for your own resolution.
-// Because it is analogous to handling, it must supress unhandled rejections on
-// the followed promise.
+// This promise must NOT be resolved.
+// The given argument must be a jellypromise Promise besides `this`.
 Promise.prototype._follow = function (promise) {
-	// These can be omitted because they are coincidentally never true.
-	// if (this._state & $IS_RESOLVED) {
-	// 	return
-	// }
-	// if (newValue === this) {
-	// 	return this._reject(new TypeError('A promise cannot be resolved with itself.'))
-	// }
-	var target = promise
-	while (target._state & $IS_FOLLOWING) {
-		target = target._value
-		if (target === this) {
+	while (promise._state & $IS_FOLLOWING) {
+		promise = promise._value
+		if (promise === this) {
 			return this._reject(new TypeError('Circular promise resolution chain.'))
 		}
 	}
-	if (!(promise._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
-		promise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
-	}
 	this._state |= $IS_FOLLOWING
 	this._value = promise
-	return followedBy(promise, this)
+	
+	promise._setHandled()
+	if (!(this._state & $IS_HANDLED)) {
+		++promise._unhandledFollowers
+	}
+	
+	finale(this, promise)
 }
 
 // This is the low-level functionality of Promise#_then.
@@ -152,16 +150,20 @@ Promise.prototype._handleNew = function (onFulfilled, onRejected, promise, smugg
 		warn('Promise handlers must be functions (' + typeof onRejected + 's will be ignored).', promise._trace)
 	}
 	// @[/]
-	if (!(this._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
-		this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
-	}
-	return handle(this, {
+	return handle(this._getFollowee(), {
 		onFulfilled: typeof onFulfilled === 'function' ? onFulfilled : null,
 		onRejected: typeof onRejected === 'function' ? onRejected : null,
 		promise: promise,
 		smuggledInteger: smuggledInteger,
 		smuggledObject: smuggledObject
 	})
+}
+Promise.prototype._setHandled = function () {
+	if (!(this._state & $IS_HANDLED)) {
+		this._state |= $IS_HANDLED
+		var target = this._getFollowee()
+		this === target || --target._unhandledFollowers
+	}
 }
 Promise.prototype._getFollowee = function () {
 	var self = this
@@ -173,9 +175,6 @@ Promise.prototype._getFollowee = function () {
 
 var finale = function (self, target) {
 	var state = self._state
-	if (target._state & $IS_REJECTED && !(state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
-		task(true, self, target._value)
-	}
 	if (state & $SINGLE_HANDLER) {
 		task(false, target, self._deferreds)
 		self._deferreds = undefined
@@ -186,21 +185,11 @@ var finale = function (self, target) {
 		}
 		self._deferreds = undefined
 	}
-	if (state & $SINGLE_FOLLOWER) {
-		finale(self._followers, target)
-		self._followers = undefined
-	} else if (state & $MANY_FOLLOWERS) {
-		var followers = self._followers
-		for (var i=0, len=followers.length; i<len; ++i) {
-			finale(followers[i], target)
-		}
-		self._followers = undefined
-	}
 }
 
 var handle = function (self, deferred) {
-	var followee = self._getFollowee()
-	if (!(followee._state & $IS_FINAL)) {
+	self._setHandled()
+	if (!(self._state & $IS_FINAL)) {
 		if (!(self._state & $HAS_SOME_HANDLER)) {
 			self._state |= $SINGLE_HANDLER
 			self._deferreds = deferred
@@ -211,24 +200,7 @@ var handle = function (self, deferred) {
 			self._deferreds.push(deferred)
 		}
 	} else {
-		task(false, followee, deferred)
-	}
-}
-
-var followedBy = function (self, follower) {
-	var followee = self._getFollowee()
-	if (!(followee._state & $IS_FINAL)) {
-		if (!(self._state & $HAS_SOME_FOLLOWER)) {
-			self._state |= $SINGLE_FOLLOWER
-			self._followers = follower
-		} else if (self._state & $SINGLE_FOLLOWER) {
-			self._state = self._state & ~$SINGLE_FOLLOWER | $MANY_FOLLOWERS
-			self._followers = [self._followers, follower]
-		} else {
-			self._followers.push(follower)
-		}
-	} else {
-		finale(follower, followee)
+		task(false, self, deferred)
 	}
 }
 
@@ -268,7 +240,7 @@ var handleSettledWithCallback = function (deferred, cb) {
 }
 
 var onUnhandledRejection = function (reason) {
-	if (!(this._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
+	if (!(this._state & $IS_HANDLED)) {
 		// @[development]
 		if (Promise.suppressUnhandledRejections) {
 			var originalError = console.error
@@ -278,7 +250,7 @@ var onUnhandledRejection = function (reason) {
 		console.error(
 			clc.red( // @[/node]
 				'Unhandled rejection'
-				+ ' ' + String(reason) + '\n' + this._getFollowee()._trace.getTrace() // @[/development]
+				+ ' ' + String(reason) + '\n' + this._trace.getTrace() // @[/development]
 				+ ' ' + String(reason instanceof Error && reason.stack || reason) // @[/production node]
 				, reason // @[/production browser]
 			) // @[/node]

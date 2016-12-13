@@ -12,7 +12,7 @@ function Promise(fn) {
 	this._state = $NO_STATE
 	this._value = undefined
 	this._deferreds = undefined
-	this._followers = undefined
+	this._unhandledFollowers = 0
 	this._addStackTrace(Promise) // @[/development]
 	if (fn !== INTERNAL) {
 		this._resolveFromHandler(fn)
@@ -29,7 +29,7 @@ Promise.prototype.catch = function (onRejected, onRejectedWhenTheresAPredicate) 
 		: this._then(undefined, onRejected)
 }
 Promise.prototype.catchLater = function () {
-	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._setHandled()
 	return this
 }
 module.exports = Promise
