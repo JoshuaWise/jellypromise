@@ -2,6 +2,7 @@ High priority:
 - update PromiseStream docs:
   - concurrency control for .takeUntil() and .drain()
   - added index parameter to .reduce()'s callback
+- fix unhandled rejection logging in tests
 - add tests for PromiseStream
 - reduce below 600 source characters for v8 inlining:
   - Promise.props
