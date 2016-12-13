@@ -94,9 +94,6 @@ Promise.prototype._reject = function (newValue) {
 	this._addStackTraceFromError(newValue)
 	// @[/]
 
-	if (!(this._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
-		task(true, this, newValue)
-	}
 	finale(this, this)
 }
 // @[development]
@@ -119,6 +116,13 @@ Promise.prototype._follow = function (promise) {
 	// if (newValue === this) {
 	// 	return this._reject(new TypeError('A promise cannot be resolved with itself.'))
 	// }
+	var target = promise
+	while (target._state & $IS_FOLLOWING) {
+		target = target._value
+		if (target === this) {
+			return this._reject(new TypeError('Circular promise resolution chain.'))
+		}
+	}
 	if (!(promise._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
 		promise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	}
@@ -168,20 +172,24 @@ Promise.prototype._getFollowee = function () {
 }
 
 var finale = function (self, target) {
-	if (self._state & $SINGLE_HANDLER) {
+	var state = self._state
+	if (target._state & $IS_REJECTED && !(state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
+		task(true, self, target._value)
+	}
+	if (state & $SINGLE_HANDLER) {
 		task(false, target, self._deferreds)
 		self._deferreds = undefined
-	} else if (self._state & $MANY_HANDLERS) {
+	} else if (state & $MANY_HANDLERS) {
 		var deferreds = self._deferreds
 		for (var i=0, len=deferreds.length; i<len; ++i) {
 			task(false, target, deferreds[i])
 		}
 		self._deferreds = undefined
 	}
-	if (self._state & $SINGLE_FOLLOWER) {
+	if (state & $SINGLE_FOLLOWER) {
 		finale(self._followers, target)
 		self._followers = undefined
-	} else if (self._state & $MANY_FOLLOWERS) {
+	} else if (state & $MANY_FOLLOWERS) {
 		var followers = self._followers
 		for (var i=0, len=followers.length; i<len; ++i) {
 			finale(followers[i], target)

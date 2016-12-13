@@ -1,5 +1,4 @@
 High priority:
-- merge with better-after branch
 - update PromiseStream docs:
   - concurrency control for .takeUntil() and .drain()
   - added index parameter to .reduce()'s callback
