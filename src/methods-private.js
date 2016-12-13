@@ -94,10 +94,7 @@ Promise.prototype._reject = function (newValue) {
 	this._addStackTraceFromError(newValue)
 	// @[/]
 	
-	if (!(this._state & $IS_HANDLED) || this._unhandledFollowers) {
-		task(true, this, newValue)
-	}
-	
+	this._unhandledEndpoints && task(true, this, newValue)
 	finale(this, this)
 }
 // @[development]
@@ -122,7 +119,7 @@ Promise.prototype._follow = function (promise) {
 	this._value = promise
 	
 	promise._setHandled()
-	promise._unhandledFollowers += this._unhandledFollowers + (this._state & $IS_HANDLED ? 0 : 1)
+	promise._unhandledEndpoints += this._unhandledEndpoints
 	
 	finale(this, promise)
 }
@@ -160,8 +157,7 @@ Promise.prototype._handleNew = function (onFulfilled, onRejected, promise, smugg
 Promise.prototype._setHandled = function () {
 	if (!(this._state & $IS_HANDLED)) {
 		this._state |= $IS_HANDLED
-		var target = this._getFollowee()
-		this === target || --target._unhandledFollowers
+		this._getFollowee()._unhandledEndpoints -= 1
 	}
 }
 Promise.prototype._getFollowee = function () {
@@ -237,7 +233,7 @@ var handleSettledWithCallback = function (deferred, cb) {
 }
 
 var onUnhandledRejection = function (reason) {
-	if (!(this._state & $IS_HANDLED) || this._unhandledFollowers) {
+	if (this._unhandledEndpoints) {
 		// @[development]
 		if (Promise.suppressUnhandledRejections) {
 			var originalError = console.error
