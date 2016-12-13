@@ -128,7 +128,7 @@ Promise.props = function (obj) {
 				if (--pendings === 0) {res(result)}
 			}
 		}
-		for (var i=0, len=pendings; i<len; i++) {
+		for (var i=0, len=pendings; i<len; ++i) {
 			var key = keys[i]
 			var value = obj[key]
 			isPromise(value)

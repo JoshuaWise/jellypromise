@@ -12,6 +12,7 @@ function Promise(fn) {
 	this._state = $NO_STATE
 	this._value = undefined
 	this._deferreds = undefined
+	this._followers = undefined
 	this._addStackTrace(Promise) // @[/development]
 	if (fn !== INTERNAL) {
 		this._resolveFromHandler(fn)
@@ -28,7 +29,7 @@ Promise.prototype.catch = function (onRejected, onRejectedWhenTheresAPredicate) 
 		: this._then(undefined, onRejected)
 }
 Promise.prototype.catchLater = function () {
-	this._getFollowee()._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
 	return this
 }
 module.exports = Promise
@@ -54,6 +55,6 @@ Promise.race = function (iterable) {
 }
 Promise.all = function (iterable) {
 	var promise = new Promise(INTERNAL)
-	promise._resolve(Promise.Stream.from(iterable).merge())
+	promise._follow(Promise.Stream.from(iterable).merge())
 	return promise
 }

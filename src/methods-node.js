@@ -17,8 +17,8 @@ Promise.promisify = function (fn, options) {
 		var maxArgCount = Math.max(3, likelyArgCount)
 	}
 	var argGuesses = [likelyArgCount]
-	for (var i=likelyArgCount-1; i>=minArgCount; i--) {argGuesses.push(i)}
-	for (var i=likelyArgCount+1; i<=maxArgCount; i++) {argGuesses.push(i)}
+	for (var i=likelyArgCount-1; i>=minArgCount; --i) {argGuesses.push(i)}
+	for (var i=likelyArgCount+1; i<=maxArgCount; ++i) {argGuesses.push(i)}
 	
 	var callback = options.multiArgs
 		? 'function (err) {if (err != null) {reject.call(promise, err); return} var len = arguments.length - 1; var results = new Array(len); for (var i=0; i<len; ++i) {results[i] = arguments[i + 1]} resolve.call(promise, results)}'
@@ -44,7 +44,7 @@ Promise.promisify = function (fn, options) {
 }
 function generateArgumentList(count) {
 	var args = new Array(count)
-	for (var i=0; i<count; i++) {
+	for (var i=0; i<count; ++i) {
 		args[i] = 'a_' + i
 	}
 	return args
@@ -88,8 +88,8 @@ Promise.nodeify = function (fn) {
 	var minArgCount = Math.max(1, likelyArgCount - 3)
 	var maxArgCount = Math.max(4, likelyArgCount)
 	var argGuesses = [likelyArgCount]
-	for (var i=likelyArgCount-1; i>=minArgCount; i--) {argGuesses.push(i)}
-	for (var i=likelyArgCount+1; i<=maxArgCount; i++) {argGuesses.push(i)}
+	for (var i=likelyArgCount-1; i>=minArgCount; --i) {argGuesses.push(i)}
+	for (var i=likelyArgCount+1; i<=maxArgCount; ++i) {argGuesses.push(i)}
 	var body = [
 		'"use strict"',
 		'return function nodeified(' + generateArgumentList(maxArgCount).join(', ') + ') {',

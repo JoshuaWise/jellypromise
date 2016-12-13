@@ -33,7 +33,7 @@ Promise.prototype._conditionalCatch = function (predicate, onRejected) {
 	var newPromise
 	return newPromise = this._then(undefined, function (reason) {
 		if (Array.isArray(predicate)) {
-			for (var i=0, len=predicate.length; i<len; i++) {
+			for (var i=0, len=predicate.length; i<len; ++i) {
 				if (catchesError(predicate[i], reason)) {return onRejected(reason)} // @[/production]
 				if (catchesError(predicate[i], reason, newPromise)) {return onRejected(reason)} // @[/development]
 			}
@@ -68,12 +68,12 @@ Promise.prototype._resolve = function (newValue) {
 			return this._reject(LAST_ERROR)
 		}
 		if (typeof then === 'function') {
-			return follow(this, newValue instanceof Promise ? newValue : foreignPromise(newValue, then))
+			return this._follow(newValue instanceof Promise ? newValue : foreignPromise(newValue, then))
 		}
 	}
 	this._state |= $IS_FULFILLED
 	this._value = newValue
-	finale(this)
+	finale(this, this)
 }
 Promise.prototype._reject = function (newValue) {
 	if (this._state & $IS_RESOLVED) {
@@ -97,7 +97,7 @@ Promise.prototype._reject = function (newValue) {
 	if (!(this._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
 		task(true, this, newValue)
 	}
-	finale(this)
+	finale(this, this)
 }
 // @[development]
 Promise.prototype._passthroughReject = function (newValue, trace) {
@@ -107,6 +107,25 @@ Promise.prototype._passthroughReject = function (newValue, trace) {
 	PASSTHROUGH_REJECTION = false
 }
 // @[/]
+
+// Following a promise is like handling it for your own resolution.
+// Because it is analogous to handling, it must supress unhandled rejections on
+// the followed promise.
+Promise.prototype._follow = function (promise) {
+	// These can be omitted because they are coincidentally never true.
+	// if (this._state & $IS_RESOLVED) {
+	// 	return
+	// }
+	// if (newValue === this) {
+	// 	return this._reject(new TypeError('A promise cannot be resolved with itself.'))
+	// }
+	if (!(promise._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
+		promise._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	}
+	this._state |= $IS_FOLLOWING
+	this._value = promise
+	return followedBy(promise, this)
+}
 
 // This is the low-level functionality of Promise#_then.
 // It allows additional modification of behavior:
@@ -129,33 +148,16 @@ Promise.prototype._handleNew = function (onFulfilled, onRejected, promise, smugg
 		warn('Promise handlers must be functions (' + typeof onRejected + 's will be ignored).', promise._trace)
 	}
 	// @[/]
-	return this._handle({
+	if (!(this._state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
+		this._state |= $SUPPRESS_UNHANDLED_REJECTIONS
+	}
+	return handle(this, {
 		onFulfilled: typeof onFulfilled === 'function' ? onFulfilled : null,
 		onRejected: typeof onRejected === 'function' ? onRejected : null,
 		promise: promise,
 		smuggledInteger: smuggledInteger,
 		smuggledObject: smuggledObject
 	})
-}
-Promise.prototype._handle = function (deferred) {
-	var self = this._getFollowee()
-	var state = self._state
-	if (!(state & $SUPPRESS_UNHANDLED_REJECTIONS)) {
-		self._state |= $SUPPRESS_UNHANDLED_REJECTIONS
-	}
-	if (!(state & $IS_FINAL)) {
-		if (!(state & $HAS_SOME_HANDLER)) {
-			self._state |= $SINGLE_HANDLER
-			self._deferreds = deferred
-		} else if (state & $SINGLE_HANDLER) {
-			self._state = state & ~$SINGLE_HANDLER | $MANY_HANDLERS
-			self._deferreds = [self._deferreds, deferred]
-		} else {
-			self._deferreds.push(deferred)
-		}
-	} else {
-		task(false, self, deferred)
-	}
 }
 Promise.prototype._getFollowee = function () {
 	var self = this
@@ -165,26 +167,60 @@ Promise.prototype._getFollowee = function () {
 	return self
 }
 
-var follow = function (self, newValue) {
-	self._state |= $IS_FOLLOWING
-	self._value = newValue
-	if (self._state & $HAS_SOME_HANDLER) {
-		finale(self)
-	} else if (self._state & $SUPPRESS_UNHANDLED_REJECTIONS) {
-		newValue._getFollowee()._state |= $SUPPRESS_UNHANDLED_REJECTIONS
-	}
-}
-
-var finale = function (self) {
+var finale = function (self, target) {
 	if (self._state & $SINGLE_HANDLER) {
-		self._handle(self._deferreds)
+		task(false, target, self._deferreds)
 		self._deferreds = undefined
 	} else if (self._state & $MANY_HANDLERS) {
 		var deferreds = self._deferreds
-		for (var i=0, len=deferreds.length; i<len; i++) {
-			self._handle(deferreds[i])
+		for (var i=0, len=deferreds.length; i<len; ++i) {
+			task(false, target, deferreds[i])
 		}
 		self._deferreds = undefined
+	}
+	if (self._state & $SINGLE_FOLLOWER) {
+		finale(self._followers, target)
+		self._followers = undefined
+	} else if (self._state & $MANY_FOLLOWERS) {
+		var followers = self._followers
+		for (var i=0, len=followers.length; i<len; ++i) {
+			finale(followers[i], target)
+		}
+		self._followers = undefined
+	}
+}
+
+var handle = function (self, deferred) {
+	var followee = self._getFollowee()
+	if (!(followee._state & $IS_FINAL)) {
+		if (!(self._state & $HAS_SOME_HANDLER)) {
+			self._state |= $SINGLE_HANDLER
+			self._deferreds = deferred
+		} else if (self._state & $SINGLE_HANDLER) {
+			self._state = self._state & ~$SINGLE_HANDLER | $MANY_HANDLERS
+			self._deferreds = [self._deferreds, deferred]
+		} else {
+			self._deferreds.push(deferred)
+		}
+	} else {
+		task(false, followee, deferred)
+	}
+}
+
+var followedBy = function (self, follower) {
+	var followee = self._getFollowee()
+	if (!(followee._state & $IS_FINAL)) {
+		if (!(self._state & $HAS_SOME_FOLLOWER)) {
+			self._state |= $SINGLE_FOLLOWER
+			self._followers = follower
+		} else if (self._state & $SINGLE_FOLLOWER) {
+			self._state = self._state & ~$SINGLE_FOLLOWER | $MANY_FOLLOWERS
+			self._followers = [self._followers, follower]
+		} else {
+			self._followers.push(follower)
+		}
+	} else {
+		finale(follower, followee)
 	}
 }
 
