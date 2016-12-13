@@ -121,6 +121,9 @@ Promise.prototype._follow = function (promise) {
 	promise._setHandled()
 	promise._unhandledEndpoints += this._unhandledEndpoints
 	
+	if (promise._state & $IS_REJECTED) {
+		promise._unhandledEndpoints && task(true, promise, promise._value)
+	}
 	finale(this, promise)
 }
 
