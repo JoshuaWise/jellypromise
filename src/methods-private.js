@@ -122,9 +122,7 @@ Promise.prototype._follow = function (promise) {
 	this._value = promise
 	
 	promise._setHandled()
-	if (!(this._state & $IS_HANDLED)) {
-		++promise._unhandledFollowers
-	}
+	promise._unhandledFollowers += this._unhandledFollowers + (this._state & $IS_HANDLED ? 0 : 1)
 	
 	finale(this, promise)
 }
@@ -150,6 +148,7 @@ Promise.prototype._handleNew = function (onFulfilled, onRejected, promise, smugg
 		warn('Promise handlers must be functions (' + typeof onRejected + 's will be ignored).', promise._trace)
 	}
 	// @[/]
+	this._setHandled()
 	return handle(this._getFollowee(), {
 		onFulfilled: typeof onFulfilled === 'function' ? onFulfilled : null,
 		onRejected: typeof onRejected === 'function' ? onRejected : null,
@@ -174,21 +173,19 @@ Promise.prototype._getFollowee = function () {
 }
 
 var finale = function (self, target) {
-	var state = self._state
-	if (state & $SINGLE_HANDLER) {
-		task(false, target, self._deferreds)
+	if (self._state & $SINGLE_HANDLER) {
+		handle(target, self._deferreds)
 		self._deferreds = undefined
-	} else if (state & $MANY_HANDLERS) {
+	} else if (self._state & $MANY_HANDLERS) {
 		var deferreds = self._deferreds
 		for (var i=0, len=deferreds.length; i<len; ++i) {
-			task(false, target, deferreds[i])
+			handle(target, deferreds[i])
 		}
 		self._deferreds = undefined
 	}
 }
 
 var handle = function (self, deferred) {
-	self._setHandled()
 	if (!(self._state & $IS_FINAL)) {
 		if (!(self._state & $HAS_SOME_HANDLER)) {
 			self._state |= $SINGLE_HANDLER
@@ -240,7 +237,7 @@ var handleSettledWithCallback = function (deferred, cb) {
 }
 
 var onUnhandledRejection = function (reason) {
-	if (!(this._state & $IS_HANDLED)) {
+	if (!(this._state & $IS_HANDLED) || this._unhandledFollowers) {
 		// @[development]
 		if (Promise.suppressUnhandledRejections) {
 			var originalError = console.error
