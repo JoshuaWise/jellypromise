@@ -165,7 +165,7 @@ Promise.prototype._setHandled = function () {
 	if (!(this._state & $IS_HANDLED)) {
 		this._state |= $IS_HANDLED
 		var target = this._getFollowee()
-		target._state = ((target._state >>> $UNHANDLED_ENDPOINTS) - 1 << $UNHANDLED_ENDPOINTS) | (target._state & $FLAGS)
+		target._state -= 1 << $UNHANDLED_ENDPOINTS
 	}
 }
 Promise.prototype._getFollowee = function () {
