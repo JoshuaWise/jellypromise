@@ -16,7 +16,7 @@ var constants = {
 	HAS_SOME_HANDLER: 0x8 | 0x10,
 
 	UNHANDLED_ENDPOINTS: 7, // This must be the number of normal bit flags.
-	FLAGS: Math.pow(7) - 1, // This must be Math.pow(UNHANDLED_ENDPOINTS) - 1
+	FLAGS: Math.pow(2, 7) - 1, // This must be Math.pow(UNHANDLED_ENDPOINTS) - 1
 	MAX_UNHANDLED_ENDPOINTS: 0xffffffff >>> 7, // This must be (0xffffffff >>> UNHANDLED_ENDPOINTS).
 
 	STREAM_OPEN: 0x0,
