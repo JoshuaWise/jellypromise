@@ -82,7 +82,7 @@ Promise.prototype._reject = function (newValue) {
 	}
 	this._state |= $IS_REJECTED
 	this._value = newValue
-	
+
 	// @[development]
 	if (!PASSTHROUGH_REJECTION && !(newValue instanceof Error)) {
 		var type = newValue === null ? 'null' :
@@ -93,7 +93,7 @@ Promise.prototype._reject = function (newValue) {
 	this._trace = LST.useRejectionStack() || this._trace
 	this._addStackTraceFromError(newValue)
 	// @[/]
-	
+
 	this._state >>> $UNHANDLED_ENDPOINTS && task(true, this, newValue)
 	finale(this, this)
 }
@@ -121,10 +121,10 @@ Promise.prototype._follow = function (promise) {
 		return this._reject(new RangeError('Maximum depth of promise resolution chain exceeded.'))
 	}
 	promise._state = (count << $UNHANDLED_ENDPOINTS) | (promise._state & $FLAGS)
-	
+
 	this._state |= $IS_FOLLOWING
 	this._value = promise
-	
+
 	if (promise._state & $IS_REJECTED) {
 		count && task(true, promise, promise._value)
 	}
@@ -293,10 +293,10 @@ var tryCallTwo = function (fn, a, b) {
 
 // Returns whether the given catch predicate should catch the exception reason.
 var catchesError = function (predicate, reason) {
-	if (predicate === Error || (predicate && predicate.prototype instanceof Error)) {
-		return reason instanceof predicate
-	}
 	if (typeof predicate === 'function') {
+		if (predicate === Error || predicate.prototype instanceof Error) {
+			return reason instanceof predicate
+		}
 		return !!predicate(reason)
 	}
 	warn('The predicate passed to .catch() is invalid, and will be ignored.', arguments[2]._trace) // @[/development]
