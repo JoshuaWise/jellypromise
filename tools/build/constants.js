@@ -1,29 +1,30 @@
 var constants = {
-	NO_STATE: 1 << 6, // This must be (1 << UNHANDLED_ENDPOINTS).
-	
+	NO_STATE: 1 << 7, // This must be (1 << UNHANDLED_ENDPOINTS).
+
 	IS_FULFILLED: 0x1,
 	IS_REJECTED: 0x2,
 	IS_FOLLOWING: 0x4,
-	
+
 	SINGLE_HANDLER: 0x8,
 	MANY_HANDLERS: 0x10,
-	
+
 	IS_HANDLED: 0x20,
-	
+	LOGGED_UNHANDLED_REJECTION: 0x40,
+
 	IS_FINAL: 0x1 | 0x2,
 	IS_RESOLVED: 0x1 | 0x2 | 0x4,
 	HAS_SOME_HANDLER: 0x8 | 0x10,
-	
-	UNHANDLED_ENDPOINTS: 6, // This must be the number of normal bit flags.
-	FLAGS: 0x1 | 0x2 | 0x4 | 0x8 | 0x10 | 0x20, // This must be every normal bit flag combined.
-	MAX_UNHANDLED_ENDPOINTS: 0xffffffff >>> 6, // This must be (0xffffffff >>> UNHANDLED_ENDPOINTS).
-	
+
+	UNHANDLED_ENDPOINTS: 7, // This must be the number of normal bit flags.
+	FLAGS: Math.pow(7) - 1, // This must be Math.pow(UNHANDLED_ENDPOINTS) - 1
+	MAX_UNHANDLED_ENDPOINTS: 0xffffffff >>> 7, // This must be (0xffffffff >>> UNHANDLED_ENDPOINTS).
+
 	STREAM_OPEN: 0x0,
 	STREAM_CLOSING: 0x1,
 	STREAM_CLOSED: 0x2,
 	STREAM_NOT_OPEN: 0x1 | 0x2,
 	STREAM_IS_FROM_PIPE: 0x4,
-	
+
 	NO_INTEGER: -1
 }
 

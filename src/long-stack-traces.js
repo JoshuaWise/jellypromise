@@ -7,11 +7,11 @@ var taskFile = require.resolve('./task') // @[/node]
 
 exports.init = function () {
 	var Promise = require('./promise')
-	
+
 	// Captures the current stack info and pushes it onto the stack trace.
 	// Optionally trims a certain number of lines from the stack info.
 	Promise.prototype._addStackTrace = _addStackTrace
-	
+
 	// Pushes an Error's stack info onto the stack trace.
 	// // This shouldn't be used as a promise's first stack.
 	Promise.prototype._addStackTraceFromError = _addStackTraceFromError
@@ -77,25 +77,25 @@ function _Stack(stackPoint, parent, error) {
 _Stack.prototype.getTrace = function () {
 	var point = this
 	var stacks = []
-	
+
 	var errorStack
 	if (point.error) {
 		errorStack = formatStack.call({count: 0}, point)
 		point = point.parent
 	}
-	
+
 	while (point) {
 		stacks.push(point)
 		point = point.parent
 	}
-	
+
 	var formatedStacks = stacks.map(formatStack, {count: 0}).filter(function (str) {return !!str})
 	if (errorStack) {
 		formatedStacks[0] = formatedStacks[0]
 			? combineStackPoints(errorStack, formatedStacks[0])
 			: errorStack
 	}
-	
+
 	return formatedStacks.join('\nFrom previous event:\n') + '\n'
 }
 exports.Stack = _Stack
@@ -155,7 +155,7 @@ function formatStack(stack) {
 	if (!stack.stackPoint || this.count === TRACE_SIZE) {
 		return ''
 	}
-	
+
 	// @[node]
 	var processed = []
 	var parsedLines = ErrorStackParser.parse({stack: stack.stackPoint})
@@ -165,7 +165,7 @@ function formatStack(stack) {
 		this.count += 1
 		return '    [Failed to parse stack trace]'
 	}
-	
+
 	for (var i=0; i<lineCount; ++i) {
 		var fullPath = parsedLines[i].fileName || ''
 		if (fullPath === taskFile) {

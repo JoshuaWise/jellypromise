@@ -2,7 +2,7 @@
 # jellypromise [![Build Status](https://img.shields.io/travis/JoshuaWise/jellypromise.svg)](https://travis-ci.org/JoshuaWise/jellypromise)
 
 This is an implementation of Promises that achieves the following design goals:
-- Tiny size (3.99 kB minified and gzipped)
+- Tiny size (4.01 kB minified and gzipped)
 - Fast performance (often faster than [bluebird](https://github.com/petkaantonov/bluebird/))
 - Very low memory overhead
 - A superset of the [ES6 Promise](http://www.ecma-international.org/ecma-262/6.0/#sec-promise-objects)

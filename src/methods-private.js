@@ -94,7 +94,10 @@ Promise.prototype._reject = function (newValue) {
 	this._addStackTraceFromError(newValue)
 	// @[/]
 
-	this._state >>> $UNHANDLED_ENDPOINTS && task(true, this, newValue)
+	if (this._state >>> $UNHANDLED_ENDPOINTS) {
+		this._state |= $LOGGED_UNHANDLED_REJECTION
+		task(true, this, newValue)
+	}
 	finale(this, this)
 }
 // @[development]
@@ -106,7 +109,7 @@ Promise.prototype._passthroughReject = function (newValue, trace) {
 }
 // @[/]
 
-// This promise must NOT be resolved.
+// The `this` promise must NOT be resolved.
 // The given argument must be a jellypromise Promise besides `this`.
 Promise.prototype._follow = function (promise) {
 	while (promise._state & $IS_FOLLOWING) {
@@ -116,18 +119,23 @@ Promise.prototype._follow = function (promise) {
 		}
 	}
 	promise._setHandled()
-	var count = (promise._state >>> $UNHANDLED_ENDPOINTS) + (this._state >>> $UNHANDLED_ENDPOINTS)
-	if (count > $MAX_UNHANDLED_ENDPOINTS) {
-		return this._reject(new RangeError('Maximum depth of promise resolution chain exceeded.'))
+
+	var c = this._state >>> $UNHANDLED_ENDPOINTS
+	if (c) {
+		c += promise._state >>> $UNHANDLED_ENDPOINTS
+		if (c > $MAX_UNHANDLED_ENDPOINTS) {
+			return this._reject(new RangeError('Maximum size of promise resolution chain exceeded.'))
+		}
+		if (promise._state & $IS_REJECTED && !(promise._state & $LOGGED_UNHANDLED_REJECTION)) {
+			promise._state |= $LOGGED_UNHANDLED_REJECTION
+			task(true, promise, promise._value)
+		}
+		promise._state = (c << $UNHANDLED_ENDPOINTS) | (promise._state & $FLAGS)
 	}
-	promise._state = (count << $UNHANDLED_ENDPOINTS) | (promise._state & $FLAGS)
 
 	this._state |= $IS_FOLLOWING
 	this._value = promise
 
-	if (promise._state & $IS_REJECTED) {
-		count && task(true, promise, promise._value)
-	}
 	finale(this, promise)
 }
 
@@ -256,6 +264,8 @@ var onUnhandledRejection = function (reason) {
 				, reason // @[/production browser]
 			) // @[/node]
 		)
+	} else {
+		this._state &= ~$LOGGED_UNHANDLED_REJECTION
 	}
 }
 
