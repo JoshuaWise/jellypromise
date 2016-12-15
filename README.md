@@ -8,7 +8,7 @@ This is an implementation of Promises that achieves the following design goals:
 - A superset of the [ES6 Promise](http://www.ecma-international.org/ecma-262/6.0/#sec-promise-objects)
 - Has a useful, carefully-selected set of utilities, without bloat
 - Logs unhandled errors by default (the opposite of what [then/promise](https://github.com/then/promise) does), provides long stack traces, and provides utilities for useful error handling patterns
-- Provides a very efficient object streaming library for asynchronous processing chains with concurrency control
+- Has an object streaming library (observables) for efficient asynchronous processing chains with concurrency control
 
 ## Installation
 
