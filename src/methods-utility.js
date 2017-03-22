@@ -3,6 +3,7 @@ var Promise = require('./promise')
 var console = require('./util').console // @[/browser]
 var iterate = require('./util').iterate
 var INTERNAL = require('./util').INTERNAL
+var hasOwnProperty = Object.prototype.hasOwnProperty
 
 Promise.prototype.finally = function (fn) {
 	if (typeof fn !== 'function') {
@@ -154,6 +155,45 @@ Promise.settle = function (iterable) {
 			promise._handleNew(handler, handler, undefined, $NO_INTEGER)
 		})
 		pendings ? (result.length = pendings) : res(result)
+	})
+}
+Promise.build = function (keys, handler) {
+	if (!Array.isArray(keys)) {throw new TypeError('Expected first argument to be an array.')}
+	if (typeof handler !== 'function') {throw new TypeError('Expected second argument to be a function.')}
+	keys = keys.slice()
+	var promise
+	return promise = new Promise(function (res, rej) {
+		var pendings = keys.length
+		var result = {}
+		var builder = function (key, value) {
+			if (promise._state & $IS_RESOLVED) {
+				return false
+			}
+			if (key !== null && typeof key === 'object') {
+				var props = Object.keys(key)
+				var oneSucceeded = false
+				for (var i=0, len=props.length; i<len; ++i) {
+					var prop = props[i]
+					if (setValue(prop, key[prop])) {
+						oneSucceeded = true
+					}
+				}
+				return oneSucceeded
+			}
+			return setValue(key, value)
+		}
+		var setValue = function (key, value) {
+			if (keys.indexOf(key) === -1) {
+				return false
+			}
+			if (!hasOwnProperty.call(result, key)) {
+				if (--pendings === 0) {res(result)}
+			}
+			result[key] = value
+			return true
+		}
+		handler(builder, rej)
+		pendings || res(result)
 	})
 }
 var PromiseAfter = Promise.after = function (ms, value) {

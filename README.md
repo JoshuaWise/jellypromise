@@ -2,7 +2,7 @@
 # jellypromise [![Build Status](https://img.shields.io/travis/JoshuaWise/jellypromise.svg)](https://travis-ci.org/JoshuaWise/jellypromise)
 
 This is an implementation of Promises that achieves the following design goals:
-- Tiny size (4.01 kB minified and gzipped)
+- Tiny size (4.21 kB minified and gzipped)
 - Fast performance (often faster than [bluebird](https://github.com/petkaantonov/bluebird/))
 - Very low memory overhead
 - A superset of the [ES6 Promise](http://www.ecma-international.org/ecma-262/6.0/#sec-promise-objects)
@@ -223,6 +223,29 @@ If the corresponding input promise is:
  - rejected, the descriptor will be `{ state: 'rejected', reason: <rejectionReason> }`
 
 Non-promise values in the `iterable` are treated like already-fulfilled promises.
+
+### *static* Promise.build(*keys*, *handler*) -> *promise*
+
+Returns a promise that fulfills with an object containing the given `keys`. `handler` must be a function with the following signature:
+
+`function handler(set, reject)`
+
+ 1. `set` is a function that should be called with two arguments (*key*, *value*) to assign properties to the eventually fulfilled object. You can also pass a single object argument whose key-value pairs will be used instead. Properties will only be assigned if they are specified in `keys`. `set` returns `true` or `false`, indicating whether a property was successfully assigned.
+ 2. `reject` is a function that should be called with a single argument. The returned promise will be rejected with that argument.
+
+When `set` has been used to assign a value for each property specified in `keys`, the returned promise will be fulfilled with the resulting object.
+
+After the promise is resolved, any further attempts to `set` a property will fail and return `false`.
+
+```js
+var words = ['anthophilous', 'conviviality', 'cynosure']
+Promise.build(words, function (set, reject) {
+  var reader = new EnglishDictionaryReader(database)
+  reader.on('definition' function (word, definition) {
+    set(word, definition)
+  })
+})
+```
 
 ### *static* Promise.after(*milliseconds*, [*value*]) -> *promise*
 
