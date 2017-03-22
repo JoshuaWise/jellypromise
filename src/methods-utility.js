@@ -92,9 +92,10 @@ Promise.prototype.timeout = function (ms, reason) {
 }
 Promise.prototype.log = function (prefix) {
 	var usePrefix = arguments.length > 0
-	return this._then(function (value) {
-		usePrefix ? console.log(prefix, value) : console.log(value)
-		return value
+	var self = this
+	return this.finally(function () {
+		usePrefix ? console.log(prefix, '<' + self.inspect().state + '>', self._value)
+		          : console.log('<' + self.inspect().state + '>', self._value)
 	})
 }
 Promise.prototype.inspect = function () {

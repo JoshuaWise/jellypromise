@@ -2,7 +2,7 @@
 # jellypromise [![Build Status](https://img.shields.io/travis/JoshuaWise/jellypromise.svg)](https://travis-ci.org/JoshuaWise/jellypromise)
 
 This is an implementation of Promises that achieves the following design goals:
-- Tiny size (4.21 kB minified and gzipped)
+- Tiny size (4.22 kB minified and gzipped)
 - Fast performance (often faster than [bluebird](https://github.com/petkaantonov/bluebird/))
 - Very low memory overhead
 - A superset of the [ES6 Promise](http://www.ecma-international.org/ecma-262/6.0/#sec-promise-objects)
@@ -138,13 +138,7 @@ If you specify a string `reason`, the `TimeoutError` will have `reason` as its m
 
 ### .log([*prefix*]) -> *promise*
 
-Sugar for:
-```js
-.then(function (value) {
-  console.log(value)
-  return value
-})
-```
+Conveniently logs the state and value of the promise when it becomes fulfilled or rejected.
 
 If `prefix` is provided, it will be prepended to the logged `value`, separated by a space character.
 

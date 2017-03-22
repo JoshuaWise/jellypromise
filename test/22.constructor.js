@@ -31,11 +31,17 @@ require('../tools/test/describe')('Promise.constructor', function (Promise, expe
 			expect(arguments[1]).to.be.a('function')
 		})
 	})
-	it('should reject if an error is thrown inside the handler', function () {
-		var err = new Error()
-		expect(new Promise(function () {throw 0})).to.be.rejected
-		expect(new Promise(function () {throw true})).to.be.rejected
-		expect(new Promise(function () {throw err})).to.be.rejectedWith(err)
+	describe('should reject if an error is thrown inside the handler', function () {
+		specify('throw 0', function () {
+			return expect(new Promise(function () {throw 0})).to.be.rejected
+		})
+		specify('throw true', function () {
+			return expect(new Promise(function () {throw true})).to.be.rejected
+		})
+		specify('throw new Error()', function () {
+			var err = new Error()
+			return expect(new Promise(function () {throw err})).to.be.rejectedWith(err)
+		})
 	})
 	
 	// Everything below is taken from, or inspired by https://github.com/petkaantonov/bluebird

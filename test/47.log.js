@@ -4,14 +4,15 @@ require('../tools/test/describe')('.log', function (Promise, expect) {
 		var consoleLog = console.log
 		var wasInvoked = false
 		var isPending = true
-		var passed0, passed1
-		console.log = function (arg0, arg1) {
+		var passed0, passed1, passed2
+		console.log = function (arg0, arg1, arg2) {
 			if (isPending) {
 				isPending = false
 				console.log = consoleLog
 				wasInvoked = true
 				passed0 = arg0
 				passed1 = arg1
+				passed2 = arg2
 			}
 		}
 		return {
@@ -22,7 +23,7 @@ require('../tools/test/describe')('.log', function (Promise, expect) {
 				}
 			},
 			get: function () {
-				var arr = [passed0, passed1]
+				var arr = [passed0, passed1, passed2]
 				arr.invoked = wasInvoked
 				return arr
 			}
@@ -39,22 +40,28 @@ require('../tools/test/describe')('.log', function (Promise, expect) {
 			if (!success) {throw new Error('The method did not return a new promise.')}
 		})
 	})
-	describe('should ignore rejected promises', function () {
-		function shouldNotBeFulfilled() {
-			throw new Error('This promise should have been rejected.')
-		}
-		specify('when passed 0 arguments', function () {
+	describe('should log the rejection value without changing it', function () {
+		specify('already rejected', function () {
+			var err = new Error('foo')
 			var controller = hookConsole()
-			return Promise.reject(5).log().then(shouldNotBeFulfilled, function (reason) {
-				expect(reason).to.equal(5)
-				expect(controller.get().invoked).to.be.false
+			return Promise.reject(err).log().catch(function (reason) {
+				expect(reason).to.equal(err)
+				expect(controller.get()[0]).to.equal('<rejected>')
+				expect(controller.get()[1]).to.equal(err)
+				expect(controller.get()[2]).to.be.undefined
 			}).finally(controller.cancel)
 		})
-		specify('when passed 1 argument', function () {
+		specify('eventually rejected', function () {
+			var err = new Error('foo')
 			var controller = hookConsole()
-			return Promise.reject(5).log('foo').then(shouldNotBeFulfilled, function (reason) {
-				expect(reason).to.equal(5)
-				expect(controller.get().invoked).to.be.false
+			var promise = new Promise(function (res, rej) {
+				setTimeout(function () {rej(err)}, 50)
+			})
+			return promise.log().catch(function (reason) {
+				expect(reason).to.equal(err)
+				expect(controller.get()[0]).to.equal('<rejected>')
+				expect(controller.get()[1]).to.equal(err)
+				expect(controller.get()[2]).to.be.undefined
 			}).finally(controller.cancel)
 		})
 	})
@@ -64,8 +71,9 @@ require('../tools/test/describe')('.log', function (Promise, expect) {
 			var controller = hookConsole()
 			return Promise.resolve(obj).log().then(function (value) {
 				expect(value).to.equal(obj)
-				expect(controller.get()[0]).to.equal(obj)
-				expect(controller.get()[1]).to.be.undefined
+				expect(controller.get()[0]).to.equal('<fulfilled>')
+				expect(controller.get()[1]).to.equal(obj)
+				expect(controller.get()[2]).to.be.undefined
 			}).finally(controller.cancel)
 		})
 		specify('eventually fulfilled', function () {
@@ -76,8 +84,9 @@ require('../tools/test/describe')('.log', function (Promise, expect) {
 			})
 			return promise.log().then(function (value) {
 				expect(value).to.equal(obj)
-				expect(controller.get()[0]).to.equal(obj)
-				expect(controller.get()[1]).to.be.undefined
+				expect(controller.get()[0]).to.equal('<fulfilled>')
+				expect(controller.get()[1]).to.equal(obj)
+				expect(controller.get()[2]).to.be.undefined
 			}).finally(controller.cancel)
 		})
 	})
@@ -89,7 +98,8 @@ require('../tools/test/describe')('.log', function (Promise, expect) {
 			return Promise.resolve(obj).log(arg).then(function (value) {
 				expect(value).to.equal(obj)
 				expect(controller.get()[0]).to.equal(arg)
-				expect(controller.get()[1]).to.equal(obj)
+				expect(controller.get()[1]).to.equal('<fulfilled>')
+				expect(controller.get()[2]).to.equal(obj)
 			}).finally(controller.cancel)
 		})
 		specify('argument is value', function () {
@@ -99,7 +109,8 @@ require('../tools/test/describe')('.log', function (Promise, expect) {
 			return Promise.resolve(obj).log(arg).then(function (value) {
 				expect(value).to.equal(obj)
 				expect(controller.get()[0]).to.equal(arg)
-				expect(controller.get()[1]).to.equal(obj)
+				expect(controller.get()[1]).to.equal('<fulfilled>')
+				expect(controller.get()[2]).to.equal(obj)
 			}).finally(controller.cancel)
 		})
 	})

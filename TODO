@@ -1,8 +1,6 @@
 High priority:
 - cause unhandled rejections to crash, rather than just logging the rejection
-- rework .log() to use .inspect() and to log even if the promise is rejected
 - fix unhandled rejection logging in tests
-- add tests for Promise.build
 - add tests for PromiseStream
 - reduce below 600 source characters for v8 inlining:
   - Promise.props
