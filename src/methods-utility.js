@@ -160,9 +160,9 @@ Promise.settle = function (iterable) {
 Promise.build = function (keys, handler) {
 	if (!Array.isArray(keys)) {throw new TypeError('Expected first argument to be an array.')}
 	if (typeof handler !== 'function') {throw new TypeError('Expected second argument to be a function.')}
+	var promise = new Promise(INTERNAL)
 	keys = keys.slice()
-	var promise
-	return promise = new Promise(function (res, rej) {
+	promise._resolveFromHandler(function (res, rej) {
 		var pendings = keys.length
 		var result = {}
 		var builder = function (key, value) {
@@ -195,6 +195,7 @@ Promise.build = function (keys, handler) {
 		handler(builder, rej)
 		pendings || res(result)
 	})
+	return promise
 }
 var PromiseAfter = Promise.after = function (ms, value) {
 	value instanceof Promise && value.catchLater()
