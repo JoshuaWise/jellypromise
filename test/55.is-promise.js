@@ -1,4 +1,5 @@
 'use strict'
+var toString = require('../tools/test/to-string')
 require('../tools/test/describe')('Promise.isPromise', function (Promise, expect) {
 	function falseWhenGiven(value, string) {
 		specify('given: ' + (string || toString(value)), function () {
@@ -10,7 +11,7 @@ require('../tools/test/describe')('Promise.isPromise', function (Promise, expect
 			expect(Promise.isPromise(value)).to.be.true
 		})
 	}
-	
+
 	it('should throw when accessing .then throws', function () {
 		expect(function () {
 			Promise.isPromise({get then() {
@@ -37,7 +38,7 @@ require('../tools/test/describe')('Promise.isPromise', function (Promise, expect
 		falseWhenGiven({Then: function () {}}, '{Then: function () {}}')
 		falseWhenGiven({THEN: function () {}}, '{THEN: function () {}}')
 		falseWhenGiven({"then ": function () {}}, '{"then ": function () {}}')
-		
+
 		specify('given: "foo" with String.prototype.then', function () {
 			var thenInString = 'then' in String.prototype
 			var originalStringThen = String.prototype.then
@@ -52,11 +53,11 @@ require('../tools/test/describe')('Promise.isPromise', function (Promise, expect
 				}
 			}
 		})
-		
+
 		var fn = function () {}
 		fn.then = {}
 		falseWhenGiven(fn, '(function () {}).then = {}')
-		
+
 		if (typeof Symbol === 'function') {
 			falseWhenGiven(Symbol())
 			falseWhenGiven({then: Symbol()}, '{then: Symbol()}')
@@ -65,23 +66,13 @@ require('../tools/test/describe')('Promise.isPromise', function (Promise, expect
 	describe('should return true when', function () {
 		var unnamedFunction = function () {}
 		trueWhenGiven({then: unnamedFunction}, '{then: function () {}}')
-		
+
 		var nullObject = Object.create(null)
 		nullObject.then = function () {}
 		trueWhenGiven(nullObject, 'Object.create(null).then = function () {}')
-		
+
 		var fn = function () {}
 		fn.then = function () {}
 		trueWhenGiven(fn, '(function () {}).then = function () {}')
 	})
 })
-
-function toString(value) {
-	if (value instanceof Array) {
-		return '[' + String(value) + ']'
-	}
-	if (typeof value === 'string') {
-		return '"' + value + '"'
-	}
-	return String(value)
-}

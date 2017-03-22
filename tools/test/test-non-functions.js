@@ -1,4 +1,5 @@
 'use strict'
+var toString = require('./to-string')
 
 // This function runs the given test several times, once for each possible
 // non-function value. Each non-function value is passed as the first argument
@@ -20,22 +21,12 @@ module.exports = function (test) {
 	testInput('foo')
 	testInput({})
 	testInput([])
-	
+
 	var fakeFunction = Object.create(Function.prototype)
 	fakeFunction.toString = function () {return 'Object.create(Function.prototype)'}
 	testInput(fakeFunction)
-	
+
 	if (typeof Symbol === 'function') {
 		testInput(Symbol())
 	}
-}
-
-function toString(value) {
-	if (value instanceof Array) {
-		return '[' + String(value) + ']'
-	}
-	if (typeof value === 'string') {
-		return '"' + value + '"'
-	}
-	return String(value)
 }

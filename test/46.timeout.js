@@ -9,7 +9,7 @@ require('../tools/test/describe')('Promise.TimeoutError', function (Promise, exp
 		var error = new Promise.TimeoutError('foobar')
 		expect(error.message).to.equal('foobar')
 		expect(error.name).to.equal('TimeoutError')
-		
+
 		var typeofStack = typeof (new Error('baz').stack)
 		expect(typeof error.stack).to.equal(typeofStack)
 	})
@@ -44,7 +44,7 @@ require('../tools/test/describe')('.timeout', function (Promise, expect) {
 				.to.be.rejectedWith(Promise.TimeoutError)
 		})
 	}
-	
+
 	it('should return a new promise', function () {
 		var original = Promise.resolve()
 		var timeouted = original.timeout()
@@ -171,6 +171,12 @@ require('../tools/test/describe')('.timeout', function (Promise, expect) {
 			})
 		})
 		describe('when argument is something else, it should be used as a custom message', function () {
+			var correctSymbolCasting = (function () {
+				if (typeof Symbol !== 'function') {return false}
+				try {String(Symbol())}
+				catch (ex) {return false}
+				return true
+			}());
 			function testTimeoutErrorMessage(arg) {
 				return eventualPromise(100).timeout(0, arg).then(shouldNotFulfill,
 					shouldBeTimeoutErrorOf(String(arg)))
@@ -202,7 +208,7 @@ require('../tools/test/describe')('.timeout', function (Promise, expect) {
 			specify('argument is function () {return new Error}', function () {
 				return testTimeoutErrorMessage(function () {return new Error})
 			})
-			if (typeof Symbol === 'function') {
+			if (correctSymbolCasting) {
 				specify('argument is Symbol("bar")', function () {
 					return testTimeoutErrorMessage(Symbol('bar'))
 				})

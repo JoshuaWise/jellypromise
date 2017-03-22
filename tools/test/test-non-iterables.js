@@ -1,4 +1,5 @@
 'use strict'
+var toString = require('./to-string')
 
 // This function runs the given test several times, once for each possible
 // non-iterable value. Each non-iterable value is passed as the first argument
@@ -25,14 +26,4 @@ module.exports = function (test) {
 	if (typeof Symbol !== 'function' || !Symbol.iterator) {
 		testInput('foo')
 	}
-}
-
-function toString(value) {
-	if (value instanceof Array) {
-		return '[' + String(value) + ']'
-	}
-	if (typeof value === 'string') {
-		return '"' + value + '"'
-	}
-	return String(value)
 }

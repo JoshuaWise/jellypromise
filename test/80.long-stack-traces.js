@@ -11,7 +11,7 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 			Promise.suppressUnhandledRejections = originalSuppressionValue
 		})
 	}
-	
+
 	var specialLineRE = /^(Used to reject promise:|From previous event:)$/
 	function cleanLines(parsedLines, lines) {
 		for (var i=0; i<lines.length; ++i) {
@@ -39,17 +39,17 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 				if (!isPending) {return}
 				isPending = false
 				console.error = consoleError
-				
+
 				str = clc.strip(str).replace(/\n+$/g, '')
 				if (isProduction) {
 					expect(str).to.equal('Unhandled rejection ' + productionStack)
 					return done()
 				}
-				
+
 				var lines = str.split('\n').slice(1)
 				var parsedLines = ErrorStackParser.parse({stack: str})
 				cleanLines(parsedLines, lines)
-				
+
 				expect(lines.length).to.equal(trace.length)
 				for (var i=0; i<trace.length; ++i) {
 					var desired = trace[i]
@@ -63,7 +63,7 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 								break
 							case '*':
 								expect(lines[i]).equal(
-									process.version >= 'v4.0.0' ? 'From previous event:' : 'Used to reject promise:'
+									process.version >= 'v0.12.0' ? 'From previous event:' : 'Used to reject promise:'
 								)
 								break
 							default:
@@ -74,7 +74,7 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 					}
 				}
 				done()
-				
+
 			}
 			test(function (error) {
 				productionStack = error && error.stack || Symbol()
@@ -82,7 +82,7 @@ require('../tools/test/describe')('Long stack traces', function (Promise, expect
 			})
 		}
 	}
-	
+
 	it('Normal callbacks with throw', testTrace(['c', '->', 'b', '|', 'a'], function a(throws) {
 		Promise.resolve().then(function b() {
 			return Promise.resolve().then(function c() {

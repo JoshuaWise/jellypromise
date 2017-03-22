@@ -1,12 +1,13 @@
 'use strict'
 var ObjectTester = require('../tools/test/object-tester')
 var shallowEquals = require('../tools/test/object-shallow-equals')
+var toString = require('../tools/test/to-string')
 require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 	var objectTester = new ObjectTester(Promise)
 	function expectToMatch(input, source) {
 		return expect(Promise.props(input)).to.eventually.satisfy(shallowEquals(source))
 	}
-	
+
 	it('should be fulfilled given an empty object', function () {
 		var obj = {}
 		return expectToMatch(obj, obj)
@@ -49,23 +50,14 @@ require('../tools/test/describe')('Promise.props', function (Promise, expect) {
 	it('should accept arbitrary subclasses of Object', function () {
 		function Ignore() {}
 		Ignore.prototype.quux = 'ignore me'
-		
+
 		function Foo() {this.bar = 'baz'}
 		Foo.prototype.__proto__ = Ignore.prototype
 		Foo.prototype.thud = 'also ignored'
-		
+
 		return expectToMatch(new Foo, {bar: 'baz'})
 	})
 	describe('should be rejected on invalid input', function () {
-		function toString(value) {
-			if (value instanceof Array) {
-				return '[' + String(value) + ']'
-			}
-			if (typeof value === 'string') {
-				return '"' + value + '"'
-			}
-			return String(value)
-		}
 		function testInvalidInput(value) {
 			specify('given: ' + toString(value), function () {
 				return expect(Promise.props(value)).to.be.rejectedWith(TypeError)

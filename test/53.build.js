@@ -2,7 +2,7 @@
 var makeIterable = require('../tools/test/make-iterable')
 require('../tools/test/describe')('Promise.build', function (Promise, expect) {
 	var defaultThis = (function () {return this}())
-	
+
 	it('should throw on invalid input', function () {
 		expect(function () {Promise.build()}).to.throw(TypeError)
 		expect(function () {Promise.build(function () {})}).to.throw(TypeError)
@@ -11,7 +11,9 @@ require('../tools/test/describe')('Promise.build', function (Promise, expect) {
 		expect(function () {Promise.build(null, function () {})}).to.throw(TypeError)
 		expect(function () {Promise.build(false, function () {})}).to.throw(TypeError)
 		expect(function () {Promise.build(346543, function () {})}).to.throw(TypeError)
-		expect(function () {Promise.build(makeIterable(['a', 'b']), function () {})}).to.throw(TypeError)
+		if (typeof Symbol === 'function' && Symbol.iterator) {
+			expect(function () {Promise.build(makeIterable(['a', 'b']), function () {})}).to.throw(TypeError)
+		}
 		expect(function () {Promise.build(['a', 'b'])}).to.throw(TypeError)
 		expect(function () {Promise.build(['a', 'b'], 'foo')}).to.throw(TypeError)
 		expect(function () {Promise.build(['a', 'b'], ['foo'])}).to.throw(TypeError)
