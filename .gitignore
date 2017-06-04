@@ -35,4 +35,3 @@ node_modules
 # Project specific
 /lib-*/
 /production.js
-/.next-version-arg
