@@ -84,11 +84,11 @@ If a `predicate` is specified, the `onRejected` handler will only catch exceptio
 
 The `predicate` can be:
 - an `Error` class
- - example: `.catch(TypeError, func)`
+  - example: `.catch(TypeError, func)`
 - a filter function
- - example: `.catch(function (err) {return err.statusCode === 404}, func)`
+  - example: `.catch(function (err) {return err.statusCode === 404}, func)`
 - an array of accepted `predicates`
- - example: `.catch([TypeError, SyntaxError, is404], func)`
+  - example: `.catch([TypeError, SyntaxError, is404], func)`
 
 ### .catchLater() -> *this*
 
